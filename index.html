@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HeartKey Workspace | O Estúdio num só lugar</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700;900&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+    <style>
+        /* ==========================================
+           1. VARIÁVEIS MÁGICAS (O MOTOR DO TEMA)
+           ========================================== */
+        :root {
+            /* TEMA ESCURO (Padrão Indie/Dev) */
+            --bg-base: #09090b;
+            --bg-nav: rgba(9, 9, 11, 0.8);
+            --bg-card: rgba(20, 20, 25, 0.6);
+            --text-main: #ffffff;
+            --text-muted: #888888;
+            --border: rgba(255, 255, 255, 0.08);
+            --primary: #81fe4e; /* Verde Neon */
+            --primary-glow: rgba(129, 254, 78, 0.2);
+            --hero-gradient: linear-gradient(135deg, #ffffff 0%, #a1a1aa 100%);
+            --shadow-soft: 0 10px 40px rgba(0,0,0,0.5);
+        }
+
+        /* TEMA CLARO (Padrão Corporativo/B2B) */
+        body.light-mode {
+            --bg-base: #f7f7f9; /* Branco "Gelo", super confortável aos olhos */
+            --bg-nav: rgba(247, 247, 249, 0.85);
+            --bg-card: rgba(255, 255, 255, 0.9);
+            --text-main: #111111;
+            --text-muted: #666666;
+            --border: rgba(0, 0, 0, 0.08);
+            --primary: #000000; /* No tema claro, o botão principal vira preto elegante */
+            --primary-glow: rgba(0, 0, 0, 0.1);
+            --hero-gradient: linear-gradient(135deg, #111111 0%, #555555 100%);
+            --shadow-soft: 0 10px 40px rgba(0,0,0,0.08);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            overflow-x: hidden;
+            transition: background-color 0.4s ease, color 0.4s ease;
+            /* Textura super subtil */
+            background-image: radial-gradient(var(--border) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        /* ==========================================
+           2. NAVBAR
+           ========================================== */
+        .navbar {
+            position: fixed; top: 0; left: 0; width: 100%;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 5%;
+            background: var(--bg-nav);
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            z-index: 1000;
+            border-bottom: 1px solid var(--border);
+            transition: 0.4s ease;
+        }
+
+        .brand { font-size: 1.2rem; font-weight: 900; letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-main); }
+        .brand-icon { background: #81fe4e; color: #000; width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+
+        .nav-links { display: flex; gap: 30px; }
+        .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: 0.2s; }
+        .nav-links a:hover { color: var(--text-main); }
+
+        .nav-actions { display: flex; gap: 15px; align-items: center; }
+        .login-link { color: var(--text-main); text-decoration: none; font-size: 0.9rem; font-weight: 600; }
+        
+        .btn-theme {
+            background: transparent; border: 1px solid var(--border); color: var(--text-main);
+            width: 38px; height: 38px; border-radius: 8px; cursor: pointer;
+            font-size: 1.1rem; display: flex; align-items: center; justify-content: center;
+            transition: 0.3s;
+        }
+        .btn-theme:hover { background: var(--bg-card); transform: scale(1.05); }
+
+        .btn-primary {
+            background: var(--text-main); color: var(--bg-base);
+            padding: 10px 20px; border-radius: 8px; font-weight: 700; text-decoration: none; font-size: 0.9rem;
+            transition: 0.3s; border: none; cursor: pointer;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px var(--primary-glow); }
+
+        /* ==========================================
+           3. HERO SECTION (MIX DE BEAKY COM APPLE)
+           ========================================== */
+        .hero {
+            min-height: 100vh;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: flex-start;
+            text-align: center;
+            position: relative;
+            padding: 140px 20px 0 20px;
+        }
+
+        .hero-glow {
+            position: absolute; top: 30%; left: 50%; transform: translate(-50%, -50%);
+            width: 800px; height: 600px;
+            background: radial-gradient(circle, rgba(129,254,78,0.1) 0%, rgba(224,64,251,0.05) 40%, transparent 70%);
+            filter: blur(60px); z-index: -1; pointer-events: none; transition: 0.4s;
+        }
+
+        body.light-mode .hero-glow {
+            background: radial-gradient(circle, rgba(129,254,78,0.2) 0%, rgba(0,234,255,0.1) 40%, transparent 70%);
+        }
+
+        .tag-launch {
+            background: var(--bg-card); border: 1px solid var(--border);
+            padding: 6px 16px; border-radius: 30px;
+            font-size: 0.8rem; font-weight: 600; color: var(--text-main);
+            margin-bottom: 25px; display: inline-block;
+            backdrop-filter: blur(10px);
+        }
+        .tag-launch span { color: #81fe4e; }
+        body.light-mode .tag-launch span { color: #4caf50; } /* Verde mais escuro no modo claro */
+
+        .hero h1 {
+            font-size: 4.5rem; font-weight: 900; letter-spacing: -2px; line-height: 1.1;
+            max-width: 800px; margin-bottom: 25px;
+            background: var(--hero-gradient);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            transition: 0.4s;
+        }
+
+        .hero p {
+            font-size: 1.25rem; color: var(--text-muted);
+            max-width: 650px; margin-bottom: 40px; line-height: 1.6;
+        }
+
+        .hero-cta-group { display: flex; gap: 15px; justify-content: center; margin-bottom: 60px; }
+        .btn-large { padding: 15px 35px; font-size: 1rem; border-radius: 12px; }
+        .btn-outline { background: transparent; color: var(--text-main); border: 1px solid var(--border); }
+        .btn-outline:hover { background: var(--bg-card); }
+
+        /* ==========================================
+           OBJETOS ABSTRATOS FLUTUANTES (GLASSMORPHISM B2B)
+           ========================================== */
+        .floating-shapes {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            overflow: hidden;
+            z-index: 0; 
+            pointer-events: none; 
+        }
+
+        .shape {
+            position: absolute;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            /* A sombra suave dá o efeito 3D de "flutuar" */
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15); 
+        }
+
+        /* 1. Esfera de Vidro (Verde Neon) - Topo Esquerda */
+        .shape-1 {
+            width: 140px; height: 140px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(129, 254, 78, 0.15), rgba(129, 254, 78, 0.02));
+            border: 1px solid rgba(129, 254, 78, 0.3);
+            top: 12%; left: 10%;
+            animation: drift-soft 18s ease-in-out infinite alternate;
+        }
+
+        /* 2. Cápsula (Roxa) - Meio Esquerda */
+        .shape-6 {
+            width: 70px; height: 140px;
+            border-radius: 35px;
+            background: linear-gradient(135deg, rgba(224, 64, 251, 0.12), rgba(224, 64, 251, 0.02));
+            border: 1px solid rgba(224, 64, 251, 0.25);
+            top: 42%; left: 6%;
+            animation: drift-rotate 24s ease-in-out infinite alternate;
+            animation-delay: -12s;
+        }
+
+        /* 3. Triângulo de Acrílico (Borda Verde) - Fundo Esquerda */
+        .shape-2 {
+            width: 95px; height: 95px;
+            top: 75%; left: 15%;
+            background: transparent; border: none; box-shadow: none; backdrop-filter: none;
+            animation: drift-rotate 22s ease-in-out infinite alternate-reverse;
+            animation-delay: -5s; 
+        }
+        .shape-2 svg {
+            width: 100%; height: 100%;
+            overflow: visible; 
+            filter: drop-shadow(0 15px 30px rgba(0,0,0,0.15));
+        }
+        .shape-2 polygon {
+            fill: rgba(129, 254, 78, 0.05); /* Fundo verde quase transparente */
+            stroke: rgba(129, 254, 78, 0.4); /* Borda verde sólida */
+            stroke-width: 2px;
+            stroke-linejoin: round;
+        }
+
+        /* 4. O "X" de Vidro Cruzado (Roxo) - Topo Direita */
+        .shape-5 {
+            width: 80px; height: 80px;
+            top: 15%; right: 20%;
+            background: transparent; border: none; box-shadow: none; backdrop-filter: none;
+            animation: drift-rotate 28s ease-in-out infinite alternate;
+            animation-delay: -15s;
+        }
+        .glass-bar {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 100%; height: 22px; 
+            border-radius: 11px; 
+            background: linear-gradient(135deg, rgba(224, 64, 251, 0.15), rgba(224, 64, 251, 0.02));
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(224, 64, 251, 0.3);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .bar-1 { transform: translate(-50%, -50%) rotate(45deg); }
+        .bar-2 { transform: translate(-50%, -50%) rotate(-45deg); }
+
+        /* 5. Cápsula Menor (Verde) - Meio Direita */
+        .shape-4 {
+            width: 60px; height: 160px;
+            border-radius: 30px;
+            background: linear-gradient(135deg, rgba(129, 254, 78, 0.1), rgba(129, 254, 78, 0.02));
+            border: 1px solid rgba(129, 254, 78, 0.25);
+            top: 45%; right: 6%;
+            animation: drift-rotate 20s ease-in-out infinite alternate-reverse;
+            animation-delay: -8s;
+        }
+
+        /* 6. Cubo de Vidro (Roxo) - Fundo Direita */
+        .shape-3 {
+            width: 110px; height: 110px;
+            border-radius: 26px;
+            background: linear-gradient(135deg, rgba(224, 64, 251, 0.15), rgba(224, 64, 251, 0.02));
+            border: 1px solid rgba(224, 64, 251, 0.3);
+            top: 70%; right: 12%;
+            animation: drift-rotate 25s ease-in-out infinite alternate;
+        }
+
+        /* MOTORES DE ANIMAÇÃO */
+        @keyframes drift-soft {
+            0% { transform: translateY(0px) translateX(0px); }
+            100% { transform: translateY(-30px) translateX(15px); }
+        }
+
+        @keyframes drift-rotate {
+            0% { transform: translateY(0px) rotate(10deg); }
+            100% { transform: translateY(-40px) rotate(35deg); }
+        }
+
+        @media (max-width: 900px) {
+            .floating-shapes { display: none; }
+        }
+
+        /* ==========================================
+           4. MOCKUP DA INTERFACE (A PROVA SOCIAL)
+           ========================================== */
+        .hero-mockup-container {
+            width: 100%; max-width: 1000px;
+            position: relative;
+            margin-bottom: -100px; /* Sobrepõe a próxima secção sutilmente */
+            perspective: 1000px;
+        }
+
+        .mockup-window {
+            width: 100%; height: 500px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px 20px 0 0;
+            box-shadow: var(--shadow-soft);
+            overflow: hidden;
+            backdrop-filter: blur(20px);
+            /* Efeito 3D sutil imitando a apresentação da Vercel */
+            transform: rotateX(5deg) scale(0.95);
+            transform-origin: top center;
+            transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .hero-mockup-container:hover .mockup-window {
+            transform: rotateX(0deg) scale(1); /* Levanta quando passa o rato! */
+            box-shadow: 0 30px 60px rgba(0,0,0,0.3);
+        }
+
+        /* Falso Header do Mac/Windows dentro do Mockup */
+        .mockup-header {
+            height: 40px; background: rgba(0,0,0,0.1); border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; padding: 0 15px; gap: 6px;
+        }
+        .mockup-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border); }
+        .dot-r { background: #ff5252; } .dot-y { background: #ffc107; } .dot-g { background: #81fe4e; }
+
+        /* O interior do mockup (Apenas visual, sem código pesado) */
+        .mockup-body {
+            padding: 20px; display: grid; grid-template-columns: 200px 1fr; gap: 20px; height: 100%;
+        }
+        .mockup-sidebar { background: var(--border); border-radius: 12px; height: 100%; opacity: 0.5; }
+        .mockup-content { display: flex; flex-direction: column; gap: 15px; }
+        .mockup-box { background: var(--border); border-radius: 12px; opacity: 0.5; }
+        .mockup-box.large { height: 120px; }
+        .mockup-box.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; height: 200px; background: transparent; opacity: 1; }
+        .mockup-box.grid > div { background: var(--border); border-radius: 12px; opacity: 0.5; }
+
+        @media (max-width: 900px) {
+            .hero h1 { font-size: 3rem; }
+            .hero-cta-group { flex-direction: column; }
+            .mockup-body { grid-template-columns: 1fr; }
+            .mockup-sidebar { display: none; }
+        }
+
+        /* ==========================================
+           5. SECÇÃO DE FUNCIONALIDADES (BENTO GRID)
+           ========================================== */
+        .features-section {
+            padding: 120px 5%;
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 10;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .section-header h2 {
+            font-size: 3rem;
+            font-weight: 900;
+            letter-spacing: -1px;
+            margin-bottom: 15px;
+        }
+
+        .section-header p {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* O Grid Matemático */
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-auto-rows: minmax(280px, auto);
+            gap: 20px;
+        }
+
+        .bento-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 35px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: var(--shadow-soft);
+            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: default;
+        }
+
+        .bento-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--text-muted);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+
+        /* Brilho especial no hover do Dark Mode */
+        body:not(.light-mode) .bento-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5), inset 0 0 30px var(--primary-glow);
+        }
+
+        /* Tamanhos Assimétricos */
+        .col-2 { grid-column: span 2; }
+        .row-2 { grid-row: span 2; }
+
+        /* Conteúdo dos Cartões */
+        .bento-icon {
+            width: 50px; height: 50px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem;
+            background: rgba(129, 254, 78, 0.1);
+            color: var(--primary);
+            margin-bottom: 20px;
+            border: 1px solid var(--primary-glow);
+        }
+
+        .bento-card h3 {
+            font-size: 1.3rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .bento-card p {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+            flex: 1; /* Empurra a arte para o fundo */
+        }
+
+        /* Artes Decorativas dentro dos Cartões */
+        .bento-art {
+            margin-top: 25px;
+            border-radius: 12px;
+            background: var(--bg-base);
+            border: 1px solid var(--border);
+            padding: 15px;
+            flex: 1;
+            position: relative;
+        }
+
+        /* Mini Kanban Art */
+        .mini-kanban { display: flex; gap: 10px; height: 100%; opacity: 0.7; }
+        .mini-col { flex: 1; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border); padding: 5px; display: flex; flex-direction: column; gap: 5px;}
+        .mini-task { height: 15px; background: var(--border); border-radius: 4px; width: 100%; }
+        .mini-task.done { background: var(--primary); width: 80%; }
+
+        /* Mini Gráfico Financeiro */
+        .mini-chart { display: flex; align-items: flex-end; gap: 5px; height: 100px; padding-top: 20px; }
+        .bar { flex: 1; background: var(--border); border-radius: 4px 4px 0 0; }
+        .bar.high { background: var(--primary); height: 80%; }
+        .bar.med { height: 50%; }
+        .bar.low { height: 30%; background: #ff5252; }
+
+        @media (max-width: 900px) {
+            .bento-grid { grid-template-columns: 1fr; }
+            .col-2 { grid-column: span 1; }
+            .row-2 { grid-row: span 1; }
+        }
+
+        /* ==========================================
+           6. SECÇÃO DE PREÇOS (PRICING)
+           ========================================== */
+        .pricing-section {
+            padding: 100px 5% 150px 5%;
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 10;
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            align-items: center; /* Faz o card do meio destacar-se na altura */
+            margin-top: 50px;
+        }
+
+        .pricing-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 40px 30px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: var(--shadow-soft);
+            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--text-muted);
+        }
+
+        /* O Plano "Estúdio" (Destaque Principal) */
+        .pricing-card.popular {
+            border-color: var(--primary);
+            box-shadow: 0 20px 50px var(--primary-glow);
+            transform: scale(1.05); /* Ligeiramente maior que os outros */
+            background: linear-gradient(180deg, var(--bg-card) 0%, rgba(129, 254, 78, 0.03) 100%);
+        }
+        
+        /* Ajuste do destaque para o Modo Claro */
+        body.light-mode .pricing-card.popular {
+            background: linear-gradient(180deg, var(--bg-card) 0%, rgba(0, 0, 0, 0.02) 100%);
+            border-color: var(--text-main);
+        }
+
+        .pricing-card.popular:hover {
+            transform: scale(1.05) translateY(-10px);
+        }
+
+        .popular-badge {
+            position: absolute;
+            top: 0; left: 50%;
+            transform: translateX(-50%);
+            background: var(--primary);
+            color: #000;
+            padding: 6px 15px;
+            border-radius: 0 0 12px 12px;
+            font-size: 0.75rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        body.light-mode .popular-badge {
+            background: var(--text-main);
+            color: var(--bg-base);
+        }
+
+        .plan-name { 
+            font-size: 1.2rem; font-weight: 700; color: var(--text-muted); margin-bottom: 15px; 
+        }
+        .pricing-card.popular .plan-name { color: var(--primary); }
+        body.light-mode .pricing-card.popular .plan-name { color: var(--text-main); }
+
+        .plan-price { 
+            font-size: 3rem; font-weight: 900; color: var(--text-main); margin-bottom: 20px; 
+            display: flex; align-items: baseline; gap: 5px; letter-spacing: -1px;
+        }
+        .plan-price span { font-size: 1rem; color: var(--text-muted); font-weight: 500; letter-spacing: 0;}
+
+        .plan-features { 
+            list-style: none; margin-bottom: 30px; display: flex; flex-direction: column; gap: 15px; 
+        }
+        .plan-features li { 
+            display: flex; align-items: center; gap: 10px; font-size: 0.95rem; color: var(--text-main); 
+        }
+        .plan-features li i { 
+            color: var(--primary); font-weight: bold; font-style: normal; 
+        }
+        body.light-mode .plan-features li i { color: #4caf50; }
+
+        .btn-plan {
+            display: block; width: 100%; text-align: center;
+            padding: 15px; border-radius: 12px; font-weight: 700;
+            text-decoration: none; transition: 0.3s; margin-top: auto;
+        }
+        .btn-plan-outline { 
+            border: 1px solid var(--border); color: var(--text-main); 
+        }
+        .btn-plan-outline:hover { 
+            background: var(--text-main); color: var(--bg-base); 
+        }
+        
+        .btn-plan-solid { 
+            background: var(--primary); color: #000; 
+        }
+        .btn-plan-solid:hover { 
+            box-shadow: 0 0 20px var(--primary-glow); filter: brightness(1.1); 
+        }
+        body.light-mode .btn-plan-solid { 
+            background: var(--text-main); color: var(--bg-base); 
+        }
+        
+        @media (max-width: 900px) {
+            .pricing-grid { grid-template-columns: 1fr; gap: 40px; margin-top: 60px; }
+            .pricing-card.popular { transform: scale(1); }
+            .pricing-card.popular:hover { transform: translateY(-5px); }
+        }
+
+        /* ==========================================
+           7. PROVA SOCIAL (TESTEMUNHOS)
+           ========================================== */
+        .social-proof-section {
+            padding: 100px 5% 120px 5%;
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 10;
+        }
+
+        .testimonials-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+        }
+
+        .testimonial-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            transition: 0.3s;
+        }
+
+        .testimonial-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--text-muted);
+        }
+
+        .stars { color: #ffc107; font-size: 1.1rem; letter-spacing: 2px;}
+
+        .testimonial-text {
+            font-size: 1rem;
+            color: var(--text-main);
+            line-height: 1.6;
+            font-style: italic;
+            flex: 1;
+        }
+
+        .testimonial-author {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border-top: 1px solid var(--border);
+            padding-top: 20px;
+        }
+
+        .author-avatar {
+            width: 45px; height: 45px;
+            border-radius: 50%;
+            background: var(--border);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .author-info h4 { font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin-bottom: 2px; }
+        .author-info p { font-size: 0.8rem; color: var(--text-muted); }
+
+        /* ==========================================
+           8. RODAPÉ (FOOTER INSTITUCIONAL)
+           ========================================== */
+        .footer {
+            border-top: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.2);
+            padding: 80px 5% 40px 5%;
+        }
+
+        body.light-mode .footer {
+            background: rgba(0, 0, 0, 0.02);
+        }
+
+        .footer-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 60px;
+        }
+
+        .footer-brand p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: 15px;
+            max-width: 300px;
+            line-height: 1.6;
+        }
+
+        .footer-col h4 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 20px;
+            letter-spacing: 0.5px;
+        }
+
+        .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+        .footer-col ul a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: 0.2s;
+        }
+        .footer-col ul a:hover { color: var(--text-main); padding-left: 5px; }
+
+        .footer-bottom {
+            max-width: 1200px;
+            margin: 0 auto;
+            border-top: 1px solid var(--border);
+            padding-top: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        @media (max-width: 900px) {
+            .testimonials-grid { grid-template-columns: 1fr; }
+            .footer-grid { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 600px) {
+            .footer-grid { grid-template-columns: 1fr; }
+            .footer-bottom { flex-direction: column; gap: 15px; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="brand">
+            <div class="brand-icon">🔑</div>
+            Workspace
+        </div>
+        <div class="nav-links">
+            <a href="#features">Recursos</a>
+            <a href="#pricing">Preços</a>
+            <a href="#manifesto">A Guilda</a>
+        </div>
+        <div class="nav-actions">
+            <button class="btn-theme" id="themeToggle" title="Trocar Tema">☀️</button>
+            
+            <a href="#" class="login-link">Fazer Login</a>
+            <a href="#" class="btn-primary">Criar Conta</a>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="hero-glow"></div>
+
+        <div class="floating-shapes">
+            <div class="shape shape-1"></div>
+            
+            <div class="shape shape-2">
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <polygon points="50,15 90,80 10,80" />
+                </svg>
+            </div>
+            
+            <div class="shape shape-3"></div>
+            
+            <div class="shape shape-4"></div>
+
+            <div class="shape shape-5">
+                <div class="glass-bar bar-1"></div>
+                <div class="glass-bar bar-2"></div>
+            </div>
+
+            <div class="shape shape-6   "></div>
+        </div>
+
+        <div class="tag-launch"><span>✦</span> Feito para Produtividade Absoluta</div>
+        
+        <h1><span class="text-gradient">O seu estúdio indie.</span><br>Tudo num só lugar.</h1>
+        
+        <p>A ferramenta definitiva para equipas criativas. Substitua o Trello, Notion e Slack por um único ecossistema desenhado especificamente para quem constrói jogos e software.</p>
+        
+        <div class="hero-cta-group">
+            <a href="#" class="btn-primary btn-large">Começar Gratuitamente &rarr;</a>
+            <a href="#" class="btn-primary btn-outline btn-large">Agendar Demo</a>
+        </div>
+
+        <div class="hero-mockup-container">
+            <div class="mockup-window">
+                <div class="mockup-header">
+                    <div class="mockup-dot dot-r"></div><div class="mockup-dot dot-y"></div><div class="mockup-dot dot-g"></div>
+                </div>
+                <div class="mockup-body">
+                    <div class="mockup-sidebar"></div>
+                    <div class="mockup-content">
+                        <div class="mockup-box large"></div>
+                        <div class="mockup-box grid">
+                            <div></div><div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="features" class="features-section">
+        <div class="section-header">
+            <h2>O fim do caos na produção.</h2>
+            <p>Substitua 5 subscrições diferentes por um único ecossistema desenhado nativamente para produtores, developers e criativos.</p>
+        </div>
+
+        <div class="bento-grid">
+            
+            <div class="bento-card col-2">
+                <div class="bento-icon">📋</div>
+                <h3>Kanban & Sincronização GitHub</h3>
+                <p>Arraste, solte e conclua. As suas tarefas sincronizam automaticamente com os repositórios do GitHub, transformando commits em progresso visual e XP para a equipa.</p>
+                <div class="bento-art mini-kanban">
+                    <div class="mini-col"><div class="mini-task"></div><div class="mini-task" style="width:60%"></div></div>
+                    <div class="mini-col"><div class="mini-task" style="width:90%"></div></div>
+                    <div class="mini-col"><div class="mini-task done"></div><div class="mini-task done" style="width:50%"></div></div>
+                </div>
+            </div>
+
+            <div class="bento-card row-2">
+                <div class="bento-icon" style="color: #00eaff; background: rgba(0, 234, 255, 0.1); border-color: rgba(0, 234, 255, 0.3);">📓</div>
+                <h3>Diário E2EE</h3>
+                <p>O seu DevLog é sagrado. Um santuário privado com criptografia de ponta-a-ponta (E2EE). Nem nós, nem o banco de dados, conseguimos ler o que você escreve sem a sua senha mestre.</p>
+                <div class="bento-art" style="background: transparent; border: none; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 4rem; opacity: 0.5;">
+                    🔒
+                </div>
+            </div>
+
+            <div class="bento-card">
+                <div class="bento-icon" style="color: #e040fb; background: rgba(224, 64, 251, 0.1); border-color: rgba(224, 64, 251, 0.3);">📻</div>
+                <h3>Rádio do Estúdio</h3>
+                <p>Sincronize a equipa com uma estação de rádio global. Programação musical partilhada e interrupções automáticas para plantões e avisos da direção.</p>
+            </div>
+
+            <div class="bento-card">
+                <div class="bento-icon" style="color: #ffc107; background: rgba(255, 193, 7, 0.1); border-color: rgba(255, 193, 7, 0.3);">💰</div>
+                <h3>Runway & Metas</h3>
+                <p>Monitorize o "tempo de vida" do estúdio. Registe os custos, acompanhe as receitas e foque a equipa num objetivo financeiro em tempo real.</p>
+                <div class="bento-art mini-chart">
+                    <div class="bar low"></div><div class="bar med"></div><div class="bar high"></div><div class="bar med"></div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <section id="pricing" class="pricing-section">
+        <div class="section-header">
+            <h2>Invista na sua equipa.</h2>
+            <p>Planos simples e transparentes, feitos para estúdios independentes de todos os tamanhos. Cresça sem surpresas no fim do mês.</p>
+        </div>
+
+        <div class="pricing-grid">
+            
+            <div class="pricing-card">
+                <div class="plan-name">Indie</div>
+                <div class="plan-price">Grátis<span>/para sempre</span></div>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 25px; min-height: 40px;">Para lobos solitários e pequenas equipas a dar os primeiros passos.</p>
+                <ul class="plan-features">
+                    <li><i>✓</i> Até 3 membros na equipa</li>
+                    <li><i>✓</i> 2 Projetos ativos</li>
+                    <li><i>✓</i> Kanban Essencial</li>
+                    <li><i>✓</i> DevLog Local</li>
+                </ul>
+                <a href="#" class="btn-plan btn-plan-outline">Começar de Graça</a>
+            </div>
+
+            <div class="pricing-card popular">
+                <div class="popular-badge">Mais Escolhido</div>
+                <div class="plan-name">Estúdio</div>
+                <div class="plan-price">R$ 49<span>/mês</span></div>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 25px; min-height: 40px;">A potência completa para equipas que querem lançar jogos comerciais.</p>
+                <ul class="plan-features">
+                    <li><i>✓</i> Até 15 membros na equipa</li>
+                    <li><i>✓</i> Projetos ilimitados</li>
+                    <li><i>✓</i> Wiki & GDD Colaborativo</li>
+                    <li><i>✓</i> Central de Áudio & Moodboard</li>
+                    <li><i>✓</i> War Room (Sprints & Jams)</li>
+                </ul>
+                <a href="#" class="btn-plan btn-plan-solid">Testar por 14 dias</a>
+            </div>
+
+            <div class="pricing-card">
+                <div class="plan-name">Publisher</div>
+                <div class="plan-price">R$ 199<span>/mês</span></div>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 25px; min-height: 40px;">Controlo total, relatórios financeiros e suporte dedicado para publishers.</p>
+                <ul class="plan-features">
+                    <li><i>✓</i> Membros ilimitados</li>
+                    <li><i>✓</i> Tudo do plano Estúdio</li>
+                    <li><i>✓</i> Gestão Financeira (Runway)</li>
+                    <li><i>✓</i> CRM de Clientes (Leads)</li>
+                    <li><i>✓</i> Exportação em PDF & ZIP</li>
+                </ul>
+                <a href="#" class="btn-plan btn-plan-outline">Falar com Vendas</a>
+            </div>
+
+        </div>
+    </section>
+
+    <section id="manifesto" class="social-proof-section">
+        <div class="section-header">
+            <h2>Construído para quem constrói.</h2>
+            <p>Não confie apenas na nossa palavra. Veja o que dizem os estúdios e criadores que já mudaram o seu workflow para o HeartKey Workspace.</p>
+        </div>
+
+        <div class="testimonials-grid">
+            
+            <div class="testimonial-card">
+                <div class="stars">★★★★★</div>
+                <p class="testimonial-text">"Tínhamos o Trello para tarefas, o Google Drive para GDDs e o Discord para ficheiros de áudio. Era um caos completo. O Workspace unificou o nosso estúdio numa semana."</p>
+                <div class="testimonial-author">
+                    <div class="author-avatar">👾</div>
+                    <div class="author-info">
+                        <h4>João Silva</h4>
+                        <p>Lead Developer, PixelForge</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="testimonial-card">
+                <div class="stars">★★★★★</div>
+                <p class="testimonial-text">"O DevLog criptografado foi a principal razão da mudança. Finalmente tenho um espaço seguro para guardar as chaves de API e os segredos do jogo sem medo de fugas de informação."</p>
+                <div class="testimonial-author">
+                    <div class="author-avatar">🧙‍♂️</div>
+                    <div class="author-info">
+                        <h4>Alexandre M.</h4>
+                        <p>Solo Indie Dev</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="testimonial-card">
+                <div class="stars">★★★★★</div>
+                <p class="testimonial-text">"O painel de áudio é genial. Conseguimos ouvir as referências do Moodboard e testar as trilhas do jogo lado a lado, tudo isto enquanto o Kanban regista a nossa evolução. Perfeito."</p>
+                <div class="testimonial-author">
+                    <div class="author-avatar">🎧</div>
+                    <div class="author-info">
+                        <h4>Sofia Costa</h4>
+                        <p>Sound Designer</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="footer-grid">
+            
+            <div class="footer-brand">
+                <div class="brand">
+                    <div class="brand-icon">🔑</div>
+                    Workspace
+                </div>
+                <p>Nós forjamos mundos. Feitos com amor. O HeartKey Workspace é a nossa contribuição para facilitar a vida aos criadores indie em todo o mundo.</p>
+            </div>
+
+            <div class="footer-col">
+                <h4>Produto</h4>
+                <ul>
+                    <li><a href="#">Funcionalidades</a></li>
+                    <li><a href="#">Preços</a></li>
+                    <li><a href="#">Integração GitHub</a></li>
+                    <li><a href="#">Changelog</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-col">
+                <h4>A Guilda</h4>
+                <ul>
+                    <li><a href="#">Sobre Nós</a></li>
+                    <li><a href="#">Nossos Jogos</a></li>
+                    <li><a href="#">O Estúdio</a></li>
+                    <li><a href="#">Carreiras</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-col">
+                <h4>Legal & Suporte</h4>
+                <ul>
+                    <li><a href="#">Termos de Uso</a></li>
+                    <li><a href="#">Privacidade</a></li>
+                    <li><a href="#">Contacto</a></li>
+                    <li><a href="#">Twitter / X</a></li>
+                </ul>
+            </div>
+
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2026 HeartKey Studio. Todos os direitos reservados.</p>
+            <p>Construído com ❤️ e código em Santos, BR.</p>
+        </div>
+    </footer>
+
+    <script>
+        const themeToggle = document.getElementById('themeToggle');
+        const body = document.body;
+
+        themeToggle.addEventListener('click', () => {
+            body.classList.toggle('light-mode');
+            
+            // Troca o ícone baseando-se na classe
+            if (body.classList.contains('light-mode')) {
+                themeToggle.innerText = '🌙';
+            } else {
+                themeToggle.innerText = '☀️';
+            }
+        });
+    </script>
+</body>
+</html>
