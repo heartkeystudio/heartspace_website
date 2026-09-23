@@ -3,7 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HeartKey Workspace | O Estúdio num só lugar</title>
+    <title>HeartSpace Hub | O centro do seu estúdio</title>
+    <meta name="description" content="HeartSpace é o ecossistema local-first para estúdios indie criarem, decidirem, produzirem e entregarem jogos.">
+    <meta name="theme-color" content="#9501d8">
+    <link rel="canonical" href="https://heartspace.tools/">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="pt_BR">
+    <meta property="og:title" content="HeartSpace Hub | Seu estúdio, conectado.">
+    <meta property="og:description" content="O ecossistema local-first para estúdios indie criarem, decidirem, produzirem e entregarem jogos.">
+    <meta property="og:url" content="https://heartspace.tools/">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="HeartSpace Hub | Seu estúdio, conectado.">
+    <meta name="twitter:description" content="O ecossistema local-first para estúdios indie criarem, decidirem, produzirem e entregarem jogos.">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700;900&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
     <style>
         /* ==========================================
@@ -17,8 +28,8 @@
             --text-main: #ffffff;
             --text-muted: #888888;
             --border: rgba(255, 255, 255, 0.08);
-            --primary: #81fe4e; /* Verde Neon */
-            --primary-glow: rgba(129, 254, 78, 0.2);
+            --primary: #9501d8;
+            --primary-glow: rgba(149, 1, 216, 0.22);
             --hero-gradient: linear-gradient(135deg, #ffffff 0%, #a1a1aa 100%);
             --shadow-soft: 0 10px 40px rgba(0,0,0,0.5);
         }
@@ -31,13 +42,15 @@
             --text-main: #111111;
             --text-muted: #666666;
             --border: rgba(0, 0, 0, 0.08);
-            --primary: #000000; /* No tema claro, o botão principal vira preto elegante */
-            --primary-glow: rgba(0, 0, 0, 0.1);
+            --primary: #9501d8;
+            --primary-glow: rgba(149, 1, 216, 0.14);
             --hero-gradient: linear-gradient(135deg, #111111 0%, #555555 100%);
             --shadow-soft: 0 10px 40px rgba(0,0,0,0.08);
         }
 
+        html { scroll-behavior: smooth; }
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+        :focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
 
         body {
             font-family: 'Inter', sans-serif;
@@ -65,7 +78,7 @@
         }
 
         .brand { font-size: 1.2rem; font-weight: 900; letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-main); }
-        .brand-icon { background: #81fe4e; color: #000; width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+        .brand-icon { background: #9501d8; color: #fff; width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
 
         .nav-links { display: flex; gap: 30px; }
         .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: 0.2s; }
@@ -73,6 +86,7 @@
 
         .nav-actions { display: flex; gap: 15px; align-items: center; }
         .login-link { color: var(--text-main); text-decoration: none; font-size: 0.9rem; font-weight: 600; }
+        .menu-toggle { display: none; width: 38px; height: 38px; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--text-main); cursor: pointer; font-size: 1.2rem; }
         
         .btn-theme {
             background: transparent; border: 1px solid var(--border); color: var(--text-main);
@@ -89,6 +103,20 @@
         }
         .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px var(--primary-glow); }
 
+        @media (max-width: 760px) {
+            .navbar { padding: 12px 5%; }
+            .nav-links {
+                display: none; position: absolute; top: calc(100% + 8px); left: 5%; right: 5%;
+                flex-direction: column; gap: 4px; padding: 10px; border: 1px solid var(--border);
+                border-radius: 14px; background: var(--bg-nav); backdrop-filter: blur(18px);
+            }
+            .navbar.nav-open .nav-links { display: flex; }
+            .nav-links a { padding: 11px 10px; border-radius: 8px; }
+            .nav-links a:hover { background: var(--bg-card); }
+            .menu-toggle { display: inline-flex; align-items: center; justify-content: center; }
+            .nav-actions .login-link, .nav-actions .btn-primary { display: none; }
+        }
+
         /* ==========================================
            3. HERO SECTION (MIX DE BEAKY COM APPLE)
            ========================================== */
@@ -104,12 +132,12 @@
         .hero-glow {
             position: absolute; top: 30%; left: 50%; transform: translate(-50%, -50%);
             width: 800px; height: 600px;
-            background: radial-gradient(circle, rgba(129,254,78,0.1) 0%, rgba(224,64,251,0.05) 40%, transparent 70%);
+            background: radial-gradient(circle, rgba(149,1,216,0.16) 0%, rgba(224,64,251,0.05) 40%, transparent 70%);
             filter: blur(60px); z-index: -1; pointer-events: none; transition: 0.4s;
         }
 
         body.light-mode .hero-glow {
-            background: radial-gradient(circle, rgba(129,254,78,0.2) 0%, rgba(0,234,255,0.1) 40%, transparent 70%);
+            background: radial-gradient(circle, rgba(149,1,216,0.2) 0%, rgba(0,234,255,0.1) 40%, transparent 70%);
         }
 
         .tag-launch {
@@ -119,8 +147,8 @@
             margin-bottom: 25px; display: inline-block;
             backdrop-filter: blur(10px);
         }
-        .tag-launch span { color: #81fe4e; }
-        body.light-mode .tag-launch span { color: #4caf50; } /* Verde mais escuro no modo claro */
+        .tag-launch span { color: var(--primary); }
+        body.light-mode .tag-launch span { color: #7410a5; }
 
         .hero h1 {
             font-size: 4.5rem; font-weight: 900; letter-spacing: -2px; line-height: 1.1;
@@ -163,8 +191,8 @@
         .shape-1 {
             width: 140px; height: 140px;
             border-radius: 50%;
-            background: linear-gradient(135deg, rgba(129, 254, 78, 0.15), rgba(129, 254, 78, 0.02));
-            border: 1px solid rgba(129, 254, 78, 0.3);
+            background: linear-gradient(135deg, rgba(149, 1, 216, 0.16), rgba(149, 1, 216, 0.02));
+            border: 1px solid rgba(149, 1, 216, 0.32);
             top: 12%; left: 10%;
             animation: drift-soft 18s ease-in-out infinite alternate;
         }
@@ -194,8 +222,8 @@
             filter: drop-shadow(0 15px 30px rgba(0,0,0,0.15));
         }
         .shape-2 polygon {
-            fill: rgba(129, 254, 78, 0.05); /* Fundo verde quase transparente */
-            stroke: rgba(129, 254, 78, 0.4); /* Borda verde sólida */
+            fill: rgba(149, 1, 216, 0.05);
+            stroke: rgba(149, 1, 216, 0.42);
             stroke-width: 2px;
             stroke-linejoin: round;
         }
@@ -226,8 +254,8 @@
         .shape-4 {
             width: 60px; height: 160px;
             border-radius: 30px;
-            background: linear-gradient(135deg, rgba(129, 254, 78, 0.1), rgba(129, 254, 78, 0.02));
-            border: 1px solid rgba(129, 254, 78, 0.25);
+            background: linear-gradient(135deg, rgba(149, 1, 216, 0.12), rgba(149, 1, 216, 0.02));
+            border: 1px solid rgba(149, 1, 216, 0.28);
             top: 45%; right: 6%;
             animation: drift-rotate 20s ease-in-out infinite alternate-reverse;
             animation-delay: -8s;
@@ -293,24 +321,39 @@
             display: flex; align-items: center; padding: 0 15px; gap: 6px;
         }
         .mockup-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border); }
-        .dot-r { background: #ff5252; } .dot-y { background: #ffc107; } .dot-g { background: #81fe4e; }
+        .dot-r { background: #ff5252; } .dot-y { background: #ffc107; } .dot-g { background: #9501d8; }
 
-        /* O interior do mockup (Apenas visual, sem código pesado) */
+        /* Prévia visual do Hub */
         .mockup-body {
             padding: 20px; display: grid; grid-template-columns: 200px 1fr; gap: 20px; height: 100%;
         }
-        .mockup-sidebar { background: var(--border); border-radius: 12px; height: 100%; opacity: 0.5; }
-        .mockup-content { display: flex; flex-direction: column; gap: 15px; }
-        .mockup-box { background: var(--border); border-radius: 12px; opacity: 0.5; }
-        .mockup-box.large { height: 120px; }
-        .mockup-box.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; height: 200px; background: transparent; opacity: 1; }
-        .mockup-box.grid > div { background: var(--border); border-radius: 12px; opacity: 0.5; }
+        .mockup-sidebar { background: rgba(255,255,255,0.035); border: 1px solid var(--border); border-radius: 12px; height: 100%; padding: 18px 14px; }
+        .mockup-sidebar strong { display: block; font-size: 0.8rem; margin-bottom: 24px; }
+        .mockup-sidebar span { display: block; color: var(--text-muted); font-size: 0.72rem; padding: 9px 8px; margin-bottom: 3px; border-radius: 6px; }
+        .mockup-sidebar .active { color: var(--text-main); background: rgba(149,1,216,0.17); }
+        .mockup-content { display: flex; flex-direction: column; gap: 15px; min-width: 0; }
+        .hub-topline { display: flex; align-items: center; justify-content: space-between; }
+        .hub-topline p { color: var(--text-muted); font-size: 0.75rem; }
+        .hub-topline h3 { font-size: 1.2rem; margin-top: 4px; }
+        .hub-status { color: #c987ff; border: 1px solid rgba(149,1,216,0.4); border-radius: 20px; padding: 6px 10px; font-size: 0.65rem; }
+        .hub-overview { display: grid; grid-template-columns: 1.3fr 0.7fr; gap: 15px; }
+        .hub-panel { border: 1px solid var(--border); border-radius: 12px; padding: 16px; background: rgba(255,255,255,0.025); }
+        .hub-panel small { color: var(--text-muted); font-size: 0.68rem; }
+        .hub-panel h4 { margin-top: 7px; font-size: 1rem; }
+        .progress-track { height: 7px; margin-top: 18px; border-radius: 9px; background: var(--border); overflow: hidden; }
+        .progress-track i { display: block; width: 62%; height: 100%; background: var(--primary); border-radius: inherit; }
+        .hub-apps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .hub-app { min-height: 100px; border: 1px solid var(--border); border-radius: 12px; padding: 14px; background: rgba(255,255,255,0.02); transition: 0.25s; }
+        .hub-app:hover { border-color: var(--primary); transform: translateY(-2px); }
+        .hub-app b { display: block; margin-top: 15px; font-size: 0.82rem; }
+        .hub-app span { color: var(--text-muted); font-size: 0.65rem; }
 
         @media (max-width: 900px) {
             .hero h1 { font-size: 3rem; }
             .hero-cta-group { flex-direction: column; }
             .mockup-body { grid-template-columns: 1fr; }
             .mockup-sidebar { display: none; }
+            .hub-overview { grid-template-columns: 1fr; }
         }
 
         /* ==========================================
@@ -389,7 +432,7 @@
             border-radius: 12px;
             display: flex; align-items: center; justify-content: center;
             font-size: 1.5rem;
-            background: rgba(129, 254, 78, 0.1);
+            background: rgba(149, 1, 216, 0.12);
             color: var(--primary);
             margin-bottom: 20px;
             border: 1px solid var(--primary-glow);
@@ -424,6 +467,34 @@
         .mini-col { flex: 1; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border); padding: 5px; display: flex; flex-direction: column; gap: 5px;}
         .mini-task { height: 15px; background: var(--border); border-radius: 4px; width: 100%; }
         .mini-task.done { background: var(--primary); width: 80%; }
+
+        .app-chips {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 22px;
+        }
+        .app-chip {
+            display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 8px; min-width: 0; padding: 9px;
+            border: 1px solid var(--border); border-radius: 9px; background: rgba(255,255,255,0.025);
+            color: var(--text-muted); font-size: 0.72rem; transition: 0.25s;
+        }
+        .app-chip i { color: var(--primary); font-style: normal; }
+        .app-chip small { grid-column: 2; color: var(--text-muted); font-size: 0.6rem; line-height: 1.2; }
+        .app-chip:hover { color: var(--text-main); border-color: var(--primary); background: rgba(149,1,216,0.1); }
+
+        .tool-split {
+            margin-top: 25px; min-height: 190px; display: flex; overflow: hidden;
+            border: 1px solid var(--border); border-radius: 14px; background: var(--bg-base);
+        }
+        .tool-pane {
+            flex: 1; min-width: 0; padding: 22px 14px; display: flex; flex-direction: column;
+            justify-content: flex-end; transition: flex 0.45s ease, background 0.45s ease;
+        }
+        .tool-pane + .tool-pane { border-left: 1px solid var(--border); }
+        .tool-pane h4 { font-size: 1.15rem; margin-bottom: 6px; }
+        .tool-pane span { color: var(--text-muted); font-size: 0.78rem; line-height: 1.35; }
+        .tool-pane.docs { background: linear-gradient(145deg, rgba(0, 234, 255, 0.15), transparent 70%); }
+        .tool-pane.tasks { background: linear-gradient(145deg, rgba(149, 1, 216, 0.18), transparent 70%); }
+        .tool-split:hover .tool-pane { flex: 0.75; }
+        .tool-split .tool-pane:hover { flex: 1.65; }
 
         /* Mini Gráfico Financeiro */
         .mini-chart { display: flex; align-items: flex-end; gap: 5px; height: 100px; padding-top: 20px; }
@@ -483,7 +554,7 @@
             border-color: var(--primary);
             box-shadow: 0 20px 50px var(--primary-glow);
             transform: scale(1.05); /* Ligeiramente maior que os outros */
-            background: linear-gradient(180deg, var(--bg-card) 0%, rgba(129, 254, 78, 0.03) 100%);
+            background: linear-gradient(180deg, var(--bg-card) 0%, rgba(149, 1, 216, 0.06) 100%);
         }
         
         /* Ajuste do destaque para o Modo Claro */
@@ -535,7 +606,7 @@
         .plan-features li i { 
             color: var(--primary); font-weight: bold; font-style: normal; 
         }
-        body.light-mode .plan-features li i { color: #4caf50; }
+        body.light-mode .plan-features li i { color: #7410a5; }
 
         .btn-plan {
             display: block; width: 100%; text-align: center;
@@ -550,7 +621,7 @@
         }
         
         .btn-plan-solid { 
-            background: var(--primary); color: #000; 
+            background: var(--primary); color: #fff;
         }
         .btn-plan-solid:hover { 
             box-shadow: 0 0 20px var(--primary-glow); filter: brightness(1.1); 
@@ -597,6 +668,64 @@
             transform: translateY(-5px);
             border-color: var(--text-muted);
         }
+
+        .publication-flow {
+            display: grid; grid-template-columns: 1fr auto 1fr; gap: 22px; align-items: center;
+            max-width: 900px; margin: 0 auto 50px;
+        }
+        .publication-sheet {
+            min-height: 220px; border: 1px solid var(--border); border-radius: 18px; padding: 24px;
+            background: var(--bg-card); box-shadow: var(--shadow-soft);
+        }
+        .publication-sheet .eyebrow { color: var(--text-muted); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
+        .publication-sheet h3 { font-size: 1.25rem; margin: 12px 0 18px; }
+        .document-lines { display: grid; gap: 9px; }
+        .document-lines i { display: block; height: 8px; border-radius: 10px; background: var(--border); }
+        .document-lines i:nth-child(2) { width: 76%; }
+        .document-lines i:nth-child(3) { width: 58%; }
+        .publication-sheet.public { border-color: rgba(149,1,216,0.55); background: linear-gradient(145deg, rgba(149,1,216,0.14), var(--bg-card) 65%); }
+        .public-url { display: inline-block; border-radius: 20px; padding: 6px 9px; color: #dba2ff; background: rgba(149,1,216,0.14); font-size: 0.68rem; }
+        .publication-arrow { color: var(--primary); font-size: 1.8rem; }
+        .publish-state { color: #dba2ff; font-size: 0.75rem; font-weight: 700; }
+
+        .download-section {
+            max-width: 1100px; margin: 0 auto; padding: 20px 5% 70px; position: relative; z-index: 10;
+        }
+        .download-panel {
+            padding: 42px; border: 1px solid rgba(149,1,216,0.45); border-radius: 24px;
+            background: radial-gradient(circle at 80% 20%, rgba(149,1,216,0.2), transparent 38%), var(--bg-card);
+            box-shadow: var(--shadow-soft); text-align: center;
+        }
+        .download-panel h2 { font-size: 2.4rem; letter-spacing: -1px; }
+        .download-panel p { max-width: 600px; margin: 14px auto 28px; color: var(--text-muted); line-height: 1.5; }
+        .platform-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; max-width: 520px; margin: 0 auto; }
+        .platform-option { padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: rgba(255,255,255,0.03); text-align: left; text-decoration: none; color: var(--text-main); transition: 0.25s; }
+        .platform-option:hover { border-color: var(--primary); background: rgba(149,1,216,0.12); transform: translateY(-2px); }
+        .platform-option.recommended { border-color: rgba(149,1,216,0.8); background: rgba(149,1,216,0.12); }
+        .platform-option.recommended b::after { content: 'Recomendado'; display: inline-block; margin-left: 7px; color: #e4b3ff; font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+        .platform-option b, .platform-option small { display: block; }
+        .platform-option b { font-size: 0.9rem; }
+        .platform-option small { color: var(--text-muted); margin-top: 4px; font-size: 0.7rem; }
+
+        .changelog-section { margin: 10px auto 0; max-width: 720px; }
+        .release-card { display: flex; align-items: baseline; gap: 10px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px; background: rgba(255,255,255,0.025); }
+        .release-version { color: #e4b3ff; font-size: 0.7rem; font-weight: 800; white-space: nowrap; }
+        .release-copy { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+        .release-copy small { color: var(--primary); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.6rem; white-space: nowrap; }
+        .release-copy h3 { display: none; }
+        .release-copy p { color: var(--text-muted); line-height: 1.35; font-size: 0.7rem; }
+
+        .faq-section { max-width: 900px; margin: 0 auto; padding: 0 5% 110px; position: relative; z-index: 10; }
+        .faq-section .section-header { margin-bottom: 32px; }
+        .faq-section .section-header h2 { font-size: 2.3rem; }
+        .faq-list { display: grid; gap: 10px; }
+        .faq-list details { border: 1px solid var(--border); border-radius: 12px; background: var(--bg-card); transition: 0.25s; }
+        .faq-list details[open] { border-color: rgba(149,1,216,0.6); background: rgba(149,1,216,0.07); }
+        .faq-list summary { padding: 17px 20px; cursor: pointer; font-weight: 700; list-style: none; display: flex; justify-content: space-between; gap: 20px; }
+        .faq-list summary::-webkit-details-marker { display: none; }
+        .faq-list summary::after { content: '+'; color: var(--primary); font-size: 1.2rem; line-height: 0.9; }
+        .faq-list details[open] summary::after { content: '−'; }
+        .faq-list p { padding: 0 20px 18px; max-width: 760px; color: var(--text-muted); line-height: 1.55; font-size: 0.92rem; }
 
         .stars { color: #ffc107; font-size: 1.1rem; letter-spacing: 2px;}
 
@@ -688,11 +817,20 @@
 
         @media (max-width: 900px) {
             .testimonials-grid { grid-template-columns: 1fr; }
+            .publication-flow { grid-template-columns: 1fr; }
+            .publication-arrow { transform: rotate(90deg); text-align: center; }
+            .platform-grid { grid-template-columns: 1fr; }
+            .release-card, .release-copy { align-items: flex-start; flex-direction: column; gap: 4px; }
             .footer-grid { grid-template-columns: 1fr 1fr; }
         }
         @media (max-width: 600px) {
             .footer-grid { grid-template-columns: 1fr; }
             .footer-bottom { flex-direction: column; gap: 15px; text-align: center; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
         }
     </style>
 </head>
@@ -701,18 +839,18 @@
     <nav class="navbar">
         <div class="brand">
             <div class="brand-icon">🔑</div>
-            Workspace
+            HeartSpace
         </div>
-        <div class="nav-links">
-            <a href="#features">Recursos</a>
-            <a href="#pricing">Preços</a>
-            <a href="#manifesto">A Guilda</a>
+        <div class="nav-links" id="primaryNav">
+            <a href="#ecosystem">Ecossistema</a>
+            <a href="#publications">Publicações</a>
+            <a href="#plans">Planos</a>
         </div>
         <div class="nav-actions">
             <button class="btn-theme" id="themeToggle" title="Trocar Tema">☀️</button>
-            
-            <a href="#" class="login-link">Fazer Login</a>
-            <a href="#" class="btn-primary">Criar Conta</a>
+            <a href="#plans" class="login-link">Acompanhar</a>
+            <a href="#plans" class="btn-primary">Participar do lançamento</a>
+            <button class="menu-toggle" id="menuToggle" type="button" aria-label="Abrir menu" aria-controls="primaryNav" aria-expanded="false">☰</button>
         </div>
     </nav>
 
@@ -740,15 +878,15 @@
             <div class="shape shape-6   "></div>
         </div>
 
-        <div class="tag-launch"><span>✦</span> Feito para Produtividade Absoluta</div>
+        <div class="tag-launch"><span>✦</span> Um ecossistema local-first para estúdios indie</div>
         
-        <h1><span class="text-gradient">O seu estúdio indie.</span><br>Tudo num só lugar.</h1>
+        <h1><span class="text-gradient">Seu estúdio, conectado.</span></h1>
         
-        <p>A ferramenta definitiva para equipas criativas. Substitua o Trello, Notion e Slack por um único ecossistema desenhado especificamente para quem constrói jogos e software.</p>
+        <p>O HeartSpace Hub reúne seu estúdio, seus projetos e apps especializados. Crie localmente, sincronize quando houver rede e mantenha seus arquivos sempre seus.</p>
         
         <div class="hero-cta-group">
-            <a href="#" class="btn-primary btn-large">Começar Gratuitamente &rarr;</a>
-            <a href="#" class="btn-primary btn-outline btn-large">Agendar Demo</a>
+            <a id="primaryDownload" href="#download" class="btn-primary btn-large">Baixar o Hub grátis &rarr;</a>
+            <a href="#ecosystem" class="btn-primary btn-outline btn-large">Explorar o ecossistema</a>
         </div>
 
         <div class="hero-mockup-container">
@@ -757,11 +895,27 @@
                     <div class="mockup-dot dot-r"></div><div class="mockup-dot dot-y"></div><div class="mockup-dot dot-g"></div>
                 </div>
                 <div class="mockup-body">
-                    <div class="mockup-sidebar"></div>
+                    <aside class="mockup-sidebar">
+                        <strong>✦ HeartSpace</strong>
+                        <span class="active">Visão geral</span>
+                        <span>Projetos</span>
+                        <span>Apps</span>
+                        <span>Atividade</span>
+                        <span>Publicações</span>
+                    </aside>
                     <div class="mockup-content">
-                        <div class="mockup-box large"></div>
-                        <div class="mockup-box grid">
-                            <div></div><div></div>
+                        <div class="hub-topline">
+                            <div><p>Projeto atual</p><h3>Aurora Vale</h3></div>
+                            <span class="hub-status">● Sincronizado</span>
+                        </div>
+                        <div class="hub-overview">
+                            <div class="hub-panel"><small>Progresso da sprint</small><h4>Vertical Slice</h4><div class="progress-track"><i></i></div></div>
+                            <div class="hub-panel"><small>Atividade</small><h4>12 atualizações</h4></div>
+                        </div>
+                        <div class="hub-apps">
+                            <div class="hub-app"><span>▤</span><b>Docs</b><span>3 decisões novas</span></div>
+                            <div class="hub-app"><span>✓</span><b>Tasks</b><span>8 em andamento</span></div>
+                            <div class="hub-app"><span>◒</span><b>Canvas</b><span>2 assets alterados</span></div>
                         </div>
                     </div>
                 </div>
@@ -769,18 +923,18 @@
         </div>
     </section>
 
-    <section id="features" class="features-section">
+    <section id="ecosystem" class="features-section">
         <div class="section-header">
             <h2>O fim do caos na produção.</h2>
-            <p>Substitua 5 subscrições diferentes por um único ecossistema desenhado nativamente para produtores, developers e criativos.</p>
+            <p>O Hub mantém o contexto do estúdio. Cada app se aprofunda no que faz melhor e publica artefatos que o restante do projeto entende.</p>
         </div>
 
         <div class="bento-grid">
             
             <div class="bento-card col-2">
-                <div class="bento-icon">📋</div>
-                <h3>Kanban & Sincronização GitHub</h3>
-                <p>Arraste, solte e conclua. As suas tarefas sincronizam automaticamente com os repositórios do GitHub, transformando commits em progresso visual e XP para a equipa.</p>
+                <div class="bento-icon">✦</div>
+                <h3>HeartSpace Hub</h3>
+                <p>Conta, estúdio, membros, projetos, apps instalados, busca, notificações e sincronização. Abra cada ferramenta já no contexto certo do projeto.</p>
                 <div class="bento-art mini-kanban">
                     <div class="mini-col"><div class="mini-task"></div><div class="mini-task" style="width:60%"></div></div>
                     <div class="mini-col"><div class="mini-task" style="width:90%"></div></div>
@@ -789,24 +943,39 @@
             </div>
 
             <div class="bento-card row-2">
-                <div class="bento-icon" style="color: #00eaff; background: rgba(0, 234, 255, 0.1); border-color: rgba(0, 234, 255, 0.3);">📓</div>
-                <h3>Diário E2EE</h3>
-                <p>O seu DevLog é sagrado. Um santuário privado com criptografia de ponta-a-ponta (E2EE). Nem nós, nem o banco de dados, conseguimos ler o que você escreve sem a sua senha mestre.</p>
-                <div class="bento-art" style="background: transparent; border: none; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 4rem; opacity: 0.5;">
-                    🔒
+                <div class="bento-icon" style="color: #00eaff; background: rgba(0, 234, 255, 0.1); border-color: rgba(0, 234, 255, 0.3);">▤</div>
+                <h3>Decida e produza</h3>
+                <p>Docs e Tasks unem GDDs, decisões, backlog, sprints, bugs e playtests — com referências em vez de cópias perdidas entre ferramentas.</p>
+                <div class="tool-split" aria-label="Docs e Tasks">
+                    <div class="tool-pane docs">
+                        <h4>Docs</h4>
+                        <span>Decisões, GDDs e referências vivas.</span>
+                    </div>
+                    <div class="tool-pane tasks">
+                        <h4>Tasks</h4>
+                        <span>Backlog, sprints, bugs e playtests.</span>
+                    </div>
                 </div>
             </div>
 
             <div class="bento-card">
-                <div class="bento-icon" style="color: #e040fb; background: rgba(224, 64, 251, 0.1); border-color: rgba(224, 64, 251, 0.3);">📻</div>
-                <h3>Rádio do Estúdio</h3>
-                <p>Sincronize a equipa com uma estação de rádio global. Programação musical partilhada e interrupções automáticas para plantões e avisos da direção.</p>
+                <div class="bento-icon" style="color: #e040fb; background: rgba(224, 64, 251, 0.1); border-color: rgba(224, 64, 251, 0.3);">◒</div>
+                <h3>Apps especializados</h3>
+                <p>Canvas, Beats, States, Dialogues, Polygons e Designs. Cada app resolve uma parte profunda do seu estúdio.</p>
+                <div class="app-chips" aria-label="Apps HeartSpace">
+                    <span class="app-chip"><i>◒</i> Canvas<small>Arte 2D e animação</small></span>
+                    <span class="app-chip"><i>⌁</i> Beats<small>Áudio adaptativo</small></span>
+                    <span class="app-chip"><i>◇</i> States<small>Lógica visual</small></span>
+                    <span class="app-chip"><i>▤</i> Dialogues<small>Narrativa interativa</small></span>
+                    <span class="app-chip"><i>⬡</i> Polygons<small>Arte 3D low poly</small></span>
+                    <span class="app-chip"><i>✦</i> Designs<small>UI e UX</small></span>
+                </div>
             </div>
 
             <div class="bento-card">
-                <div class="bento-icon" style="color: #ffc107; background: rgba(255, 193, 7, 0.1); border-color: rgba(255, 193, 7, 0.3);">💰</div>
-                <h3>Runway & Metas</h3>
-                <p>Monitorize o "tempo de vida" do estúdio. Registe os custos, acompanhe as receitas e foque a equipa num objetivo financeiro em tempo real.</p>
+                <div class="bento-icon" style="color: #ffc107; background: rgba(255, 193, 7, 0.1); border-color: rgba(255, 193, 7, 0.3);">↗</div>
+                <h3>Arquivos que continuam seus</h3>
+                <p>Trabalhe offline, exporte em formatos documentados e sincronize com segurança. A assinatura paga colaboração e infraestrutura, nunca a posse do seu trabalho.</p>
                 <div class="bento-art mini-chart">
                     <div class="bar low"></div><div class="bar med"></div><div class="bar high"></div><div class="bar med"></div>
                 </div>
@@ -815,103 +984,103 @@
         </div>
     </section>
 
-    <section id="pricing" class="pricing-section">
+    <section id="publications" class="social-proof-section">
         <div class="section-header">
-            <h2>Invista na sua equipa.</h2>
-            <p>Planos simples e transparentes, feitos para estúdios independentes de todos os tamanhos. Cresça sem surpresas no fim do mês.</p>
+            <h2>Seu projeto também pode falar com o mundo.</h2>
+            <p>Publique uma revisão aprovada dos documentos criados no HeartSpace Docs. Transforme conhecimento de produção em uma página clara para cada público.</p>
         </div>
 
-        <div class="pricing-grid">
-            
-            <div class="pricing-card">
-                <div class="plan-name">Indie</div>
-                <div class="plan-price">Grátis<span>/para sempre</span></div>
-                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 25px; min-height: 40px;">Para lobos solitários e pequenas equipas a dar os primeiros passos.</p>
-                <ul class="plan-features">
-                    <li><i>✓</i> Até 3 membros na equipa</li>
-                    <li><i>✓</i> 2 Projetos ativos</li>
-                    <li><i>✓</i> Kanban Essencial</li>
-                    <li><i>✓</i> DevLog Local</li>
-                </ul>
-                <a href="#" class="btn-plan btn-plan-outline">Começar de Graça</a>
+        <div class="publication-flow" aria-label="Fluxo de publicação">
+            <div class="publication-sheet">
+                <div class="eyebrow">HeartSpace Docs</div>
+                <h3>Press kit — Aurora Vale</h3>
+                <div class="document-lines"><i></i><i></i><i></i></div>
             </div>
-
-            <div class="pricing-card popular">
-                <div class="popular-badge">Mais Escolhido</div>
-                <div class="plan-name">Estúdio</div>
-                <div class="plan-price">R$ 49<span>/mês</span></div>
-                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 25px; min-height: 40px;">A potência completa para equipas que querem lançar jogos comerciais.</p>
-                <ul class="plan-features">
-                    <li><i>✓</i> Até 15 membros na equipa</li>
-                    <li><i>✓</i> Projetos ilimitados</li>
-                    <li><i>✓</i> Wiki & GDD Colaborativo</li>
-                    <li><i>✓</i> Central de Áudio & Moodboard</li>
-                    <li><i>✓</i> War Room (Sprints & Jams)</li>
-                </ul>
-                <a href="#" class="btn-plan btn-plan-solid">Testar por 14 dias</a>
+            <div class="publication-arrow" aria-hidden="true">→</div>
+            <div class="publication-sheet public">
+                <div class="eyebrow">Publicação aprovada</div>
+                <h3>Press kit</h3>
+                <span class="public-url">/p/luma-studio/aurora-vale/press-kit</span>
+                <p class="publish-state" style="margin-top: 22px;">● Público e versionado</p>
             </div>
-
-            <div class="pricing-card">
-                <div class="plan-name">Publisher</div>
-                <div class="plan-price">R$ 199<span>/mês</span></div>
-                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 25px; min-height: 40px;">Controlo total, relatórios financeiros e suporte dedicado para publishers.</p>
-                <ul class="plan-features">
-                    <li><i>✓</i> Membros ilimitados</li>
-                    <li><i>✓</i> Tudo do plano Estúdio</li>
-                    <li><i>✓</i> Gestão Financeira (Runway)</li>
-                    <li><i>✓</i> CRM de Clientes (Leads)</li>
-                    <li><i>✓</i> Exportação em PDF & ZIP</li>
-                </ul>
-                <a href="#" class="btn-plan btn-plan-outline">Falar com Vendas</a>
-            </div>
-
-        </div>
-    </section>
-
-    <section id="manifesto" class="social-proof-section">
-        <div class="section-header">
-            <h2>Construído para quem constrói.</h2>
-            <p>Não confie apenas na nossa palavra. Veja o que dizem os estúdios e criadores que já mudaram o seu workflow para o HeartKey Workspace.</p>
         </div>
 
         <div class="testimonials-grid">
-            
-            <div class="testimonial-card">
-                <div class="stars">★★★★★</div>
-                <p class="testimonial-text">"Tínhamos o Trello para tarefas, o Google Drive para GDDs e o Discord para ficheiros de áudio. Era um caos completo. O Workspace unificou o nosso estúdio numa semana."</p>
-                <div class="testimonial-author">
-                    <div class="author-avatar">👾</div>
-                    <div class="author-info">
-                        <h4>João Silva</h4>
-                        <p>Lead Developer, PixelForge</p>
-                    </div>
-                </div>
-            </div>
+            <div class="testimonial-card"><div class="author-avatar">▣</div><h3>Press kit</h3><p class="testimonial-text">Informações oficiais, imagens aprovadas e links do jogo para imprensa e parceiros.</p></div>
+            <div class="testimonial-card"><div class="author-avatar">⌁</div><h3>Roadmap público</h3><p class="testimonial-text">Uma visão publicada do que vem a seguir, sem expor o planejamento interno do estúdio.</p></div>
+            <div class="testimonial-card"><div class="author-avatar">✧</div><h3>Lore e documentação</h3><p class="testimonial-text">Material navegável para fandom, modders, investidores ou a comunidade do seu projeto.</p></div>
+        </div>
+    </section>
 
-            <div class="testimonial-card">
-                <div class="stars">★★★★★</div>
-                <p class="testimonial-text">"O DevLog criptografado foi a principal razão da mudança. Finalmente tenho um espaço seguro para guardar as chaves de API e os segredos do jogo sem medo de fugas de informação."</p>
-                <div class="testimonial-author">
-                    <div class="author-avatar">🧙‍♂️</div>
-                    <div class="author-info">
-                        <h4>Alexandre M.</h4>
-                        <p>Solo Indie Dev</p>
-                    </div>
-                </div>
+    <section id="download" class="download-section">
+        <div class="download-panel">
+            <h2>O Hub será o seu ponto de partida.</h2>
+            <p>Baixe a versão alpha do HeartSpace Hub para reunir seus projetos, apps e contexto de estúdio em um só lugar.</p>
+            <div class="platform-grid" aria-label="Downloads do HeartSpace Hub" id="hubDownloads">
+                <a class="platform-option" data-platform="windows-x86_64" href="https://github.com/heartkeystudio/heartspace-releases/releases/download/hub-v0.8.1.alpha.4/hub-windows-x86_64-v0.8.1.alpha.4.zip"><b>Windows</b><small>x86_64 · Alpha 0.8.1 · 70 MB</small></a>
+                <a class="platform-option" data-platform="linux-x86_64" href="https://github.com/heartkeystudio/heartspace-releases/releases/download/hub-v0.8.1.alpha.4/hub-linux-x86_64-v0.8.1.alpha.4.zip"><b>Linux</b><small>x86_64 · Alpha 0.8.1 · 63 MB</small></a>
             </div>
-
-            <div class="testimonial-card">
-                <div class="stars">★★★★★</div>
-                <p class="testimonial-text">"O painel de áudio é genial. Conseguimos ouvir as referências do Moodboard e testar as trilhas do jogo lado a lado, tudo isto enquanto o Kanban regista a nossa evolução. Perfeito."</p>
-                <div class="testimonial-author">
-                    <div class="author-avatar">🎧</div>
-                    <div class="author-info">
-                        <h4>Sofia Costa</h4>
-                        <p>Sound Designer</p>
-                    </div>
+        </div>
+        <div id="changelog" class="changelog-section">
+            <article class="release-card">
+                <div class="release-version" data-release-version>v0.8.1.alpha.4</div>
+                <div class="release-copy">
+                    <small data-release-channel>Canal alpha</small>
+                    <h3>HeartSpace Hub</h3>
+                    <p data-release-notes>Primeira versão enviada para QA da Heartkey.</p>
                 </div>
-            </div>
+            </article>
+        </div>
+    </section>
 
+    <section id="plans" class="pricing-section">
+        <div class="section-header">
+            <h2>Planos sem pegadinha.</h2>
+            <p>Planos serão definidos com limites claros para nuvem, colaboração e consumo — não para seus arquivos, sua leitura local ou sua exportação.</p>
+        </div>
+        <div class="pricing-grid">
+            <div class="pricing-card">
+                <div class="plan-name">Free — Solo</div>
+                <div class="plan-price">Grátis<span>/ para sempre</span></div>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 25px; min-height: 40px;">Crie, trabalhe offline e exporte sem perder a propriedade dos seus arquivos.</p>
+                <ul class="plan-features"><li><i>✓</i> Uso local completo</li><li><i>✓</i> Exportação sem marca d'água</li><li><i>✓</i> Projetos e sync com limites saudáveis</li></ul>
+                <a href="#" class="btn-plan btn-plan-outline">Começar gratuitamente</a>
+            </div>
+            <div class="pricing-card popular">
+                <div class="popular-badge">Em breve</div>
+                <div class="plan-name">Indie — Studio</div>
+                <div class="plan-price">Em breve<span>/ para equipes pequenas</span></div>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 25px; min-height: 40px;">Colaboração e infraestrutura para quem já está construindo junto.</p>
+                <ul class="plan-features"><li><i>✓</i> Projetos privados e membros</li><li><i>✓</i> Histórico e mais armazenamento</li><li><i>✓</i> Integrações e colaboração</li></ul>
+                <a href="#" class="btn-plan btn-plan-solid">Acompanhar o lançamento</a>
+            </div>
+            <div class="pricing-card">
+                <div class="plan-name">Studio</div>
+                <div class="plan-price">Em breve<span>/ para produção contínua</span></div>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 25px; min-height: 40px;">Permissões, playtests e fluxos de produção para estúdios em crescimento.</p>
+                <ul class="plan-features"><li><i>✓</i> Permissões avançadas</li><li><i>✓</i> Builds e playtests</li><li><i>✓</i> Sync prioritário</li></ul>
+                <a href="#" class="btn-plan btn-plan-outline">Falar com a gente</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="faq-section" aria-labelledby="faq-title">
+        <div class="section-header">
+            <h2 id="faq-title">Perguntas honestas.</h2>
+        </div>
+        <div class="faq-list">
+            <details>
+                <summary>Posso trabalhar sem internet?</summary>
+                <p>Sim. O HeartSpace é local-first: projetos já acessados continuam disponíveis para criar, editar e exportar. Quando a conexão voltar, as alterações entram na fila de sincronização.</p>
+            </details>
+            <details>
+                <summary>O que acontece com meus arquivos se eu cancelar?</summary>
+                <p>Você mantém leitura, edição local e exportação. A assinatura existe para pagar colaboração, nuvem, histórico, armazenamento e outros recursos de infraestrutura — não para prender seu trabalho.</p>
+            </details>
+            <details>
+                <summary>Como funcionam as Publicações?</summary>
+                <p>Você escolhe uma revisão aprovada de um documento no HeartSpace Docs e a publica como uma página somente leitura. Alterações internas não entram no ar até uma nova publicação.</p>
+            </details>
         </div>
     </section>
 
@@ -921,28 +1090,28 @@
             <div class="footer-brand">
                 <div class="brand">
                     <div class="brand-icon">🔑</div>
-                    Workspace
+                    HeartSpace
                 </div>
-                <p>Nós forjamos mundos. Feitos com amor. O HeartKey Workspace é a nossa contribuição para facilitar a vida aos criadores indie em todo o mundo.</p>
+                <p>HeartSpace é o ecossistema local-first para estúdios indie criarem, decidirem, produzirem e entregarem jogos.</p>
             </div>
 
             <div class="footer-col">
                 <h4>Produto</h4>
                 <ul>
-                    <li><a href="#">Funcionalidades</a></li>
-                    <li><a href="#">Preços</a></li>
-                    <li><a href="#">Integração GitHub</a></li>
-                    <li><a href="#">Changelog</a></li>
+                    <li><a href="#ecosystem">Ecossistema</a></li>
+                    <li><a href="#publications">Publicações</a></li>
+                    <li><a href="#plans">Planos</a></li>
+                    <li><a href="#changelog">Changelog</a></li>
                 </ul>
             </div>
 
             <div class="footer-col">
-                <h4>A Guilda</h4>
+                <h4>Estúdio</h4>
                 <ul>
                     <li><a href="#">Sobre Nós</a></li>
-                    <li><a href="#">Nossos Jogos</a></li>
-                    <li><a href="#">O Estúdio</a></li>
-                    <li><a href="#">Carreiras</a></li>
+                    <li><a href="#">Roadmap</a></li>
+                    <li><a href="#">Status</a></li>
+                    <li><a href="#">Contato</a></li>
                 </ul>
             </div>
 
@@ -951,32 +1120,110 @@
                 <ul>
                     <li><a href="#">Termos de Uso</a></li>
                     <li><a href="#">Privacidade</a></li>
-                    <li><a href="#">Contacto</a></li>
-                    <li><a href="#">Twitter / X</a></li>
+                    <li><a href="#">Contato</a></li>
+                    <li><a href="#">Suporte</a></li>
                 </ul>
             </div>
 
         </div>
 
         <div class="footer-bottom">
-            <p>&copy; 2026 HeartKey Studio. Todos os direitos reservados.</p>
-            <p>Construído com ❤️ e código em Santos, BR.</p>
+            <p>&copy; 2026 Heartkey Studios. Todos os direitos reservados.</p>
+            <p>Feito para quem constrói mundos.</p>
         </div>
     </footer>
 
     <script>
         const themeToggle = document.getElementById('themeToggle');
+        const menuToggle = document.getElementById('menuToggle');
+        const navbar = document.querySelector('.navbar');
         const body = document.body;
+        const THEME_STORAGE_KEY = 'heartspace-theme';
+
+        function setTheme(isLight) {
+            body.classList.toggle('light-mode', isLight);
+            themeToggle.innerText = isLight ? '🌙' : '☀️';
+        }
+
+        try {
+            const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+            const shouldUseLightTheme = savedTheme === 'light' || (savedTheme === null && window.matchMedia('(prefers-color-scheme: light)').matches);
+            setTheme(shouldUseLightTheme);
+        } catch (_) {
+            // O tema escuro continua como padrão quando o armazenamento local não estiver disponível.
+        }
 
         themeToggle.addEventListener('click', () => {
-            body.classList.toggle('light-mode');
-            
-            // Troca o ícone baseando-se na classe
-            if (body.classList.contains('light-mode')) {
-                themeToggle.innerText = '🌙';
-            } else {
-                themeToggle.innerText = '☀️';
+            const isLight = !body.classList.contains('light-mode');
+            setTheme(isLight);
+            try { localStorage.setItem(THEME_STORAGE_KEY, isLight ? 'light' : 'dark'); } catch (_) {}
+        });
+
+        const HUB_RELEASE_CATALOG_URL = 'https://cdn.heartspace.tools/hub-release.json';
+
+        function formatMegabytes(bytes) {
+            return `${Math.round(Number(bytes) / 1000000)} MB`;
+        }
+
+        function highlightRecommendedPlatform() {
+            const userAgent = navigator.userAgent.toLowerCase();
+            const platform = userAgent.includes('windows') ? 'windows-x86_64' : userAgent.includes('linux') ? 'linux-x86_64' : null;
+            if (!platform) return;
+            const option = document.querySelector(`[data-platform="${platform}"]`);
+            if (!option) return;
+            option.classList.add('recommended');
+            const primaryDownload = document.getElementById('primaryDownload');
+            if (primaryDownload) primaryDownload.href = option.href;
+        }
+
+        async function refreshHubDownloads() {
+            try {
+                const response = await fetch(HUB_RELEASE_CATALOG_URL, { cache: 'no-store' });
+                if (!response.ok) throw new Error('Catálogo indisponível');
+
+                const catalog = await response.json();
+                if (!Array.isArray(catalog.platforms) || typeof catalog.version !== 'string') return;
+
+                const version = document.querySelector('[data-release-version]');
+                const channel = document.querySelector('[data-release-channel]');
+                const notes = document.querySelector('[data-release-notes]');
+                if (version) version.textContent = `v${catalog.version}`;
+                if (channel && typeof catalog.channel === 'string') channel.textContent = `Canal ${catalog.channel}`;
+                if (notes && typeof catalog.release_notes === 'string') notes.textContent = catalog.release_notes;
+
+                document.querySelectorAll('[data-platform]').forEach((link) => {
+                    const release = catalog.platforms.find((item) => item.platform === link.dataset.platform);
+                    if (!release || typeof release.package_url !== 'string' || !release.package_url.startsWith('https://')) return;
+
+                    link.href = release.package_url;
+                    const details = link.querySelector('small');
+                    if (details) {
+                        details.textContent = `x86_64 · Alpha ${catalog.version} · ${formatMegabytes(release.package_size_bytes)}`;
+                    }
+                });
+                highlightRecommendedPlatform();
+            } catch (_) {
+                // Os links do HTML são o fallback da última release conhecida.
             }
+        }
+
+        refreshHubDownloads();
+        highlightRecommendedPlatform();
+
+        menuToggle.addEventListener('click', () => {
+            const isOpen = navbar.classList.toggle('nav-open');
+            menuToggle.setAttribute('aria-expanded', String(isOpen));
+            menuToggle.setAttribute('aria-label', isOpen ? 'Fechar menu' : 'Abrir menu');
+            menuToggle.innerText = isOpen ? '×' : '☰';
+        });
+
+        document.querySelectorAll('#primaryNav a').forEach((link) => {
+            link.addEventListener('click', () => {
+                navbar.classList.remove('nav-open');
+                menuToggle.setAttribute('aria-expanded', 'false');
+                menuToggle.setAttribute('aria-label', 'Abrir menu');
+                menuToggle.innerText = '☰';
+            });
         });
     </script>
 </body>
