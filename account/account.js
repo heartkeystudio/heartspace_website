@@ -22,6 +22,16 @@
     const selectedPlan = query.get("plan");
     const checkoutState = query.get("checkout");
     const checkoutNotice = document.getElementById("checkoutNotice");
+    const securityEmail = document.getElementById("securityEmail");
+    const workspaceButtons = Array.from(document.querySelectorAll("[data-workspace-view]"));
+    const workspacePanels = Array.from(document.querySelectorAll("[data-workspace-panel]"));
+    const studiosTitle = document.getElementById("studiosTitle");
+    const studiosCopy = document.getElementById("studiosCopy");
+    const studioList = document.getElementById("studioList");
+    const createStudioForm = document.getElementById("createStudioForm");
+    const studioName = document.getElementById("studioName");
+    const studioSlug = document.getElementById("studioSlug");
+    const studioStatus = document.getElementById("studioStatus");
     const planDetails = {
         indie: { name: "Indie — Studio", copy: "Colaboração e infraestrutura para quem já está construindo junto." },
         studio: { name: "Studio", copy: "Permissões, playtests e fluxos de produção para estúdios em crescimento." }
@@ -113,6 +123,7 @@
 
     function showMemberArea(user) {
         memberEmail.textContent = user.email || "Conta HeartSpace";
+        securityEmail.textContent = user.email || "Conta HeartSpace";
         accountCard.hidden = true;
         memberArea.hidden = false;
         if (selectedPlan && planDetails[selectedPlan]) checkoutChoice.hidden = false;
@@ -125,6 +136,80 @@
             checkoutNotice.textContent = "O pagamento foi cancelado. Sua conta continua ativa no plano atual.";
         }
     }
+
+    function selectWorkspaceView(viewName) {
+        workspaceButtons.forEach(function (button) {
+            const isSelected = button.dataset.workspaceView === viewName;
+            button.classList.toggle("is-active", isSelected);
+            button.setAttribute("aria-current", isSelected ? "page" : "false");
+        });
+        workspacePanels.forEach(function (panel) {
+            const isSelected = panel.dataset.workspacePanel === viewName;
+            panel.hidden = !isSelected;
+            panel.classList.toggle("is-active", isSelected);
+        });
+    }
+
+    workspaceButtons.forEach(function (button) {
+        button.addEventListener("click", function () {
+            selectWorkspaceView(button.dataset.workspaceView);
+        });
+    });
+
+    function setStudioStatus(message, state) {
+        studioStatus.textContent = message;
+        studioStatus.className = "form-status" + (state ? " is-" + state : "");
+    }
+
+    async function studioRequest(action, token, payload) {
+        const endpoint = config.studioFunctionUrl && config.studioFunctionUrl.replace(/\/$/, "");
+        if (!endpoint) throw new Error("O gerenciamento de estúdios ainda está sendo preparado.");
+        const response = await fetch(endpoint, { method: "POST", headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" }, body: JSON.stringify(Object.assign({ action: action }, payload || {})) });
+        const data = await response.json().catch(function () { return {}; });
+        if (!response.ok) throw new Error(data.error || "Não foi possível concluir esta ação agora.");
+        return data;
+    }
+
+    function renderStudios(studios) {
+        studioList.replaceChildren();
+        if (!studios.length) {
+            studiosTitle.textContent = "Seu primeiro estúdio começa aqui.";
+            studiosCopy.textContent = "Crie um espaço para organizar equipe, projetos compartilhados e publicações. Você será o owner inicial.";
+            studioList.hidden = true;
+            return;
+        }
+        studiosTitle.textContent = studios.length === 1 ? "1 estúdio conectado." : studios.length + " estúdios conectados.";
+        studiosCopy.textContent = "Você pode criar outro estúdio ou escolher um deles quando o seletor de estúdio for ativado.";
+        studios.forEach(function (membership) {
+            const studio = membership.studios || membership.studio;
+            if (!studio) return;
+            const item = document.createElement("div"); item.className = "studio-list-item";
+            const name = document.createElement("strong"); name.textContent = studio.name;
+            const role = document.createElement("span"); role.textContent = membership.role === "owner" ? "Owner" : membership.role;
+            item.append(name, role); studioList.append(item);
+        });
+        studioList.hidden = studioList.childElementCount === 0;
+    }
+
+    async function loadStudios(token) {
+        if (!config.studioFunctionUrl) return;
+        try { const data = await studioRequest("list_studios", token); renderStudios(Array.isArray(data.studios) ? data.studios : []); }
+        catch (error) { studiosTitle.textContent = "Não foi possível carregar seus estúdios."; studiosCopy.textContent = "Confira sua conexão e tente novamente mais tarde."; }
+    }
+
+    if (config.studioFunctionUrl) createStudioForm.hidden = false;
+    createStudioForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
+        if (!config.studioFunctionUrl || !studioName.checkValidity()) { if (!config.studioFunctionUrl) return; studioName.reportValidity(); return; }
+        const submitButton = createStudioForm.querySelector("button[type=submit]");
+        submitButton.disabled = true; setStudioStatus("Criando seu estúdio…", "");
+        try {
+            const token = await getValidAccessToken(); if (!token) throw new Error("Sua sessão expirou. Entre novamente para continuar.");
+            await studioRequest("create_studio", token, { name: studioName.value.trim(), slug: studioSlug.value.trim() });
+            createStudioForm.reset(); setStudioStatus("Estúdio criado. Você já é o owner inicial.", "success"); await loadStudios(token);
+        } catch (error) { setStudioStatus(error.message || "Não foi possível criar o estúdio agora.", "error"); }
+        finally { submitButton.disabled = false; }
+    });
 
     async function apiRequest(action, token, payload) {
         const endpoint = config.billingFunctionUrl && config.billingFunctionUrl.replace(/\/$/, "");
@@ -177,6 +262,7 @@
             const user = await response.json();
             showMemberArea(user);
             await loadEntitlements(token);
+            await loadStudios(token);
         } catch (error) {
             clearSession();
         }

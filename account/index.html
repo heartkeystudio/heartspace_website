@@ -48,50 +48,82 @@
                 </form>
 
                 <p class="auth-status" id="authStatus" aria-live="polite">Entre com Google ou receba um link seguro no seu e-mail.</p>
-                <p class="legal-copy">Ao continuar, você concorda com os Termos de Uso e a Política de Privacidade do HeartSpace.</p>
+                <p class="legal-copy">Ao continuar, você concorda com os <a href="../terms/">Termos de Uso</a> e a <a href="../privacy/">Política de Privacidade</a> do HeartSpace.</p>
             </div>
         </section>
 
-        <section class="member-area" id="memberArea" hidden aria-labelledby="memberTitle">
-            <header class="member-header">
-                <div>
-                    <p class="eyebrow">CONTA CONECTADA</p>
-                    <h1 id="memberTitle">Seu espaço está pronto.</h1>
-                    <p class="member-email" id="memberEmail"></p>
-                </div>
-                <button class="signout-button" id="signOut" type="button">Sair</button>
+        <section class="member-area workspace" id="memberArea" hidden aria-labelledby="memberTitle">
+            <header class="member-header workspace-topbar">
+                <a class="brand" href="../" aria-label="Voltar para a página inicial do HeartSpace">
+                    <span class="brand-icon" aria-hidden="true">🔑</span><span>HeartSpace</span>
+                </a>
+                <div class="account-actions"><span class="member-email" id="memberEmail"></span><button class="signout-button" id="signOut" type="button">Sair</button></div>
             </header>
 
             <p class="checkout-notice" id="checkoutNotice" hidden aria-live="polite"></p>
 
-            <div class="member-grid">
-                <article class="member-panel plan-panel">
-                    <p class="panel-kicker">SEU PLANO</p>
-                    <h2 id="planName">Free — Solo</h2>
-                    <p id="planDescription">Crie localmente, exporte livremente e mantenha seus arquivos seus.</p>
-                    <button class="portal-button" id="billingPortal" type="button">Gerenciar assinatura</button>
-                    <p class="panel-note" id="billingStatus">Seu plano e suas faturas aparecerão aqui quando o billing for ativado.</p>
-                </article>
+            <div class="workspace-layout">
+                <nav class="workspace-nav" aria-label="Administração da conta">
+                    <p class="workspace-nav-label">ADMINISTRAÇÃO</p>
+                    <button class="workspace-nav-item is-active" type="button" data-workspace-view="overview">Visão geral</button>
+                    <button class="workspace-nav-item" type="button" data-workspace-view="studios">Estúdios</button>
+                    <button class="workspace-nav-item" type="button" data-workspace-view="projects">Projetos</button>
+                    <button class="workspace-nav-item" type="button" data-workspace-view="members">Membros</button>
+                    <button class="workspace-nav-item" type="button" data-workspace-view="publications">Publicações</button>
+                    <p class="workspace-nav-label workspace-nav-label-lower">CONTA</p>
+                    <button class="workspace-nav-item" type="button" data-workspace-view="billing">Assinatura</button>
+                    <button class="workspace-nav-item" type="button" data-workspace-view="security">Segurança</button>
+                    <a class="workspace-hub-link" href="../#download">↗ Baixar ou abrir o Hub</a>
+                </nav>
 
-                <article class="member-panel">
-                    <p class="panel-kicker">O QUE SUA CONTA CONECTA</p>
-                    <ul class="member-list">
-                        <li><span>✦</span> Estúdios, pessoas e permissões</li>
-                        <li><span>▤</span> Projetos, documentos e publicações</li>
-                        <li><span>↗</span> Hub, sincronização e apps instalados</li>
-                    </ul>
-                    <a class="hub-link" href="../#download">Baixar ou abrir o Hub →</a>
-                </article>
-            </div>
+                <div class="workspace-content">
+                    <section class="workspace-view is-active" data-workspace-panel="overview" aria-labelledby="memberTitle">
+                        <p class="eyebrow">VISÃO GERAL</p>
+                        <h1 id="memberTitle">Seu espaço começa aqui.</h1>
+                        <p class="workspace-lead">O site organiza pessoas, acesso e tudo que é compartilhado. O Hub continua sendo o lugar do trabalho local.</p>
+                        <div class="overview-grid">
+                            <article class="overview-card overview-card-accent"><p class="panel-kicker">ESTÚDIO</p><h2>Nenhum estúdio conectado</h2><p>Quando o cadastro de estúdios estiver ativo, você poderá criar seu espaço, escolher um nome e convidar a equipe daqui.</p><span class="card-state">EM PREPARAÇÃO</span></article>
+                            <article class="overview-card"><p class="panel-kicker">PROJETOS</p><h2>O Hub é a fonte do trabalho</h2><p>Projetos nascem e continuam locais. Aqui aparecerão apenas a organização, os acessos e as publicações vinculadas.</p><a class="hub-link" href="../#download">Abrir o Hub →</a></article>
+                            <article class="overview-card"><p class="panel-kicker">PUBLICAÇÕES</p><h2>Documentos públicos, no seu controle</h2><p>Press kits, wikis e links não listados ficarão associados a um projeto e poderão ser revogados a qualquer momento.</p><a class="hub-link" href="../p/luma-studio/aurora-vale/">Ver exemplo público →</a></article>
+                        </div>
+                    </section>
 
-            <article class="checkout-choice" id="checkoutChoice" hidden>
-                <div>
-                    <p class="panel-kicker">PLANO SELECIONADO</p>
-                    <h2 id="selectedPlanName">Indie — Studio</h2>
-                    <p id="selectedPlanCopy">Você só segue para o pagamento depois de confirmar esta escolha.</p>
+                    <section class="workspace-view" data-workspace-panel="studios" hidden>
+                        <p class="eyebrow">ESTÚDIOS</p><h1>Quem constrói junto.</h1>
+                        <p class="workspace-lead">Um estúdio reúne as pessoas, seus papéis, os projetos compartilhados e a assinatura. Ele não move os arquivos locais do Hub.</p>
+                        <article class="empty-panel studio-panel"><span class="empty-symbol">✦</span><h2 id="studiosTitle">Criação de estúdios está sendo conectada.</h2><p id="studiosCopy">O próximo passo é ligar este painel ao cadastro seguro de estúdios e papéis. Até lá, nada será criado apenas na interface.</p><div class="studio-list" id="studioList" hidden></div><form class="studio-form" id="createStudioForm" hidden><label for="studioName">Nome do estúdio</label><input id="studioName" name="studioName" type="text" minlength="2" maxlength="80" autocomplete="organization" placeholder="Ex.: Luma Studio" required><label for="studioSlug">Endereço do estúdio <span>opcional</span></label><input id="studioSlug" name="studioSlug" type="text" maxlength="60" autocomplete="off" placeholder="luma-studio"><button class="portal-button" type="submit">Criar estúdio</button><p class="form-status" id="studioStatus" aria-live="polite"></p></form></article>
+                    </section>
+
+                    <section class="workspace-view" data-workspace-panel="projects" hidden>
+                        <p class="eyebrow">PROJETOS</p><h1>O projeto continua seu.</h1>
+                        <p class="workspace-lead">O Hub cria e guarda o conteúdo de produção localmente. O site será a camada de acesso, equipe e presença pública.</p>
+                        <article class="empty-panel"><span class="empty-symbol">▤</span><h2>Nenhum projeto compartilhado no site.</h2><p>Quando o pareamento seguro com o Hub estiver pronto, seus projetos poderão aparecer aqui sem enviar arquivos locais desnecessariamente.</p><a class="hub-link" href="../#download">Abrir o Hub →</a></article>
+                    </section>
+
+                    <section class="workspace-view" data-workspace-panel="members" hidden>
+                        <p class="eyebrow">MEMBROS E PAPÉIS</p><h1>Acesso antes de tudo.</h1>
+                        <p class="workspace-lead">Convites, permissões e histórico de membros pertencem ao estúdio — nunca a um link público ou a um arquivo local compartilhado por acidente.</p>
+                        <article class="empty-panel"><span class="empty-symbol">◎</span><h2>Você criará um estúdio antes de convidar pessoas.</h2><p>O fluxo terá papéis claros, revogação de convite e uma visão de quem possui acesso a cada espaço.</p></article>
+                    </section>
+
+                    <section class="workspace-view" data-workspace-panel="publications" hidden>
+                        <p class="eyebrow">PUBLICAÇÕES</p><h1>Mostre só o que escolheu.</h1>
+                        <p class="workspace-lead">A publicação transforma documentos selecionados em páginas para imprensa, investidores, comunidade ou fandom — sem abrir todo o projeto.</p>
+                        <article class="empty-panel"><span class="empty-symbol">↗</span><h2>Publicações serão vinculadas a um projeto.</h2><p>Você poderá definir visibilidade pública ou não listada, revisar o que aparece e retirar uma página do ar sem apagar o documento original.</p><a class="hub-link" href="../p/luma-studio/aurora-vale/press-kit/">Ver exemplo de press kit →</a></article>
+                    </section>
+
+                    <section class="workspace-view" data-workspace-panel="billing" hidden>
+                        <p class="eyebrow">ASSINATURA</p><h1>Você paga pela escala.</h1>
+                        <div class="member-grid"><article class="member-panel plan-panel"><p class="panel-kicker">SEU PLANO</p><h2 id="planName">Free — Solo</h2><p id="planDescription">Crie localmente, exporte livremente e mantenha seus arquivos seus.</p><button class="portal-button" id="billingPortal" type="button">Gerenciar assinatura</button><p class="panel-note" id="billingStatus">Seu plano e suas faturas aparecerão aqui quando o billing for ativado.</p></article><article class="member-panel"><p class="panel-kicker">PRINCÍPIO</p><h2>Sem prender seu trabalho.</h2><p>Os limites de plano serão sobre colaboração, infraestrutura e serviços online — nunca sobre a posse dos seus arquivos locais.</p></article></div>
+                        <article class="checkout-choice" id="checkoutChoice" hidden><div><p class="panel-kicker">PLANO SELECIONADO</p><h2 id="selectedPlanName">Indie — Studio</h2><p id="selectedPlanCopy">Você só segue para o pagamento depois de confirmar esta escolha.</p></div><button class="checkout-button" id="checkoutButton" type="button">Continuar para pagamento</button></article>
+                    </section>
+
+                    <section class="workspace-view" data-workspace-panel="security" hidden>
+                        <p class="eyebrow">CONTA E SEGURANÇA</p><h1>Seu acesso, claro e seu.</h1>
+                        <div class="security-list"><div><span>E-MAIL DA CONTA</span><strong id="securityEmail">—</strong></div><div><span>SESSÃO</span><strong>Sessão temporária neste navegador</strong></div><div><span>AJUDA</span><a href="../support/">Recuperar acesso ou falar com suporte →</a></div><div><span>SEGURANÇA</span><a href="../security/">Ler política de divulgação responsável →</a></div></div>
+                    </section>
                 </div>
-                <button class="checkout-button" id="checkoutButton" type="button">Continuar para pagamento</button>
-            </article>
+            </div>
         </section>
 
         <p class="back-home"><a href="../">← Conhecer o HeartSpace</a></p>

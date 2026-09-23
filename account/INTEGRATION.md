@@ -11,6 +11,7 @@ Edite `account/config.js` com valores próprios para o navegador:
 window.HEARTSPACE_ACCOUNT_CONFIG = {
   supabaseUrl: "https://SEU-PROJETO.supabase.co",
   supabaseAnonKey: "SUA_CHAVE_ANON_PUBLICA",
+  studioFunctionUrl: "https://SEU-PROJETO.supabase.co/functions/v1/heartspace-studios",
   billingFunctionUrl: "https://SEU-PROJETO.supabase.co/functions/v1/heartspace-billing",
   plans: {
     indie: "indie",
