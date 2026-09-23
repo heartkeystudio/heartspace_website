@@ -23,6 +23,17 @@ function slugFrom(value: string) {
     .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
 }
 
+async function tokenHash(token: string) {
+  const bytes = new TextEncoder().encode(token);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function randomToken() {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
 Deno.serve(async (request) => {
   const origin = allowedOrigin(request.headers.get("origin"));
   if (request.method === "OPTIONS") return new Response(null, { status: origin ? 204 : 403, headers: { ...corsHeaders, ...(origin ? { "Access-Control-Allow-Origin": origin } : {}) } });
@@ -66,6 +77,26 @@ Deno.serve(async (request) => {
       return response({ error: duplicate ? "Esse endereço de estúdio já está em uso. Escolha outro nome." : "Não foi possível criar o estúdio." }, duplicate ? 409 : 500, origin);
     }
     return response({ studio: data }, 201, origin);
+  }
+
+  if (payload.action === "create_invite") {
+    const studioId = typeof payload.studio_id === "string" ? payload.studio_id : "";
+    const email = typeof payload.email === "string" ? payload.email.trim().toLowerCase() : "";
+    const role = payload.role === "admin" ? "admin" : payload.role === "member" ? "member" : "";
+    if (!studioId || !email || !role) return response({ error: "Convite inválido." }, 400, origin);
+    const token = randomToken();
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { data, error } = await admin.rpc("admin_create_studio_invite", { p_actor_id: authData.user.id, p_studio_id: studioId, p_email: email, p_role: role, p_token_hash: await tokenHash(token), p_expires_at: expiresAt });
+    if (error) return response({ error: error.code === "42501" ? "Você não pode convidar pessoas para este estúdio." : "Não foi possível criar o convite." }, error.code === "42501" ? 403 : 400, origin);
+    return response({ invite: data, invite_url: origin + "/invite/?token=" + encodeURIComponent(token) }, 201, origin);
+  }
+
+  if (payload.action === "accept_invite") {
+    const token = typeof payload.token === "string" ? payload.token : "";
+    if (!token || !authData.user.email) return response({ error: "Convite inválido." }, 400, origin);
+    const { data, error } = await admin.rpc("admin_accept_studio_invite", { p_actor_id: authData.user.id, p_email: authData.user.email, p_token_hash: await tokenHash(token) });
+    if (error) return response({ error: "Este convite não é válido para esta conta ou já expirou." }, 400, origin);
+    return response({ studio_id: data }, 200, origin);
   }
 
   return response({ error: "Ação não reconhecida." }, 400, origin);

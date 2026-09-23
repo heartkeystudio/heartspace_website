@@ -8,7 +8,11 @@
     const configured = Boolean(config.supabaseUrl && config.supabaseAnonKey);
     const key = (name) => "heartspace-account-" + name;
     const setStatus = (message, state) => { status.textContent = message; status.className = "auth-status" + (state ? " is-" + state : ""); };
-    const redirect = () => window.location.replace("../account/" + window.location.search);
+    const redirect = () => {
+        const query = new URLSearchParams(window.location.search);
+        const invite = query.get("invite");
+        window.location.replace(invite ? "../invite/?token=" + encodeURIComponent(invite) : "../account/" + window.location.search);
+    };
     const callback = new URLSearchParams(window.location.hash.slice(1));
     if (callback.get("access_token")) {
         sessionStorage.setItem(key("access-token"), callback.get("access_token"));

@@ -15,43 +15,6 @@
             <span>HeartSpace</span>
         </a>
 
-        <section class="account-card" aria-labelledby="accountTitle" hidden>
-            <div class="account-intro">
-                <p class="eyebrow">SEU ESPAÇO DE TRABALHO</p>
-                <h1 id="accountTitle">Entre no seu estúdio.</h1>
-                <p>Uma conta conecta seu Hub, seus projetos, sua equipe e, quando chegar a hora, sua assinatura.</p>
-
-                <div class="account-preview" aria-label="O que sua conta reúne">
-                    <div class="preview-line"><span class="preview-icon purple">✦</span><span>Estúdios e membros</span></div>
-                    <div class="preview-line"><span class="preview-icon cyan">▤</span><span>Projetos e documentos</span></div>
-                    <div class="preview-line"><span class="preview-icon gold">↗</span><span>Plano, faturas e uso</span></div>
-                </div>
-            </div>
-
-            <div class="auth-panel">
-                <div class="panel-heading">
-                    <h2>Comece por aqui</h2>
-                    <p>Use a mesma conta no site e no HeartSpace Hub.</p>
-                </div>
-
-                <button class="google-button" id="googleSignIn" type="button">
-                    <span class="google-mark" aria-hidden="true">G</span>
-                    Continuar com Google
-                </button>
-
-                <div class="divider"><span>ou</span></div>
-
-                <form id="magicLinkForm" novalidate>
-                    <label for="email">Seu e-mail</label>
-                    <input id="email" name="email" type="email" autocomplete="email" placeholder="voce@estudio.com" required>
-                    <button class="email-button" type="submit">Receber link de entrada</button>
-                </form>
-
-                <p class="auth-status" id="authStatus" aria-live="polite">Entre com Google ou receba um link seguro no seu e-mail.</p>
-                <p class="legal-copy">Ao continuar, você concorda com os <a href="../terms/">Termos de Uso</a> e a <a href="../privacy/">Política de Privacidade</a> do HeartSpace.</p>
-            </div>
-        </section>
-
         <section class="member-area workspace" id="memberArea" hidden aria-labelledby="memberTitle">
             <header class="member-header workspace-topbar">
                 <a class="brand" href="../" aria-label="Voltar para a página inicial do HeartSpace">
@@ -103,7 +66,7 @@
                     <section class="workspace-view" data-workspace-panel="members" hidden>
                         <p class="eyebrow">MEMBROS E PAPÉIS</p><h1>Acesso antes de tudo.</h1>
                         <p class="workspace-lead">Convites, permissões e histórico de membros pertencem ao estúdio — nunca a um link público ou a um arquivo local compartilhado por acidente.</p>
-                        <article class="empty-panel"><span class="empty-symbol">◎</span><h2>Você criará um estúdio antes de convidar pessoas.</h2><p>O fluxo terá papéis claros, revogação de convite e uma visão de quem possui acesso a cada espaço.</p></article>
+                        <article class="empty-panel"><span class="empty-symbol">◎</span><h2 id="membersTitle">Você criará um estúdio antes de convidar pessoas.</h2><p id="membersCopy">O fluxo terá papéis claros, revogação de convite e uma visão de quem possui acesso a cada espaço.</p><form class="studio-form" id="inviteMemberForm" hidden><label for="inviteStudio">Estúdio</label><select id="inviteStudio" required></select><label for="inviteEmail">E-mail da pessoa</label><input id="inviteEmail" type="email" autocomplete="email" placeholder="pessoa@estudio.com" required><label for="inviteRole">Papel inicial</label><select id="inviteRole"><option value="member">Membro</option><option value="admin">Admin</option></select><button class="portal-button" type="submit">Criar link de convite</button><p class="form-status" id="inviteStatus" aria-live="polite"></p><a class="hub-link" id="inviteLink" hidden target="_blank" rel="noreferrer">Abrir convite →</a></form></article>
                     </section>
 
                     <section class="workspace-view" data-workspace-panel="publications" hidden>

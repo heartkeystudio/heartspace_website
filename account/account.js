@@ -32,6 +32,15 @@
     const studioName = document.getElementById("studioName");
     const studioSlug = document.getElementById("studioSlug");
     const studioStatus = document.getElementById("studioStatus");
+    const inviteMemberForm = document.getElementById("inviteMemberForm");
+    const inviteStudio = document.getElementById("inviteStudio");
+    const inviteEmail = document.getElementById("inviteEmail");
+    const inviteRole = document.getElementById("inviteRole");
+    const inviteStatus = document.getElementById("inviteStatus");
+    const inviteLink = document.getElementById("inviteLink");
+    const membersTitle = document.getElementById("membersTitle");
+    const membersCopy = document.getElementById("membersCopy");
+    let currentStudios = [];
     const planDetails = {
         indie: { name: "Indie — Studio", copy: "Colaboração e infraestrutura para quem já está construindo junto." },
         studio: { name: "Studio", copy: "Permissões, playtests e fluxos de produção para estúdios em crescimento." }
@@ -124,7 +133,6 @@
     function showMemberArea(user) {
         memberEmail.textContent = user.email || "Conta HeartSpace";
         securityEmail.textContent = user.email || "Conta HeartSpace";
-        accountCard.hidden = true;
         memberArea.hidden = false;
         if (selectedPlan && planDetails[selectedPlan]) checkoutChoice.hidden = false;
         if (checkoutState === "success") {
@@ -171,11 +179,14 @@
     }
 
     function renderStudios(studios) {
+        currentStudios = studios;
         studioList.replaceChildren();
+        inviteStudio.replaceChildren();
         if (!studios.length) {
             studiosTitle.textContent = "Seu primeiro estúdio começa aqui.";
             studiosCopy.textContent = "Crie um espaço para organizar equipe, projetos compartilhados e publicações. Você será o owner inicial.";
             studioList.hidden = true;
+            inviteMemberForm.hidden = true;
             return;
         }
         studiosTitle.textContent = studios.length === 1 ? "1 estúdio conectado." : studios.length + " estúdios conectados.";
@@ -187,8 +198,10 @@
             const name = document.createElement("strong"); name.textContent = studio.name;
             const role = document.createElement("span"); role.textContent = membership.role === "owner" ? "Owner" : membership.role;
             item.append(name, role); studioList.append(item);
+            const option = document.createElement("option"); option.value = studio.id; option.textContent = studio.name; inviteStudio.append(option);
         });
         studioList.hidden = studioList.childElementCount === 0;
+        if (inviteStudio.childElementCount) { membersTitle.textContent = "Convide alguém para colaborar."; membersCopy.textContent = "O link vale por 7 dias e só pode ser aceito pela conta do e-mail informado."; inviteMemberForm.hidden = false; }
     }
 
     async function loadStudios(token) {
@@ -209,6 +222,20 @@
             createStudioForm.reset(); setStudioStatus("Estúdio criado. Você já é o owner inicial.", "success"); await loadStudios(token);
         } catch (error) { setStudioStatus(error.message || "Não foi possível criar o estúdio agora.", "error"); }
         finally { submitButton.disabled = false; }
+    });
+
+    inviteMemberForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
+        if (!inviteEmail.checkValidity() || !inviteStudio.value) { inviteEmail.reportValidity(); return; }
+        const button = inviteMemberForm.querySelector("button[type=submit]"); button.disabled = true; inviteStatus.textContent = "Criando convite…"; inviteLink.hidden = true;
+        try {
+            const token = await getValidAccessToken(); if (!token) throw new Error("Sua sessão expirou. Entre novamente.");
+            const data = await studioRequest("create_invite", token, { studio_id: inviteStudio.value, email: inviteEmail.value.trim(), role: inviteRole.value });
+            inviteLink.href = data.invite_url; inviteLink.hidden = false; inviteStatus.textContent = "Link criado. Copie-o e envie apenas para a pessoa convidada.";
+            if (navigator.clipboard) navigator.clipboard.writeText(data.invite_url).catch(function () {});
+            inviteEmail.value = "";
+        } catch (error) { inviteStatus.textContent = error.message || "Não foi possível criar o convite."; }
+        finally { button.disabled = false; }
     });
 
     async function apiRequest(action, token, payload) {
@@ -269,6 +296,7 @@
         }
     }
 
+    if (googleButton && magicLinkForm) {
     googleButton.addEventListener("click", function () {
         if (!isConfigured) return requireConfiguration();
 
@@ -311,6 +339,7 @@
             submitButton.disabled = false;
         }
     });
+    }
 
     billingPortal.addEventListener("click", async function () {
         let token;
