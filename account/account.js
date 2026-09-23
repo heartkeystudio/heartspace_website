@@ -164,7 +164,7 @@
     async function studioRequest(action, token, payload) {
         const endpoint = config.studioFunctionUrl && config.studioFunctionUrl.replace(/\/$/, "");
         if (!endpoint) throw new Error("O gerenciamento de estúdios ainda está sendo preparado.");
-        const response = await fetch(endpoint, { method: "POST", headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" }, body: JSON.stringify(Object.assign({ action: action }, payload || {})) });
+        const response = await fetch(endpoint, { method: "POST", headers: { "Authorization": "Bearer " + token, "apikey": config.supabaseAnonKey, "Content-Type": "application/json" }, body: JSON.stringify(Object.assign({ action: action }, payload || {})) });
         const data = await response.json().catch(function () { return {}; });
         if (!response.ok) throw new Error(data.error || "Não foi possível concluir esta ação agora.");
         return data;
