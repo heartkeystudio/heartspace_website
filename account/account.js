@@ -41,6 +41,10 @@
     const inviteLink = document.getElementById("inviteLink");
     const membersTitle = document.getElementById("membersTitle");
     const membersCopy = document.getElementById("membersCopy");
+    const studioContextName = document.getElementById("studioContextName");
+    const overviewStudioCount = document.getElementById("overviewStudioCount");
+    const overviewStudioTitle = document.getElementById("overviewStudioTitle");
+    const overviewStudioCopy = document.getElementById("overviewStudioCopy");
     let currentStudios = [];
     const planDetails = {
         indie: { name: "Indie — Studio", copy: "Colaboração e infraestrutura para quem já está construindo junto." },
@@ -166,6 +170,13 @@
         });
     });
 
+    Array.from(document.querySelectorAll("[data-go-to]")).forEach(function (button) {
+        button.addEventListener("click", function () {
+            selectWorkspaceView(button.dataset.goTo);
+            document.querySelector(".workspace-content").scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+    });
+
     function setStudioStatus(message, state) {
         studioStatus.textContent = message;
         studioStatus.className = "form-status" + (state ? " is-" + state : "");
@@ -184,9 +195,13 @@
         currentStudios = studios;
         studioList.replaceChildren();
         inviteStudio.replaceChildren();
+        overviewStudioCount.textContent = String(studios.length);
         if (!studios.length) {
             studiosTitle.textContent = "Seu primeiro estúdio começa aqui.";
             studiosCopy.textContent = "Crie um espaço para organizar equipe, projetos compartilhados e publicações. Você será o owner inicial.";
+            studioContextName.textContent = "Nenhum estúdio";
+            overviewStudioTitle.textContent = "Crie seu primeiro estúdio";
+            overviewStudioCopy.textContent = "Seu estúdio organiza pessoas, acessos e projetos compartilhados. O trabalho continua local no Hub.";
             studioList.hidden = true;
             inviteMemberForm.hidden = true;
             return;
@@ -203,13 +218,26 @@
             const option = document.createElement("option"); option.value = studio.id; option.textContent = studio.name; inviteStudio.append(option);
         });
         studioList.hidden = studioList.childElementCount === 0;
-        if (inviteStudio.childElementCount) { membersTitle.textContent = "Convide alguém para colaborar."; membersCopy.textContent = "O link vale por 7 dias e só pode ser aceito pela conta do e-mail informado."; inviteMemberForm.hidden = false; }
+        if (inviteStudio.childElementCount) {
+            const activeStudioName = inviteStudio.options[0].textContent || "Estúdio ativo";
+            studioContextName.textContent = activeStudioName;
+            overviewStudioTitle.textContent = studios.length === 1 ? "Seu estúdio está pronto." : studios.length + " estúdios, um só controle.";
+            overviewStudioCopy.textContent = "" + activeStudioName + " está conectado à sua conta. Use os papéis e convites para organizar quem pode colaborar.";
+            membersTitle.textContent = "Convide alguém para colaborar.";
+            membersCopy.textContent = "O link vale por 7 dias e só pode ser aceito pela conta do e-mail informado.";
+            inviteMemberForm.hidden = false;
+        }
     }
 
     async function loadStudios(token) {
         if (!config.studioFunctionUrl) return;
         try { const data = await studioRequest("list_studios", token); renderStudios(Array.isArray(data.studios) ? data.studios : []); }
-        catch (error) { studiosTitle.textContent = "Não foi possível carregar seus estúdios."; studiosCopy.textContent = "Confira sua conexão e tente novamente mais tarde."; }
+        catch (error) {
+            studiosTitle.textContent = "Não foi possível carregar seus estúdios.";
+            studiosCopy.textContent = "Confira sua conexão e tente novamente mais tarde.";
+            overviewStudioTitle.textContent = "Estúdios indisponíveis agora";
+            overviewStudioCopy.textContent = "A sua sessão continua protegida; tente atualizar a página para consultar seus espaços.";
+        }
     }
 
     if (config.studioFunctionUrl) createStudioForm.hidden = false;

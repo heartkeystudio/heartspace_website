@@ -73,7 +73,12 @@ Deno.serve(async (request) => {
     }
     const { data, error } = await admin.rpc("admin_create_studio", { p_actor_id: authData.user.id, p_name: name, p_slug: slug });
     if (error) {
-      console.error("create_studio RPC failed", { code: error.code, message: error.message });
+      console.error("create_studio RPC failed", {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+      });
       const duplicate = error.code === "23505";
       return response({ error: duplicate ? "Esse endereço de estúdio já está em uso. Escolha outro nome." : "Não foi possível criar o estúdio." }, duplicate ? 409 : 500, origin);
     }

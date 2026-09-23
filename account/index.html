@@ -19,9 +19,7 @@
 
         <section class="member-area workspace" id="memberArea" hidden aria-labelledby="memberTitle">
             <header class="member-header workspace-topbar">
-                <a class="brand" href="../" aria-label="Voltar para a página inicial do HeartSpace">
-                    <span class="brand-icon" aria-hidden="true">🔑</span><span>HeartSpace</span>
-                </a>
+                <div class="workspace-breadcrumb"><span class="workspace-dot" aria-hidden="true"></span><span>HeartSpace</span><span class="breadcrumb-divider">/</span><strong>Administração</strong></div>
                 <div class="account-actions"><span class="member-email" id="memberEmail"></span><button class="signout-button" id="signOut" type="button">Sair</button></div>
             </header>
 
@@ -29,15 +27,17 @@
 
             <div class="workspace-layout">
                 <nav class="workspace-nav" aria-label="Administração da conta">
+                    <a class="workspace-brand" href="../"><span class="brand-icon" aria-hidden="true">🔑</span><span>HeartSpace</span></a>
+                    <button class="studio-context" type="button" disabled aria-label="Estúdio ativo"><span class="studio-context-mark">✦</span><span><small>ESTÚDIO ATIVO</small><strong id="studioContextName">Nenhum estúdio</strong></span><span class="studio-context-chevron">⌄</span></button>
                     <p class="workspace-nav-label">ADMINISTRAÇÃO</p>
-                    <button class="workspace-nav-item is-active" type="button" data-workspace-view="overview">Visão geral</button>
-                    <button class="workspace-nav-item" type="button" data-workspace-view="studios">Estúdios</button>
-                    <button class="workspace-nav-item" type="button" data-workspace-view="projects">Projetos</button>
-                    <button class="workspace-nav-item" type="button" data-workspace-view="members">Membros</button>
-                    <button class="workspace-nav-item" type="button" data-workspace-view="publications">Publicações</button>
+                    <button class="workspace-nav-item is-active" type="button" data-workspace-view="overview"><span>⌂</span>Visão geral</button>
+                    <button class="workspace-nav-item" type="button" data-workspace-view="studios"><span>◇</span>Estúdios</button>
+                    <button class="workspace-nav-item" type="button" data-workspace-view="projects"><span>▣</span>Projetos</button>
+                    <button class="workspace-nav-item" type="button" data-workspace-view="members"><span>◎</span>Membros</button>
+                    <button class="workspace-nav-item" type="button" data-workspace-view="publications"><span>↗</span>Publicações</button>
                     <p class="workspace-nav-label workspace-nav-label-lower">CONTA</p>
-                    <button class="workspace-nav-item" type="button" data-workspace-view="billing">Assinatura</button>
-                    <button class="workspace-nav-item" type="button" data-workspace-view="security">Segurança</button>
+                    <button class="workspace-nav-item" type="button" data-workspace-view="billing"><span>◈</span>Assinatura</button>
+                    <button class="workspace-nav-item" type="button" data-workspace-view="security"><span>⌘</span>Segurança</button>
                     <a class="workspace-hub-link" href="../#download">↗ Baixar ou abrir o Hub</a>
                 </nav>
 
@@ -46,10 +46,11 @@
                         <p class="eyebrow">VISÃO GERAL</p>
                         <h1 id="memberTitle">Seu espaço começa aqui.</h1>
                         <p class="workspace-lead">O site organiza pessoas, acesso e tudo que é compartilhado. O Hub continua sendo o lugar do trabalho local.</p>
+                        <div class="overview-metrics"><article><span id="overviewStudioCount">0</span><small>ESTÚDIOS</small></article><article><span>—</span><small>PROJETOS VINCULADOS</small></article><article><span>—</span><small>PUBLICAÇÕES ATIVAS</small></article></div>
                         <div class="overview-grid">
-                            <article class="overview-card overview-card-accent"><p class="panel-kicker">ESTÚDIO</p><h2>Nenhum estúdio conectado</h2><p>Quando o cadastro de estúdios estiver ativo, você poderá criar seu espaço, escolher um nome e convidar a equipe daqui.</p><span class="card-state">EM PREPARAÇÃO</span></article>
+                            <article class="overview-card overview-card-accent"><p class="panel-kicker">ESTÚDIO</p><h2 id="overviewStudioTitle">Crie seu primeiro estúdio</h2><p id="overviewStudioCopy">Seu estúdio organiza pessoas, acessos e projetos compartilhados. O trabalho continua local no Hub.</p><button class="card-action" type="button" data-go-to="studios">Gerenciar estúdios</button></article>
                             <article class="overview-card"><p class="panel-kicker">PROJETOS</p><h2>O Hub é a fonte do trabalho</h2><p>Projetos nascem e continuam locais. Aqui aparecerão apenas a organização, os acessos e as publicações vinculadas.</p><a class="hub-link" href="../#download">Abrir o Hub →</a></article>
-                            <article class="overview-card"><p class="panel-kicker">PUBLICAÇÕES</p><h2>Documentos públicos, no seu controle</h2><p>Press kits, wikis e links não listados ficarão associados a um projeto e poderão ser revogados a qualquer momento.</p><a class="hub-link" href="../p/luma-studio/aurora-vale/">Ver exemplo público →</a></article>
+                            <article class="overview-card"><p class="panel-kicker">PUBLICAÇÕES</p><h2>Documentos públicos, no seu controle</h2><p>Press kits, wikis e links não listados ficarão associados a um projeto e poderão ser revogados a qualquer momento.</p><button class="card-action" type="button" data-go-to="publications">Explorar publicações</button></article>
                         </div>
                     </section>
 

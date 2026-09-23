@@ -4,6 +4,11 @@
 -- usa a service role internamente, pode criar ou alterar dados administrativos.
 
 grant execute on function public.admin_create_studio(uuid, text, text) to service_role;
+grant usage on schema public to service_role;
+grant select, insert, update, delete on public.profiles, public.studios,
+    public.studio_members, public.studio_invites, public.studio_projects,
+    public.studio_audit_log to service_role;
+grant usage, select on all sequences in schema public to service_role;
 
 -- Estas duas grants entram em vigor após a migration de convites ser aplicada.
 do $$

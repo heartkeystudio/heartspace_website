@@ -11,7 +11,7 @@ Edite `account/config.js` com valores próprios para o navegador:
 window.HEARTSPACE_ACCOUNT_CONFIG = {
   supabaseUrl: "https://SEU-PROJETO.supabase.co",
   supabaseAnonKey: "SUA_CHAVE_ANON_PUBLICA",
-  studioFunctionUrl: "https://SEU-PROJETO.supabase.co/functions/v1/heartspace-studios",
+  studioFunctionUrl: "https://SEU-PROJETO.supabase.co/functions/v1/heartspace-studio",
   billingFunctionUrl: "https://SEU-PROJETO.supabase.co/functions/v1/heartspace-billing",
   plans: {
     indie: "indie",
@@ -42,6 +42,30 @@ servidor.
 
 O Google precisa ter o domínio e a tela de consentimento configurados no
 console do próprio provedor. O site não guarda segredo algum desse fluxo.
+
+## Estúdios e convites
+
+O painel administrativo usa uma única Function publicada no projeto como
+`heartspace-studio`. O código-fonte permanece em
+`supabase/functions/heartspace-studios/index.ts`; o nome da pasta não precisa
+coincidir com o nome dado no dashboard do Supabase.
+
+Antes de disponibilizar cada ação, aplique as migrations na ordem abaixo:
+
+1. `SUPABASE_STUDIO_SCHEMA.sql`
+2. `SUPABASE_STUDIO_FUNCTION_PERMISSIONS.sql`
+3. `SUPABASE_STUDIOS_COMPATIBILITY.sql` — somente para a estrutura legada já
+   existente deste projeto.
+4. `SUPABASE_PROFILE_BRIDGE.sql` — necessário porque `studio_members` possui
+   uma FK legada para `profiles`.
+5. `SUPABASE_STUDIO_INVITES.sql`
+6. `SUPABASE_INVITE_PROFILE_BRIDGE.sql` — garante a mesma ponte de perfil ao
+   aceitar um convite.
+
+No dashboard, publique/atualize a Function com o nome **`heartspace-studio`**
+e configure `HEARTSPACE_ALLOWED_ORIGINS` com
+`https://heartspace.tools,https://www.heartspace.tools`. A service role fica
+somente no ambiente da Function; o navegador usa apenas a publishable key.
 
 ## Edge Function `heartspace-billing`
 
