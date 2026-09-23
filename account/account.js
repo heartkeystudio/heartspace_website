@@ -7,6 +7,7 @@
     const emailInput = document.getElementById("email");
     const status = document.getElementById("authStatus");
     const accountCard = document.querySelector(".account-card");
+    const accountLoading = document.getElementById("accountLoading");
     const memberArea = document.getElementById("memberArea");
     const memberEmail = document.getElementById("memberEmail");
     const planName = document.getElementById("planName");
@@ -133,6 +134,7 @@
     function showMemberArea(user) {
         memberEmail.textContent = user.email || "Conta HeartSpace";
         securityEmail.textContent = user.email || "Conta HeartSpace";
+        accountLoading.hidden = true;
         memberArea.hidden = false;
         if (selectedPlan && planDetails[selectedPlan]) checkoutChoice.hidden = false;
         if (checkoutState === "success") {
@@ -272,12 +274,13 @@
     }
 
     async function restoreSession() {
-        if (!isConfigured) return;
+        if (!isConfigured) { window.location.replace("../login/"); return; }
         let token;
         try {
             token = await getValidAccessToken();
         } catch (error) {
             clearSession();
+            window.location.replace("../login/");
             return;
         }
         if (!token) { window.location.replace("../login/"); return; }
