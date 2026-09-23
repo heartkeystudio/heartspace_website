@@ -83,6 +83,7 @@
         .nav-links { display: flex; gap: 30px; }
         .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: 0.2s; }
         .nav-links a:hover { color: var(--text-main); }
+        .mobile-account-link { display: none; }
 
         .nav-actions { display: flex; gap: 15px; align-items: center; }
         .login-link { color: var(--text-main); text-decoration: none; font-size: 0.9rem; font-weight: 600; }
@@ -113,6 +114,7 @@
             .navbar.nav-open .nav-links { display: flex; }
             .nav-links a { padding: 11px 10px; border-radius: 8px; }
             .nav-links a:hover { background: var(--bg-card); }
+            .mobile-account-link { display: block; }
             .menu-toggle { display: inline-flex; align-items: center; justify-content: center; }
             .nav-actions .login-link, .nav-actions .btn-primary { display: none; }
         }
@@ -684,7 +686,8 @@
         .document-lines i:nth-child(2) { width: 76%; }
         .document-lines i:nth-child(3) { width: 58%; }
         .publication-sheet.public { border-color: rgba(149,1,216,0.55); background: linear-gradient(145deg, rgba(149,1,216,0.14), var(--bg-card) 65%); }
-        .public-url { display: inline-block; border-radius: 20px; padding: 6px 9px; color: #dba2ff; background: rgba(149,1,216,0.14); font-size: 0.68rem; }
+        .public-url { display: inline-block; border-radius: 20px; padding: 6px 9px; color: #dba2ff; background: rgba(149,1,216,0.14); font-size: 0.68rem; text-decoration: none; }
+        .public-url:hover { background: rgba(149,1,216,0.26); }
         .publication-arrow { color: var(--primary); font-size: 1.8rem; }
         .publish-state { color: #dba2ff; font-size: 0.75rem; font-weight: 700; }
 
@@ -845,11 +848,12 @@
             <a href="#ecosystem">Ecossistema</a>
             <a href="#publications">Publicações</a>
             <a href="#plans">Planos</a>
+            <a class="mobile-account-link" href="account/">Entrar ou criar conta</a>
         </div>
         <div class="nav-actions">
             <button class="btn-theme" id="themeToggle" title="Trocar Tema">☀️</button>
-            <a href="#plans" class="login-link">Acompanhar</a>
-            <a href="#plans" class="btn-primary">Participar do lançamento</a>
+            <a href="account/" class="login-link">Entrar</a>
+            <a href="account/" class="btn-primary">Criar conta</a>
             <button class="menu-toggle" id="menuToggle" type="button" aria-label="Abrir menu" aria-controls="primaryNav" aria-expanded="false">☰</button>
         </div>
     </nav>
@@ -1000,7 +1004,7 @@
             <div class="publication-sheet public">
                 <div class="eyebrow">Publicação aprovada</div>
                 <h3>Press kit</h3>
-                <span class="public-url">/p/luma-studio/aurora-vale/press-kit</span>
+                <a class="public-url" href="p/luma-studio/aurora-vale/press-kit/">/p/luma-studio/aurora-vale/press-kit</a>
                 <p class="publish-state" style="margin-top: 22px;">● Público e versionado</p>
             </div>
         </div>
@@ -1044,7 +1048,7 @@
                 <div class="plan-price">Grátis<span>/ para sempre</span></div>
                 <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 25px; min-height: 40px;">Crie, trabalhe offline e exporte sem perder a propriedade dos seus arquivos.</p>
                 <ul class="plan-features"><li><i>✓</i> Uso local completo</li><li><i>✓</i> Exportação sem marca d'água</li><li><i>✓</i> Projetos e sync com limites saudáveis</li></ul>
-                <a href="#" class="btn-plan btn-plan-outline">Começar gratuitamente</a>
+                <a href="account/" class="btn-plan btn-plan-outline">Criar conta grátis</a>
             </div>
             <div class="pricing-card popular">
                 <div class="popular-badge">Em breve</div>
@@ -1052,14 +1056,14 @@
                 <div class="plan-price">Em breve<span>/ para equipes pequenas</span></div>
                 <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 25px; min-height: 40px;">Colaboração e infraestrutura para quem já está construindo junto.</p>
                 <ul class="plan-features"><li><i>✓</i> Projetos privados e membros</li><li><i>✓</i> Histórico e mais armazenamento</li><li><i>✓</i> Integrações e colaboração</li></ul>
-                <a href="#" class="btn-plan btn-plan-solid">Acompanhar o lançamento</a>
+                <a href="account/?plan=indie" class="btn-plan btn-plan-solid">Criar conta e acompanhar</a>
             </div>
             <div class="pricing-card">
                 <div class="plan-name">Studio</div>
                 <div class="plan-price">Em breve<span>/ para produção contínua</span></div>
                 <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 25px; min-height: 40px;">Permissões, playtests e fluxos de produção para estúdios em crescimento.</p>
                 <ul class="plan-features"><li><i>✓</i> Permissões avançadas</li><li><i>✓</i> Builds e playtests</li><li><i>✓</i> Sync prioritário</li></ul>
-                <a href="#" class="btn-plan btn-plan-outline">Falar com a gente</a>
+                <a href="account/?plan=studio" class="btn-plan btn-plan-outline">Falar com a gente</a>
             </div>
         </div>
     </section>
@@ -1101,6 +1105,7 @@
                     <li><a href="#ecosystem">Ecossistema</a></li>
                     <li><a href="#publications">Publicações</a></li>
                     <li><a href="#plans">Planos</a></li>
+                    <li><a href="account/">Conta</a></li>
                     <li><a href="#changelog">Changelog</a></li>
                 </ul>
             </div>
