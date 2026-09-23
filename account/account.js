@@ -253,7 +253,7 @@
             clearSession();
             return;
         }
-        if (!token) return;
+        if (!token) { window.location.replace("../login/"); return; }
         try {
             const response = await fetch(config.supabaseUrl.replace(/\/$/, "") + "/auth/v1/user", {
                 headers: { "apikey": config.supabaseAnonKey, "Authorization": "Bearer " + token }
@@ -265,6 +265,7 @@
             await loadStudios(token);
         } catch (error) {
             clearSession();
+            window.location.replace("../login/");
         }
     }
 
@@ -350,8 +351,7 @@
         const token = sessionStorage.getItem(sessionKey("access-token"));
         clearSession();
         memberArea.hidden = true;
-        accountCard.hidden = false;
-        setStatus("Você saiu da conta.", "");
+        window.location.replace("../login/");
         if (isConfigured && token) {
             fetch(config.supabaseUrl.replace(/\/$/, "") + "/auth/v1/logout", {
                 method: "POST",
