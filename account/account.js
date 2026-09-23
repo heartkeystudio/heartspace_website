@@ -222,7 +222,14 @@
             const token = await getValidAccessToken(); if (!token) throw new Error("Sua sessão expirou. Entre novamente para continuar.");
             await studioRequest("create_studio", token, { name: studioName.value.trim(), slug: studioSlug.value.trim() });
             createStudioForm.reset(); setStudioStatus("Estúdio criado. Você já é o owner inicial.", "success"); await loadStudios(token);
-        } catch (error) { setStudioStatus(error.message || "Não foi possível criar o estúdio agora.", "error"); }
+        } catch (error) {
+            const localPreview = window.location.protocol === "file:";
+            const unavailable = error instanceof TypeError;
+            setStudioStatus(localPreview
+                ? "Para criar um estúdio, abra o site pelo domínio publicado. Arquivos abertos diretamente no computador não podem chamar o serviço seguro."
+                : unavailable ? "Não foi possível alcançar o serviço de estúdios. Confira se a Function publicada permite este domínio."
+                : error.message || "Não foi possível criar o estúdio agora.", "error");
+        }
         finally { submitButton.disabled = false; }
     });
 
