@@ -87,6 +87,7 @@
 
         .nav-actions { display: flex; gap: 15px; align-items: center; }
         #guestActions, #signedInActions { display: flex; gap: 15px; align-items: center; }
+        #guestActions[hidden], #signedInActions[hidden] { display: none !important; }
         .login-link { color: var(--text-main); text-decoration: none; font-size: 0.9rem; font-weight: 600; }
         .home-signout { padding: 0; border: 0; color: var(--text-main); background: transparent; font: inherit; cursor: pointer; }
         .menu-toggle { display: none; width: 38px; height: 38px; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--text-main); cursor: pointer; font-size: 1.2rem; }
