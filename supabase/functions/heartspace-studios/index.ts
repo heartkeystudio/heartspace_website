@@ -71,7 +71,7 @@ async function syncProfileFromAuth(admin: any, user: any) {
 
 async function getMembership(admin: any, studioId: string, userId: string) {
   const { data, error } = await admin.from("studio_members")
-    .select("studio_id, user_id, role, created_at")
+    .select("studio_id, user_id, role")
     .eq("studio_id", studioId).eq("user_id", userId).maybeSingle();
   return { membership: data, error };
 }
@@ -142,9 +142,10 @@ Deno.serve(async (request) => {
   if (payload.action === "list_studios") {
     const { data: memberships, error: membershipError } = await admin
       .from("studio_members")
-      .select("studio_id, role, created_at")
-      .eq("user_id", authData.user.id)
-      .order("created_at", { ascending: true });
+      // A tabela de membros já existia no Hub e nem toda instalação legada
+      // possui uma coluna `created_at`.
+      .select("studio_id, role")
+      .eq("user_id", authData.user.id);
     if (membershipError) {
       console.error("list_studios memberships failed", {
         code: membershipError.code,
@@ -223,8 +224,8 @@ Deno.serve(async (request) => {
     if (membershipError || !membership) return response({ error: "Você não possui acesso a este estúdio." }, 403, origin);
 
     const [studioResult, membersResult, projectsResult, activityResult, invitesResult] = await Promise.all([
-      admin.from("studios").select("id, name, slug, description, created_at, updated_at").eq("id", studioId).maybeSingle(),
-      admin.from("studio_members").select("user_id, role, created_at").eq("studio_id", studioId).order("created_at", { ascending: true }),
+      admin.from("studios").select("id, name, description, created_at").eq("id", studioId).maybeSingle(),
+      admin.from("studio_members").select("user_id, role").eq("studio_id", studioId),
       admin.from("projects").select("id, name, description, cover_image, created_at").eq("studio_id", studioId).order("created_at", { ascending: false }),
       admin.from("studio_audit_log").select("id, actor_id, action, target_type, target_id, created_at").eq("studio_id", studioId).order("created_at", { ascending: false }).limit(20),
       membership.role === "owner" || membership.role === "admin"

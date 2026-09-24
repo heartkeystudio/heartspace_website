@@ -242,8 +242,9 @@
         const restBase = config.supabaseUrl.replace(/\/$/, "") + "/rest/v1/";
         const headers = { "apikey": config.supabaseAnonKey, "Authorization": "Bearer " + token };
         const membersUrl = new URL(restBase + "studio_members");
-        membersUrl.searchParams.set("select", "studio_id,role,created_at");
-        membersUrl.searchParams.set("order", "created_at.asc");
+        // A associação legada do Hub pode não ter `created_at`; para montar a
+        // lista bastam o identificador do estúdio e o papel da pessoa.
+        membersUrl.searchParams.set("select", "studio_id,role");
         if (currentUserId) membersUrl.searchParams.set("user_id", "eq." + currentUserId);
         const membershipsResponse = await fetch(membersUrl.toString(), { headers: headers });
         const memberships = await membershipsResponse.json().catch(function () { return []; });
