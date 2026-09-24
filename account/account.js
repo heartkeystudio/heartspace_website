@@ -98,6 +98,11 @@
     const activeProjectBannerFile = document.getElementById("activeProjectBannerFile");
     const activeProjectBannerPreview = document.getElementById("activeProjectBannerPreview");
     const projectSettingsStatus = document.getElementById("projectSettingsStatus");
+    const projectRoleCatalogPanel = document.getElementById("projectRoleCatalogPanel");
+    const roleCatalogEditor = document.getElementById("roleCatalogEditor");
+    const addProjectRole = document.getElementById("addProjectRole");
+    const saveProjectRoleCatalog = document.getElementById("saveProjectRoleCatalog");
+    const projectRoleCatalogStatus = document.getElementById("projectRoleCatalogStatus");
     const projectRolesPanel = document.getElementById("projectRolesPanel");
     const productionRoleList = document.getElementById("productionRoleList");
     const projectRolesStatus = document.getElementById("projectRolesStatus");
@@ -352,6 +357,8 @@
     function clearProjectAdministration() {
         activeProjectAdmin = null;
         projectSettingsPanel.hidden = true;
+        projectRoleCatalogPanel.hidden = true;
+        roleCatalogEditor.replaceChildren();
         projectRolesPanel.hidden = true;
         productionRoleList.replaceChildren();
         projectContextLabel.hidden = true;
@@ -709,6 +716,47 @@
         return labels[key] || key.replace(/_/g, " ").replace(/\b\w/g, function (letter) { return letter.toUpperCase(); });
     }
 
+    const projectPermissionLabels = {
+        manage_workspace: "Gerenciar projeto", manage_roles: "Gerenciar cargos", manage_billing: "Gerenciar assinatura",
+        delete_sprints: "Excluir sprints", create_sprints: "Criar sprints", view_all_tasks: "Ver todas as tarefas",
+        manage_wiki_visibility: "Controlar visibilidade da wiki", can_edit_wiki: "Editar wiki", can_comment_wiki: "Comentar na wiki", can_view_wiki: "Ver wiki"
+    };
+
+    function appendRoleEditor(role, canManage) {
+        const card = document.createElement("article"); card.className = "role-editor-card";
+        const fields = document.createElement("div"); fields.className = "role-editor-fields";
+        const keyLabel = document.createElement("label"); keyLabel.textContent = "Identificador";
+        const keyInput = document.createElement("input"); keyInput.type = "text"; keyInput.value = role.key || ""; keyInput.maxLength = 40; keyInput.dataset.roleKey = ""; keyInput.placeholder = "ex.: artista"; keyInput.disabled = !canManage || Boolean(role.locked);
+        keyLabel.append(keyInput);
+        const nameLabel = document.createElement("label"); nameLabel.textContent = "Nome";
+        const nameInput = document.createElement("input"); nameInput.type = "text"; nameInput.value = role.label || ""; nameInput.maxLength = 48; nameInput.dataset.roleLabel = ""; nameInput.placeholder = "Ex.: Artista"; nameInput.disabled = !canManage;
+        nameLabel.append(nameInput);
+        const colorLabel = document.createElement("label"); colorLabel.textContent = "Cor";
+        const colorInput = document.createElement("input"); colorInput.type = "color"; colorInput.value = /^#[0-9a-f]{6}$/i.test(role.color || "") ? role.color : "#9501d8"; colorInput.dataset.roleColor = ""; colorInput.disabled = !canManage;
+        colorLabel.append(colorInput); fields.append(keyLabel, nameLabel, colorLabel); card.append(fields);
+        const permissionList = document.createElement("div"); permissionList.className = "role-permission-checks";
+        Object.keys(projectPermissionLabels).forEach(function (permission) {
+            const label = document.createElement("label");
+            const input = document.createElement("input"); input.type = "checkbox"; input.value = permission; input.dataset.rolePermission = ""; input.checked = Array.isArray(role.permissions) && role.permissions.includes(permission); input.disabled = !canManage;
+            const text = document.createElement("span"); text.textContent = projectPermissionLabels[permission]; label.append(input, text); permissionList.append(label);
+        });
+        card.append(permissionList);
+        if (canManage) { const remove = document.createElement("button"); remove.type = "button"; remove.className = "row-button row-button-danger"; remove.dataset.removeProjectRole = ""; remove.textContent = "Remover cargo"; card.append(remove); }
+        roleCatalogEditor.append(card);
+    }
+
+    function renderRoleCatalog(data, canManage) {
+        roleCatalogEditor.replaceChildren();
+        const project = data.project || {};
+        const permissions = project.role_permissions && typeof project.role_permissions === "object" ? project.role_permissions : {};
+        const colors = project.role_colors && typeof project.role_colors === "object" ? project.role_colors : {};
+        const labels = project.role_labels && typeof project.role_labels === "object" ? project.role_labels : {};
+        Object.keys(permissions).forEach(function (key) { appendRoleEditor({ key: key, label: labels[key] || humanizeProductionRole(key), color: colors[key], permissions: Object.keys(permissions[key] || {}), locked: true }, canManage); });
+        projectRoleCatalogPanel.hidden = false;
+        addProjectRole.hidden = !canManage;
+        saveProjectRoleCatalog.hidden = !canManage;
+    }
+
     function renderProjectRoles(data, canManage) {
         productionRoleList.replaceChildren();
         const permissions = data.project && data.project.role_permissions && typeof data.project.role_permissions === "object" ? data.project.role_permissions : {};
@@ -758,6 +806,7 @@
         updateProjectBannerPreview(activeProjectBanner.value);
         Array.from(projectSettingsForm.elements).forEach(function (element) { element.disabled = !canManage; });
         projectSettingsPanel.hidden = false;
+        renderRoleCatalog(data, canManage);
         renderProjectRoles(data, canManage);
     }
 
@@ -777,6 +826,39 @@
         sessionStorage.setItem(sessionKey("active-project"), activeProjectId);
         const token = await getValidAccessToken().catch(function () { return null; });
         if (token) await loadActiveProject(token);
+    });
+
+    addProjectRole.addEventListener("click", function () {
+        appendRoleEditor({ key: "", label: "", color: "#9501d8", permissions: [] }, true);
+        const input = roleCatalogEditor.lastElementChild && roleCatalogEditor.lastElementChild.querySelector("[data-role-key]"); if (input) input.focus();
+    });
+
+    roleCatalogEditor.addEventListener("click", function (event) {
+        const button = event.target.closest("[data-remove-project-role]"); if (button) button.closest(".role-editor-card").remove();
+    });
+
+    saveProjectRoleCatalog.addEventListener("click", async function () {
+        if (!activeStudioId || !activeProjectId) return;
+        const cards = Array.from(roleCatalogEditor.querySelectorAll(".role-editor-card"));
+        const roles = cards.map(function (card) {
+            return {
+                key: card.querySelector("[data-role-key]").value.trim(),
+                label: card.querySelector("[data-role-label]").value.trim(),
+                color: card.querySelector("[data-role-color]").value,
+                permissions: Array.from(card.querySelectorAll("[data-role-permission]:checked")).map(function (input) { return input.value; })
+            };
+        });
+        if (roles.some(function (role) { return !role.key || !role.label; })) {
+            projectRoleCatalogStatus.textContent = "Preencha identificador e nome para cada cargo."; projectRoleCatalogStatus.className = "form-status is-error"; return;
+        }
+        saveProjectRoleCatalog.disabled = true; projectRoleCatalogStatus.textContent = "Salvando cargos e permissões…"; projectRoleCatalogStatus.className = "form-status";
+        try {
+            const token = await getValidAccessToken(); if (!token) throw new Error("Sua sessão expirou. Entre novamente.");
+            await studioRequest("save_project_role_catalog", token, { studio_id: activeStudioId, project_id: activeProjectId, roles: roles });
+            projectRoleCatalogStatus.textContent = "Cargos e permissões atualizados."; projectRoleCatalogStatus.className = "form-status is-success";
+            await loadActiveProject(token);
+        } catch (error) { projectRoleCatalogStatus.textContent = error.message || "Não foi possível salvar os cargos."; projectRoleCatalogStatus.className = "form-status is-error"; }
+        finally { saveProjectRoleCatalog.disabled = false; }
     });
 
     productionRoleList.addEventListener("change", async function (event) {

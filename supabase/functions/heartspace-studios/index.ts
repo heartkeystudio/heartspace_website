@@ -151,6 +151,19 @@ function cleanRoleKeys(value: unknown, permissions: Record<string, Record<string
   return Array.from(new Set(value.filter((role): role is string => typeof role === "string" && Object.prototype.hasOwnProperty.call(permissions, role))));
 }
 
+const allowedProjectPermissions = new Set([
+  "manage_workspace", "manage_roles", "manage_billing", "delete_sprints", "create_sprints", "view_all_tasks",
+  "manage_wiki_visibility", "can_edit_wiki", "can_comment_wiki", "can_view_wiki",
+]);
+
+function defaultRoleLabel(key: string) {
+  return key.split("_").map((part) => part.slice(0, 1).toUpperCase() + part.slice(1)).join(" ");
+}
+
+function labelsForTemplate(template: { permissions: Record<string, Record<string, boolean>> }) {
+  return Object.fromEntries(Object.keys(template.permissions).map((key) => [key, defaultRoleLabel(key)]));
+}
+
 Deno.serve(async (request) => {
   const origin = allowedOrigin(request.headers.get("origin"));
   if (request.method === "OPTIONS") return new Response(null, { status: origin ? 204 : 403, headers: { ...corsHeaders, ...(origin ? { "Access-Control-Allow-Origin": origin } : {}) } });
@@ -304,11 +317,11 @@ Deno.serve(async (request) => {
     const template = productionTemplates[templateKey(studio.role_template_key)];
     const projectPayload: Record<string, unknown> = {
       studio_id: studioId, owner_id: authData.user.id, name,
-      role_permissions: template.permissions, role_colors: template.colors,
+      role_permissions: template.permissions, role_colors: template.colors, role_labels: labelsForTemplate(template),
     };
     if (description) projectPayload.description = description;
     const { data, error } = await admin.from("projects").insert(projectPayload)
-      .select("id, studio_id, name, description, cover_image, banner_image, role_permissions, role_colors, created_at").single();
+      .select("id, studio_id, name, description, cover_image, banner_image, role_permissions, role_colors, role_labels, created_at").single();
     if (error) {
       console.error("create_project failed", { code: error.code, message: error.message, details: error.details });
       return response({ error: "Não foi possível criar o projeto agora." }, 500, origin);
@@ -326,7 +339,7 @@ Deno.serve(async (request) => {
     const { membership, error: membershipError } = await getMembership(admin, studioId, authData.user.id);
     if (membershipError || !membership) return response({ error: "Você não possui acesso a este projeto." }, 403, origin);
     const { data: project, error } = await admin.from("projects")
-      .select("id, studio_id, name, description, cover_image, banner_image, role_permissions, role_colors, created_at")
+      .select("id, studio_id, name, description, cover_image, banner_image, role_permissions, role_colors, role_labels, created_at")
       .eq("id", projectId).eq("studio_id", studioId).maybeSingle();
     if (error || !project) return response({ error: "Não foi possível carregar o projeto." }, 404, origin);
     const { data: studioMembers, error: studioMembersError } = await admin.from("studio_members")
@@ -373,6 +386,44 @@ Deno.serve(async (request) => {
     }
     await admin.from("studio_audit_log").insert({ studio_id: studioId, actor_id: authData.user.id, action: "project.roles_updated", target_type: "project", target_id: projectId });
     return response({ ok: true, roles }, 200, origin);
+  }
+
+  if (payload.action === "save_project_role_catalog") {
+    const studioId = typeof payload.studio_id === "string" ? payload.studio_id : "";
+    const projectId = typeof payload.project_id === "string" ? payload.project_id : "";
+    if (!studioId || !projectId || !Array.isArray(payload.roles) || payload.roles.length > 30) return response({ error: "Catálogo de cargos inválido." }, 400, origin);
+    const { membership, error: membershipError } = await getMembership(admin, studioId, authData.user.id);
+    if (membershipError || !membership || !["owner", "admin"].includes(membership.role)) return response({ error: "Você não pode configurar os cargos deste projeto." }, 403, origin);
+    const permissions: Record<string, Record<string, boolean>> = {};
+    const colors: Record<string, string> = {};
+    const labels: Record<string, string> = {};
+    for (const item of payload.roles) {
+      const rawKey = typeof item?.key === "string" ? item.key : "";
+      const key = slugFrom(rawKey).replace(/-/g, "_").slice(0, 40);
+      const label = typeof item?.label === "string" ? item.label.trim().replace(/\s+/g, " ") : "";
+      const color = typeof item?.color === "string" ? item.color.trim() : "";
+      const grants = Array.isArray(item?.permissions) ? item.permissions : [];
+      if (!/^[a-z][a-z0-9_]{1,39}$/.test(key) || !label || label.length > 48 || !/^#[0-9a-fA-F]{6}$/.test(color) || permissions[key]) {
+        return response({ error: "Confira o nome e a cor de cada cargo." }, 400, origin);
+      }
+      permissions[key] = Object.fromEntries(grants.filter((grant): grant is string => typeof grant === "string" && allowedProjectPermissions.has(grant)).map((grant) => [grant, true]));
+      colors[key] = color;
+      labels[key] = label;
+    }
+    const { data: project, error: projectError } = await admin.from("projects")
+      .update({ role_permissions: permissions, role_colors: colors, role_labels: labels })
+      .eq("id", projectId).eq("studio_id", studioId)
+      .select("id").maybeSingle();
+    if (projectError || !project) return response({ error: "Não foi possível salvar o catálogo de cargos." }, 500, origin);
+    const { data: members, error: membersError } = await admin.from("project_members").select("user_id, roles").eq("project_id", projectId);
+    if (membersError) return response({ error: "O catálogo foi salvo, mas não foi possível atualizar as atribuições." }, 500, origin);
+    for (const member of members || []) {
+      const nextRoles = cleanRoleKeys(member.roles, permissions);
+      await admin.from("project_members").update({ roles: nextRoles, role: nextRoles[0] || "reader", updated_at: new Date().toISOString() })
+        .eq("project_id", projectId).eq("user_id", member.user_id);
+    }
+    await admin.from("studio_audit_log").insert({ studio_id: studioId, actor_id: authData.user.id, action: "project.role_catalog_updated", target_type: "project", target_id: projectId });
+    return response({ ok: true, role_permissions: permissions, role_colors: colors, role_labels: labels }, 200, origin);
   }
 
   if (payload.action === "upload_project_image") {

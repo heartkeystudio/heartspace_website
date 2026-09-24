@@ -7,7 +7,8 @@ alter table public.studios
 
 alter table public.projects
   add column if not exists role_permissions jsonb not null default '{}'::jsonb,
-  add column if not exists role_colors jsonb not null default '{}'::jsonb;
+  add column if not exists role_colors jsonb not null default '{}'::jsonb,
+  add column if not exists role_labels jsonb not null default '{}'::jsonb;
 
 create table if not exists public.project_members (
   project_id uuid not null references public.projects(id) on delete cascade,
