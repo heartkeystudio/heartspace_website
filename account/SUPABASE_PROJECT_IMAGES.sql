@@ -1,6 +1,10 @@
 -- HeartSpace: capas públicas, comprimidas, para projetos.
 -- A Edge Function limita o conteúdo a 1600 × 900 e 600 KB antes de gravar.
 
+-- `cover_image` já é consumido pelo Hub como imagem de perfil do projeto.
+-- A capa horizontal ganha um campo separado para não alterar esse contrato.
+alter table public.projects add column if not exists banner_image text;
+
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
   'project-images',

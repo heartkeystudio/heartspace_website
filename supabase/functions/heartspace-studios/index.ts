@@ -248,7 +248,7 @@ Deno.serve(async (request) => {
     const { membership, error: membershipError } = await getMembership(admin, studioId, authData.user.id);
     if (membershipError || !membership) return response({ error: "Você não possui acesso a este projeto." }, 403, origin);
     const { data: project, error } = await admin.from("projects")
-      .select("id, studio_id, name, description, cover_image, created_at")
+      .select("id, studio_id, name, description, cover_image, banner_image, created_at")
       .eq("id", projectId).eq("studio_id", studioId).maybeSingle();
     if (error || !project) return response({ error: "Não foi possível carregar o projeto." }, 404, origin);
     return response({ project, membership }, 200, origin);
@@ -257,9 +257,10 @@ Deno.serve(async (request) => {
   if (payload.action === "upload_project_image") {
     const studioId = typeof payload.studio_id === "string" ? payload.studio_id : "";
     const projectId = typeof payload.project_id === "string" ? payload.project_id : "";
+    const kind = payload.kind === "profile" ? "profile" : payload.kind === "banner" ? "banner" : "";
     const imageBase64 = typeof payload.image_base64 === "string" ? payload.image_base64 : "";
     const match = imageBase64.match(/^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$/);
-    if (!studioId || !projectId || !match || imageBase64.length > 850000) return response({ error: "Envie uma imagem PNG, JPEG ou WebP válida e leve." }, 400, origin);
+    if (!studioId || !projectId || !kind || !match || imageBase64.length > 850000) return response({ error: "Envie uma imagem PNG, JPEG ou WebP válida e leve." }, 400, origin);
     const { membership, error: membershipError } = await getMembership(admin, studioId, authData.user.id);
     if (membershipError || !membership || !["owner", "admin"].includes(membership.role)) return response({ error: "Você não pode alterar a capa deste projeto." }, 403, origin);
     const { data: project } = await admin.from("projects").select("id").eq("id", projectId).eq("studio_id", studioId).maybeSingle();
@@ -269,16 +270,18 @@ Deno.serve(async (request) => {
       const binary = atob(match[2]);
       bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
     } catch { return response({ error: "A imagem não pôde ser lida." }, 400, origin); }
-    if (!bytes.length || bytes.length > 600 * 1024) return response({ error: "A imagem comprimida deve ter no máximo 600 KB." }, 400, origin);
+    const maximumBytes = kind === "profile" ? 96 * 1024 : 600 * 1024;
+    if (!bytes.length || bytes.length > maximumBytes) return response({ error: "A imagem comprimida excede o limite permitido." }, 400, origin);
     const extension = match[1] === "image/png" ? "png" : match[1] === "image/jpeg" ? "jpg" : "webp";
-    const path = `${studioId}/${projectId}/cover.${extension}`;
+    const path = `${studioId}/${projectId}/${kind}.${extension}`;
     const { error: uploadError } = await admin.storage.from("project-images").upload(path, bytes, { contentType: match[1], upsert: true, cacheControl: "31536000" });
     if (uploadError) {
       console.error("upload_project_image failed", { message: uploadError.message });
       return response({ error: "Não foi possível enviar a imagem agora." }, 500, origin);
     }
     const { data } = admin.storage.from("project-images").getPublicUrl(path);
-    return response({ cover_image: `${data.publicUrl}?v=${Date.now()}` }, 201, origin);
+    const url = `${data.publicUrl}?v=${Date.now()}`;
+    return response(kind === "profile" ? { cover_image: url } : { banner_image: url }, 201, origin);
   }
 
   if (payload.action === "update_project") {
@@ -287,11 +290,12 @@ Deno.serve(async (request) => {
     const name = typeof payload.name === "string" ? payload.name.trim().replace(/\s+/g, " ") : "";
     const description = typeof payload.description === "string" ? payload.description.trim() : "";
     const coverImage = typeof payload.cover_image === "string" ? payload.cover_image.trim() : "";
-    if (!studioId || !projectId || !name || name.length > 140 || description.length > 1200 || coverImage.length > 2048 || (coverImage && !/^https:\/\//i.test(coverImage))) return response({ error: "Dados de projeto inválidos." }, 400, origin);
+    const bannerImage = typeof payload.banner_image === "string" ? payload.banner_image.trim() : "";
+    if (!studioId || !projectId || !name || name.length > 140 || description.length > 1200 || coverImage.length > 2048 || bannerImage.length > 2048 || (coverImage && !/^https:\/\//i.test(coverImage)) || (bannerImage && !/^https:\/\//i.test(bannerImage))) return response({ error: "Dados de projeto inválidos." }, 400, origin);
     const { membership, error: membershipError } = await getMembership(admin, studioId, authData.user.id);
     if (membershipError || !membership || !["owner", "admin"].includes(membership.role)) return response({ error: "Você não pode editar este projeto." }, 403, origin);
-    const { data, error } = await admin.from("projects").update({ name, description: description || null, cover_image: coverImage || null })
-      .eq("id", projectId).eq("studio_id", studioId).select("id, studio_id, name, description, cover_image, created_at").single();
+    const { data, error } = await admin.from("projects").update({ name, description: description || null, cover_image: coverImage || null, banner_image: bannerImage || null })
+      .eq("id", projectId).eq("studio_id", studioId).select("id, studio_id, name, description, cover_image, banner_image, created_at").single();
     if (error) {
       console.error("update_project failed", { code: error.code, message: error.message, details: error.details });
       return response({ error: "Não foi possível atualizar o projeto." }, 500, origin);
@@ -309,7 +313,7 @@ Deno.serve(async (request) => {
     const [studioResult, membersResult, projectsResult, activityResult, invitesResult] = await Promise.all([
       admin.from("studios").select("id, name, description, logo_url, created_at").eq("id", studioId).maybeSingle(),
       admin.from("studio_members").select("user_id, role").eq("studio_id", studioId),
-      admin.from("projects").select("id, name, description, cover_image, created_at").eq("studio_id", studioId).order("created_at", { ascending: false }),
+      admin.from("projects").select("id, name, description, cover_image, banner_image, created_at").eq("studio_id", studioId).order("created_at", { ascending: false }),
       admin.from("studio_audit_log").select("id, actor_id, action, target_type, target_id, created_at").eq("studio_id", studioId).order("created_at", { ascending: false }).limit(20),
       membership.role === "owner" || membership.role === "admin"
         ? admin.from("studio_invites").select("id, email, role, expires_at, created_at").eq("studio_id", studioId).is("accepted_at", null).is("revoked_at", null).order("created_at", { ascending: false })

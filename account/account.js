@@ -91,6 +91,9 @@
     const activeProjectImage = document.getElementById("activeProjectImage");
     const activeProjectImageFile = document.getElementById("activeProjectImageFile");
     const activeProjectImagePreview = document.getElementById("activeProjectImagePreview");
+    const activeProjectBanner = document.getElementById("activeProjectBanner");
+    const activeProjectBannerFile = document.getElementById("activeProjectBannerFile");
+    const activeProjectBannerPreview = document.getElementById("activeProjectBannerPreview");
     const projectSettingsStatus = document.getElementById("projectSettingsStatus");
     let currentStudios = [];
     let activeStudioId = sessionStorage.getItem(sessionKey("active-studio")) || "";
@@ -100,6 +103,7 @@
     let currentUserId = "";
     let pendingStudioIconFile = null;
     let pendingProjectImageFile = null;
+    let pendingProjectBannerFile = null;
     const planDetails = {
         indie: { name: "Indie — Studio", copy: "Colaboração e infraestrutura para quem já está construindo junto." },
         studio: { name: "Studio", copy: "Permissões, playtests e fluxos de produção para estúdios em crescimento." }
@@ -650,6 +654,29 @@
         if (url) activeProjectImagePreview.src = url;
     }
 
+    function updateProjectBannerPreview(value) {
+        const url = typeof value === "string" ? value.trim() : "";
+        activeProjectBannerPreview.hidden = !url;
+        activeProjectBannerPreview.removeAttribute("src");
+        if (url) activeProjectBannerPreview.src = url;
+    }
+
+    async function compressProjectProfileImage(file) {
+        if (!file || !/^image\/(png|jpeg|webp)$/.test(file.type) || file.size > 8 * 1024 * 1024) throw new Error("Escolha uma imagem PNG, JPEG ou WebP de até 8 MB.");
+        const sourceUrl = URL.createObjectURL(file);
+        try {
+            const image = await new Promise(function (resolve, reject) { const element = new Image(); element.onload = function () { resolve(element); }; element.onerror = reject; element.src = sourceUrl; });
+            const scale = Math.min(1, 64 / image.width, 64 / image.height);
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.max(1, Math.round(image.width * scale));
+            canvas.height = Math.max(1, Math.round(image.height * scale));
+            canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+            const blob = await new Promise(function (resolve) { canvas.toBlob(resolve, "image/webp", .82); });
+            if (!blob || blob.size > 96 * 1024) throw new Error("Não foi possível otimizar essa imagem de perfil.");
+            return blob;
+        } finally { URL.revokeObjectURL(sourceUrl); }
+    }
+
     async function compressProjectImage(file) {
         if (!file || !/^image\/(png|jpeg|webp)$/.test(file.type) || file.size > 12 * 1024 * 1024) throw new Error("Escolha uma imagem PNG, JPEG ou WebP de até 12 MB.");
         const sourceUrl = URL.createObjectURL(file);
@@ -675,9 +702,13 @@
         activeProjectName.value = project.name || "";
         activeProjectDescription.value = project.description || "";
         activeProjectImage.value = project.cover_image || "";
+        activeProjectBanner.value = project.banner_image || "";
         activeProjectImageFile.value = "";
+        activeProjectBannerFile.value = "";
         pendingProjectImageFile = null;
+        pendingProjectBannerFile = null;
         updateProjectImagePreview(activeProjectImage.value);
+        updateProjectBannerPreview(activeProjectBanner.value);
         Array.from(projectSettingsForm.elements).forEach(function (element) { element.disabled = !canManage; });
         projectSettingsPanel.hidden = false;
     }
@@ -709,13 +740,33 @@
         const file = activeProjectImageFile.files && activeProjectImageFile.files[0];
         if (!file) return;
         try {
-            const compressed = await compressProjectImage(file);
+            const compressed = await compressProjectProfileImage(file);
             pendingProjectImageFile = compressed;
             updateProjectImagePreview(URL.createObjectURL(compressed));
-            setProjectSettingsStatus("Imagem pronta para salvar (até 1600 × 900 px).", "success");
+            setProjectSettingsStatus("Imagem de perfil pronta para salvar (64 × 64 px).", "success");
         } catch (error) {
             pendingProjectImageFile = null;
             activeProjectImageFile.value = "";
+            setProjectSettingsStatus(error.message || "Não foi possível preparar a imagem.", "error");
+        }
+    });
+
+    activeProjectBanner.addEventListener("input", function () {
+        pendingProjectBannerFile = null;
+        updateProjectBannerPreview(activeProjectBanner.value);
+    });
+    activeProjectBannerPreview.addEventListener("error", function () { activeProjectBannerPreview.hidden = true; });
+    activeProjectBannerFile.addEventListener("change", async function () {
+        const file = activeProjectBannerFile.files && activeProjectBannerFile.files[0];
+        if (!file) return;
+        try {
+            const compressed = await compressProjectImage(file);
+            pendingProjectBannerFile = compressed;
+            updateProjectBannerPreview(URL.createObjectURL(compressed));
+            setProjectSettingsStatus("Imagem de capa pronta para salvar (até 1600 × 900 px).", "success");
+        } catch (error) {
+            pendingProjectBannerFile = null;
+            activeProjectBannerFile.value = "";
             setProjectSettingsStatus(error.message || "Não foi possível preparar a imagem.", "error");
         }
     });
@@ -727,13 +778,20 @@
         try {
             const token = await getValidAccessToken(); if (!token) throw new Error("Sua sessão expirou. Entre novamente.");
             let coverImage = activeProjectImage.value.trim();
+            let bannerImage = activeProjectBanner.value.trim();
             if (pendingProjectImageFile) {
-                const upload = await studioRequest("upload_project_image", token, { studio_id: activeStudioId, project_id: activeProjectId, image_base64: await blobToDataUrl(pendingProjectImageFile) });
+                const upload = await studioRequest("upload_project_image", token, { studio_id: activeStudioId, project_id: activeProjectId, kind: "profile", image_base64: await blobToDataUrl(pendingProjectImageFile) });
                 coverImage = upload.cover_image || coverImage;
                 activeProjectImage.value = coverImage;
                 pendingProjectImageFile = null;
             }
-            await studioRequest("update_project", token, { studio_id: activeStudioId, project_id: activeProjectId, name: activeProjectName.value.trim(), description: activeProjectDescription.value.trim(), cover_image: coverImage });
+            if (pendingProjectBannerFile) {
+                const upload = await studioRequest("upload_project_image", token, { studio_id: activeStudioId, project_id: activeProjectId, kind: "banner", image_base64: await blobToDataUrl(pendingProjectBannerFile) });
+                bannerImage = upload.banner_image || bannerImage;
+                activeProjectBanner.value = bannerImage;
+                pendingProjectBannerFile = null;
+            }
+            await studioRequest("update_project", token, { studio_id: activeStudioId, project_id: activeProjectId, name: activeProjectName.value.trim(), description: activeProjectDescription.value.trim(), cover_image: coverImage, banner_image: bannerImage });
             setProjectSettingsStatus("Alterações salvas.", "success");
             await loadActiveStudio(token);
         } catch (error) { setProjectSettingsStatus(error.message || "Não foi possível salvar o projeto.", "error"); }
