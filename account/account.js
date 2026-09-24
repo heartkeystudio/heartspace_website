@@ -60,11 +60,17 @@
     const activeStudioHeading = document.getElementById("activeStudioHeading");
     const activeStudioName = document.getElementById("activeStudioName");
     const activeStudioIcon = document.getElementById("activeStudioIcon");
+    const activeStudioIconFile = document.getElementById("activeStudioIconFile");
     const activeStudioIconPreview = document.getElementById("activeStudioIconPreview");
     const activeStudioDescription = document.getElementById("activeStudioDescription");
     const studioSettingsStatus = document.getElementById("studioSettingsStatus");
     const studioActivityPanel = document.getElementById("studioActivityPanel");
     const studioActivityList = document.getElementById("studioActivityList");
+    const studioDangerPanel = document.getElementById("studioDangerPanel");
+    const deleteStudioForm = document.getElementById("deleteStudioForm");
+    const deleteStudioName = document.getElementById("deleteStudioName");
+    const deleteStudioConfirmation = document.getElementById("deleteStudioConfirmation");
+    const deleteStudioStatus = document.getElementById("deleteStudioStatus");
     const memberList = document.getElementById("memberList");
     const pendingInvitesPanel = document.getElementById("pendingInvitesPanel");
     const pendingInviteList = document.getElementById("pendingInviteList");
@@ -79,6 +85,7 @@
     let activeStudioId = sessionStorage.getItem(sessionKey("active-studio")) || "";
     let activeStudioAdmin = null;
     let currentUserId = "";
+    let pendingStudioIconFile = null;
     const planDetails = {
         indie: { name: "Indie — Studio", copy: "Colaboração e infraestrutura para quem já está construindo junto." },
         studio: { name: "Studio", copy: "Permissões, playtests e fluxos de produção para estúdios em crescimento." }
@@ -309,6 +316,7 @@
         memberRole.hidden = true;
         studioSettingsPanel.hidden = true;
         studioActivityPanel.hidden = true;
+        studioDangerPanel.hidden = true;
         memberList.hidden = true;
         pendingInvitesPanel.hidden = true;
         projectList.hidden = true;
@@ -396,10 +404,47 @@
     }
 
     activeStudioIcon.addEventListener("input", function () {
+        pendingStudioIconFile = null;
         updateStudioIconPreview(activeStudioIcon.value);
     });
     activeStudioIconPreview.addEventListener("error", function () {
         activeStudioIconPreview.hidden = true;
+    });
+
+    async function compressStudioIcon(file) {
+        if (!file || !/^image\/(png|jpeg|webp)$/.test(file.type) || file.size > 8 * 1024 * 1024) throw new Error("Escolha uma imagem PNG, JPEG ou WebP de até 8 MB.");
+        const sourceUrl = URL.createObjectURL(file);
+        try {
+            const image = await new Promise(function (resolve, reject) { const element = new Image(); element.onload = function () { resolve(element); }; element.onerror = reject; element.src = sourceUrl; });
+            const canvas = document.createElement("canvas");
+            const scale = Math.min(1, 64 / image.width, 64 / image.height);
+            canvas.width = Math.max(1, Math.round(image.width * scale));
+            canvas.height = Math.max(1, Math.round(image.height * scale));
+            canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+            const blob = await new Promise(function (resolve) { canvas.toBlob(resolve, "image/webp", .82); });
+            if (!blob || blob.size > 96 * 1024) throw new Error("Não foi possível otimizar esse ícone. Escolha outra imagem.");
+            return blob;
+        } finally { URL.revokeObjectURL(sourceUrl); }
+    }
+
+    function blobToDataUrl(blob) {
+        return new Promise(function (resolve, reject) { const reader = new FileReader(); reader.onload = function () { resolve(reader.result); }; reader.onerror = reject; reader.readAsDataURL(blob); });
+    }
+
+    activeStudioIconFile.addEventListener("change", async function () {
+        const file = activeStudioIconFile.files && activeStudioIconFile.files[0];
+        if (!file) return;
+        try {
+            const compressed = await compressStudioIcon(file);
+            pendingStudioIconFile = compressed;
+            const previewUrl = URL.createObjectURL(compressed);
+            updateStudioIconPreview(previewUrl);
+            setSettingsStatus("Ícone pronto para salvar (64 × 64 px).", "success");
+        } catch (error) {
+            pendingStudioIconFile = null;
+            activeStudioIconFile.value = "";
+            setSettingsStatus(error.message || "Não foi possível preparar a imagem.", "error");
+        }
     });
 
     function formatDate(value) {
@@ -429,6 +474,8 @@
         memberRole.hidden = false;
         activeStudioName.value = studio.name || "";
         activeStudioIcon.value = studio.logo_url || "";
+        activeStudioIconFile.value = "";
+        pendingStudioIconFile = null;
         updateStudioIconPreview(activeStudioIcon.value);
         activeStudioDescription.value = studio.description || "";
         Array.from(studioSettingsForm.elements).forEach(function (element) { element.disabled = !canManage; });
@@ -475,6 +522,9 @@
         const activity = Array.isArray(data.activity) ? data.activity : [];
         activity.forEach(function (event) { appendListRow(studioActivityList, String(event.action || "alteração").replace(/\./g, " · "), formatDate(event.created_at)); });
         studioActivityPanel.hidden = !activity.length;
+        studioDangerPanel.hidden = !isOwner;
+        deleteStudioName.textContent = studio.name;
+        deleteStudioConfirmation.value = "";
     }
 
     async function loadActiveStudio(token) {
@@ -511,10 +561,43 @@
         const button = studioSettingsForm.querySelector("button[type=submit]"); button.disabled = true; setSettingsStatus("Salvando alterações…", "");
         try {
             const token = await getValidAccessToken(); if (!token) throw new Error("Sua sessão expirou. Entre novamente.");
-            await studioRequest("update_studio", token, { studio_id: activeStudioId, name: activeStudioName.value.trim(), description: activeStudioDescription.value.trim(), logo_url: activeStudioIcon.value.trim() });
+            let logoUrl = activeStudioIcon.value.trim();
+            if (pendingStudioIconFile) {
+                const upload = await studioRequest("upload_studio_icon", token, { studio_id: activeStudioId, image_base64: await blobToDataUrl(pendingStudioIconFile) });
+                logoUrl = upload.logo_url || logoUrl;
+                activeStudioIcon.value = logoUrl;
+                pendingStudioIconFile = null;
+            }
+            await studioRequest("update_studio", token, { studio_id: activeStudioId, name: activeStudioName.value.trim(), description: activeStudioDescription.value.trim(), logo_url: logoUrl });
             setSettingsStatus("Alterações salvas.", "success"); await loadStudios(token);
         } catch (error) { setSettingsStatus(error.message || "Não foi possível salvar as alterações.", "error"); }
         finally { button.disabled = false; }
+    });
+
+    deleteStudioForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
+        if (!activeStudioAdmin || !activeStudioId) return;
+        const studioName = activeStudioAdmin.studio && activeStudioAdmin.studio.name || "";
+        if (deleteStudioConfirmation.value.trim() !== studioName) {
+            deleteStudioStatus.textContent = "Digite o nome do estúdio exatamente como aparece acima.";
+            deleteStudioStatus.className = "form-status is-error";
+            return;
+        }
+        if (!window.confirm("Excluir definitivamente o estúdio ‘" + studioName + "’? Essa ação não pode ser desfeita.")) return;
+        const button = deleteStudioForm.querySelector("button[type=submit]"); button.disabled = true;
+        deleteStudioStatus.textContent = "Excluindo estúdio…";
+        try {
+            const token = await getValidAccessToken(); if (!token) throw new Error("Sua sessão expirou. Entre novamente.");
+            await studioRequest("delete_studio", token, { studio_id: activeStudioId, confirmation: deleteStudioConfirmation.value.trim() });
+            activeStudioId = "";
+            sessionStorage.removeItem(sessionKey("active-studio"));
+            clearStudioAdministration();
+            await loadStudios(token);
+            selectWorkspaceView("studios");
+        } catch (error) {
+            deleteStudioStatus.textContent = error.message || "Não foi possível excluir o estúdio.";
+            deleteStudioStatus.className = "form-status is-error";
+        } finally { button.disabled = false; }
     });
 
     function setProjectStatus(message, state) {

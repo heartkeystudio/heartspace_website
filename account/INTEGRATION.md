@@ -67,6 +67,8 @@ Antes de disponibilizar cada ação, aplique as migrations na ordem abaixo:
    aceitar um convite.
 9. `SUPABASE_STUDIO_ADMINISTRATION.sql` — libera configurações, papéis,
    remoção de membros, revogação e auditoria no console.
+10. `SUPABASE_STUDIO_ICONS.sql` — cria o bucket público de ícones leves de
+    estúdio. O site reduz cada imagem para até 64 × 64 antes do envio.
 
 No dashboard, publique/atualize a Function com o nome **`heartspace-studio`**
 e configure `HEARTSPACE_ALLOWED_ORIGINS` com

@@ -6,7 +6,7 @@
     <meta name="description" content="Entre no HeartSpace para gerenciar seu estúdio, seus projetos e sua assinatura.">
     <meta name="theme-color" content="#9501d8">
     <title>Conta | HeartSpace</title>
-    <link rel="stylesheet" href="account.css?v=20260924-3">
+    <link rel="stylesheet" href="account.css?v=20260924-4">
 </head>
 <body>
     <main class="account-shell">
@@ -59,8 +59,9 @@
                         <p class="eyebrow">ESTÚDIOS</p><h1>Quem constrói junto.</h1>
                         <p class="workspace-lead">Um estúdio reúne as pessoas, seus papéis, os projetos compartilhados e a assinatura. Ele não move os arquivos locais do Hub.</p>
                         <article class="empty-panel studio-panel"><span class="empty-symbol">✦</span><h2 id="studiosTitle">Seus estúdios.</h2><p id="studiosCopy">Escolha um estúdio no seletor lateral para administrar o espaço ativo.</p><div class="studio-list" id="studioList" hidden></div></article>
-                        <article class="admin-detail-panel" id="studioSettingsPanel" hidden><div class="admin-detail-heading"><div><p class="panel-kicker">CONFIGURAÇÕES DO ESTÚDIO</p><h2 id="activeStudioHeading">Estúdio</h2></div></div><form class="studio-form" id="studioSettingsForm"><label for="activeStudioName">Nome do estúdio</label><input id="activeStudioName" type="text" minlength="2" maxlength="80" autocomplete="organization" required><label for="activeStudioIcon">Ícone do estúdio <span>URL de imagem, opcional</span></label><div class="studio-icon-field"><img id="activeStudioIconPreview" alt="Prévia do ícone do estúdio" hidden><input id="activeStudioIcon" type="url" maxlength="2048" inputmode="url" placeholder="https://…/icone.png"></div><label for="activeStudioDescription">Descrição <span>opcional</span></label><textarea id="activeStudioDescription" maxlength="500" placeholder="Uma breve descrição do estúdio."></textarea><button class="portal-button" type="submit">Salvar alterações</button><p class="form-status" id="studioSettingsStatus" aria-live="polite"></p></form></article>
+                        <article class="admin-detail-panel" id="studioSettingsPanel" hidden><div class="admin-detail-heading"><div><p class="panel-kicker">CONFIGURAÇÕES DO ESTÚDIO</p><h2 id="activeStudioHeading">Estúdio</h2></div></div><form class="studio-form" id="studioSettingsForm"><label for="activeStudioName">Nome do estúdio</label><input id="activeStudioName" type="text" minlength="2" maxlength="80" autocomplete="organization" required><label for="activeStudioIconFile">Ícone do estúdio <span>imagem de até 64 × 64 px</span></label><div class="studio-icon-field"><img id="activeStudioIconPreview" alt="Prévia do ícone do estúdio" hidden><input id="activeStudioIconFile" type="file" accept="image/png,image/jpeg,image/webp"></div><p class="field-note">A imagem é reduzida e comprimida antes do envio. O URL abaixo continua disponível se o ícone já estiver hospedado.</p><details class="icon-url-option"><summary>Usar URL de imagem</summary><input id="activeStudioIcon" type="url" maxlength="2048" inputmode="url" placeholder="https://…/icone.png"></details><label for="activeStudioDescription">Descrição <span>opcional</span></label><textarea id="activeStudioDescription" maxlength="500" placeholder="Uma breve descrição do estúdio."></textarea><button class="portal-button" type="submit">Salvar alterações</button><p class="form-status" id="studioSettingsStatus" aria-live="polite"></p></form></article>
                         <article class="admin-detail-panel" id="studioActivityPanel" hidden><div class="admin-detail-heading"><div><p class="panel-kicker">ATIVIDADE</p><h2>Alterações recentes</h2></div></div><div class="activity-list" id="studioActivityList"></div></article>
+                        <article class="danger-zone" id="studioDangerPanel" hidden><p class="panel-kicker">ZONA DE PERIGO</p><h2>Excluir este estúdio</h2><p>Isso exclui o estúdio, os projetos e os dados vinculados da nuvem. Pastas locais e arquivos do Google Drive não são apagados.</p><form id="deleteStudioForm"><label for="deleteStudioConfirmation">Digite <strong id="deleteStudioName">o nome do estúdio</strong> para confirmar</label><input id="deleteStudioConfirmation" type="text" autocomplete="off"><button class="danger-button" type="submit">Excluir estúdio</button><p class="form-status" id="deleteStudioStatus" aria-live="polite"></p></form></article>
                     </section>
 
                     <section class="workspace-view" data-workspace-panel="create-studio" hidden>
@@ -101,7 +102,7 @@
         </section>
 
     </main>
-    <script src="config.js?v=20260924-3"></script>
-    <script src="account.js?v=20260924-3"></script>
+    <script src="config.js?v=20260924-4"></script>
+    <script src="account.js?v=20260924-4"></script>
 </body>
 </html>

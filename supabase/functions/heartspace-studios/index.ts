@@ -192,6 +192,30 @@ Deno.serve(async (request) => {
     return response({ studio: data }, 201, origin);
   }
 
+  if (payload.action === "upload_studio_icon") {
+    const studioId = typeof payload.studio_id === "string" ? payload.studio_id : "";
+    const imageBase64 = typeof payload.image_base64 === "string" ? payload.image_base64 : "";
+    const match = imageBase64.match(/^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$/);
+    if (!studioId || !match || imageBase64.length > 140000) return response({ error: "Envie uma imagem PNG, JPEG ou WebP válida e pequena." }, 400, origin);
+    const { membership, error: membershipError } = await getMembership(admin, studioId, authData.user.id);
+    if (membershipError || !membership || !["owner", "admin"].includes(membership.role)) return response({ error: "Você não pode alterar o ícone deste estúdio." }, 403, origin);
+    let bytes: Uint8Array;
+    try {
+      const binary = atob(match[2]);
+      bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+    } catch { return response({ error: "A imagem não pôde ser lida." }, 400, origin); }
+    if (!bytes.length || bytes.length > 96 * 1024) return response({ error: "O ícone comprimido deve ter no máximo 96 KB." }, 400, origin);
+    const extension = match[1] === "image/png" ? "png" : match[1] === "image/jpeg" ? "jpg" : "webp";
+    const path = `${studioId}/icon.${extension}`;
+    const { error: uploadError } = await admin.storage.from("studio-icons").upload(path, bytes, { contentType: match[1], upsert: true, cacheControl: "31536000" });
+    if (uploadError) {
+      console.error("upload_studio_icon failed", { message: uploadError.message });
+      return response({ error: "Não foi possível enviar o ícone agora." }, 500, origin);
+    }
+    const { data } = admin.storage.from("studio-icons").getPublicUrl(path);
+    return response({ logo_url: `${data.publicUrl}?v=${Date.now()}` }, 201, origin);
+  }
+
   if (payload.action === "create_project") {
     const studioId = typeof payload.studio_id === "string" ? payload.studio_id : "";
     const name = typeof payload.name === "string" ? payload.name.trim().replace(/\s+/g, " ") : "";
@@ -260,6 +284,22 @@ Deno.serve(async (request) => {
       return response({ error: "Não foi possível atualizar o estúdio." }, 500, origin);
     }
     return response({ studio: data }, 200, origin);
+  }
+
+  if (payload.action === "delete_studio") {
+    const studioId = typeof payload.studio_id === "string" ? payload.studio_id : "";
+    const confirmation = typeof payload.confirmation === "string" ? payload.confirmation.trim() : "";
+    if (!studioId) return response({ error: "Estúdio inválido." }, 400, origin);
+    const { data: studio, error: readError } = await admin.from("studios").select("id, name, owner_id").eq("id", studioId).maybeSingle();
+    if (readError || !studio || studio.owner_id !== authData.user.id) return response({ error: "Apenas o Owner pode excluir este estúdio." }, 403, origin);
+    if (confirmation !== studio.name) return response({ error: "Digite o nome do estúdio para confirmar a exclusão." }, 400, origin);
+    const { error } = await admin.from("studios").delete().eq("id", studioId).eq("owner_id", authData.user.id);
+    if (error) {
+      console.error("delete_studio failed", { code: error.code, message: error.message, details: error.details });
+      return response({ error: error.code === "23503" ? "Há dados vinculados sem exclusão em cascata. Atualize a migration de exclusão segura do Hub." : "Não foi possível excluir o estúdio." }, error.code === "23503" ? 409 : 500, origin);
+    }
+    await admin.storage.from("studio-icons").remove([`${studioId}/icon.png`, `${studioId}/icon.jpg`, `${studioId}/icon.webp`]);
+    return response({ ok: true }, 200, origin);
   }
 
   if (payload.action === "update_member_role" || payload.action === "remove_member" || payload.action === "revoke_invite") {
