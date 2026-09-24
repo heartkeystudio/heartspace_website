@@ -86,7 +86,9 @@
         .mobile-account-link { display: none; }
 
         .nav-actions { display: flex; gap: 15px; align-items: center; }
+        #guestActions, #signedInActions { display: flex; gap: 15px; align-items: center; }
         .login-link { color: var(--text-main); text-decoration: none; font-size: 0.9rem; font-weight: 600; }
+        .home-signout { padding: 0; border: 0; color: var(--text-main); background: transparent; font: inherit; cursor: pointer; }
         .menu-toggle { display: none; width: 38px; height: 38px; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--text-main); cursor: pointer; font-size: 1.2rem; }
         
         .btn-theme {
@@ -848,12 +850,12 @@
             <a href="#ecosystem">Ecossistema</a>
             <a href="#publications">Publicações</a>
             <a href="#plans">Planos</a>
-            <a class="mobile-account-link" href="account/">Entrar ou criar conta</a>
+            <a class="mobile-account-link" id="mobileAccountLink" href="account/">Entrar ou criar conta</a>
         </div>
         <div class="nav-actions">
             <button class="btn-theme" id="themeToggle" title="Trocar Tema">☀️</button>
-            <a href="account/" class="login-link">Entrar</a>
-            <a href="account/" class="btn-primary">Criar conta</a>
+            <span id="guestActions"><a href="account/" class="login-link">Entrar</a><a href="account/" class="btn-primary">Criar conta</a></span>
+            <span id="signedInActions" hidden><a href="account/" class="login-link" id="homeAccountName">Minha conta</a><button class="login-link home-signout" id="homeSignOut" type="button">Sair</button></span>
             <button class="menu-toggle" id="menuToggle" type="button" aria-label="Abrir menu" aria-controls="primaryNav" aria-expanded="false">☰</button>
         </div>
     </nav>
@@ -1141,12 +1143,42 @@
         </div>
     </footer>
 
+    <script src="account/config.js?v=20260924-12"></script>
     <script>
         const themeToggle = document.getElementById('themeToggle');
         const menuToggle = document.getElementById('menuToggle');
         const navbar = document.querySelector('.navbar');
         const body = document.body;
         const THEME_STORAGE_KEY = 'heartspace-theme';
+
+        const accountConfig = window.HEARTSPACE_ACCOUNT_CONFIG || {};
+        const accountKey = (name) => 'heartspace-account-' + name;
+        const guestActions = document.getElementById('guestActions');
+        const signedInActions = document.getElementById('signedInActions');
+        const homeAccountName = document.getElementById('homeAccountName');
+        const mobileAccountLink = document.getElementById('mobileAccountLink');
+        const homeSignOut = document.getElementById('homeSignOut');
+
+        function restoreHomeAccount() {
+            const token = localStorage.getItem(accountKey('access-token'));
+            const refreshToken = localStorage.getItem(accountKey('refresh-token'));
+            if (!token && !refreshToken) return;
+            let name = 'Minha conta';
+            try {
+                const payload = JSON.parse(atob((token || '').split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+                const metadata = payload.user_metadata || {};
+                name = metadata.full_name || metadata.name || payload.email || name;
+            } catch (_) {}
+            guestActions.hidden = true; signedInActions.hidden = false;
+            homeAccountName.textContent = name; mobileAccountLink.textContent = 'Abrir minha conta';
+        }
+        restoreHomeAccount();
+        homeSignOut.addEventListener('click', () => {
+            const token = localStorage.getItem(accountKey('access-token'));
+            ['access-token', 'refresh-token', 'expires-at', 'pending-invite'].forEach((name) => localStorage.removeItem(accountKey(name)));
+            if (accountConfig.supabaseUrl && accountConfig.supabaseAnonKey && token) fetch(accountConfig.supabaseUrl.replace(/\/$/, '') + '/auth/v1/logout', { method: 'POST', headers: { apikey: accountConfig.supabaseAnonKey, Authorization: 'Bearer ' + token } }).catch(() => {});
+            guestActions.hidden = false; signedInActions.hidden = true; mobileAccountLink.textContent = 'Entrar ou criar conta';
+        });
 
         function setTheme(isLight) {
             body.classList.toggle('light-mode', isLight);
