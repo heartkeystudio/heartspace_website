@@ -6,7 +6,7 @@
     <meta name="description" content="Entre no HeartSpace para gerenciar seu estúdio, seus projetos e sua assinatura.">
     <meta name="theme-color" content="#9501d8">
     <title>Conta | HeartSpace</title>
-    <link rel="stylesheet" href="account.css?v=20260924-2">
+    <link rel="stylesheet" href="account.css?v=20260924-3">
 </head>
 <body>
     <main class="account-shell">
@@ -20,15 +20,15 @@
 
         <section class="member-area workspace" id="memberArea" hidden aria-labelledby="memberTitle">
             <header class="member-header workspace-topbar">
-                <div class="workspace-breadcrumb"><span class="workspace-dot" aria-hidden="true"></span><span>HeartSpace</span><span class="breadcrumb-divider">/</span><strong>Administração</strong></div>
-                <div class="account-actions"><span class="member-email" id="memberEmail"></span><button class="signout-button" id="signOut" type="button">Sair</button></div>
+                <a class="workspace-topbar-brand" href="../"><span class="brand-icon" aria-hidden="true">🔑</span><span>HeartSpace</span></a>
+                <div class="workspace-breadcrumb"><span class="breadcrumb-divider">/</span><strong>Administração</strong></div>
+                <div class="account-actions"><button class="theme-toggle" id="themeToggle" type="button" aria-pressed="false">Modo claro</button><span class="member-name" id="memberName"></span><span class="role-chip member-role" id="memberRole" hidden></span><button class="signout-button" id="signOut" type="button">Sair</button></div>
             </header>
 
             <p class="checkout-notice" id="checkoutNotice" hidden aria-live="polite"></p>
 
             <div class="workspace-layout">
                 <nav class="workspace-nav" aria-label="Administração da conta">
-                    <a class="workspace-brand" href="../"><span class="brand-icon" aria-hidden="true">🔑</span><span>HeartSpace</span></a>
                     <label class="studio-context" for="studioContextSelect"><span class="studio-context-mark">✦</span><span><small>ESTÚDIO ATIVO</small><select id="studioContextSelect" disabled aria-label="Escolher estúdio"><option value="">Nenhum estúdio</option></select></span></label>
                     <p class="workspace-nav-label">ADMINISTRAÇÃO</p>
                     <button class="workspace-nav-item is-active" type="button" data-workspace-view="overview"><span>⌂</span>Visão geral</button>
@@ -58,9 +58,14 @@
                     <section class="workspace-view" data-workspace-panel="studios" hidden>
                         <p class="eyebrow">ESTÚDIOS</p><h1>Quem constrói junto.</h1>
                         <p class="workspace-lead">Um estúdio reúne as pessoas, seus papéis, os projetos compartilhados e a assinatura. Ele não move os arquivos locais do Hub.</p>
-                        <article class="empty-panel studio-panel"><span class="empty-symbol">✦</span><h2 id="studiosTitle">Criação de estúdios está sendo conectada.</h2><p id="studiosCopy">O próximo passo é ligar este painel ao cadastro seguro de estúdios e papéis. Até lá, nada será criado apenas na interface.</p><div class="studio-list" id="studioList" hidden></div><form class="studio-form" id="createStudioForm" hidden><label for="studioName">Nome do estúdio</label><input id="studioName" name="studioName" type="text" minlength="2" maxlength="80" autocomplete="organization" placeholder="Ex.: Luma Studio" required><label for="studioSlug">Endereço do estúdio <span>opcional</span></label><input id="studioSlug" name="studioSlug" type="text" maxlength="60" autocomplete="off" placeholder="luma-studio"><button class="portal-button" type="submit">Criar estúdio</button><p class="form-status" id="studioStatus" aria-live="polite"></p></form></article>
-                        <article class="admin-detail-panel" id="studioSettingsPanel" hidden><div class="admin-detail-heading"><div><p class="panel-kicker">CONFIGURAÇÕES DO ESTÚDIO</p><h2 id="activeStudioHeading">Estúdio</h2></div><span class="role-chip" id="activeStudioRole">—</span></div><form class="studio-form" id="studioSettingsForm"><label for="activeStudioName">Nome do estúdio</label><input id="activeStudioName" type="text" minlength="2" maxlength="80" autocomplete="organization" required><label for="activeStudioDescription">Descrição <span>opcional</span></label><textarea id="activeStudioDescription" maxlength="500" placeholder="Uma breve descrição do estúdio."></textarea><button class="portal-button" type="submit">Salvar alterações</button><p class="form-status" id="studioSettingsStatus" aria-live="polite"></p></form></article>
+                        <article class="empty-panel studio-panel"><span class="empty-symbol">✦</span><h2 id="studiosTitle">Seus estúdios.</h2><p id="studiosCopy">Escolha um estúdio no seletor lateral para administrar o espaço ativo.</p><div class="studio-list" id="studioList" hidden></div></article>
+                        <article class="admin-detail-panel" id="studioSettingsPanel" hidden><div class="admin-detail-heading"><div><p class="panel-kicker">CONFIGURAÇÕES DO ESTÚDIO</p><h2 id="activeStudioHeading">Estúdio</h2></div></div><form class="studio-form" id="studioSettingsForm"><label for="activeStudioName">Nome do estúdio</label><input id="activeStudioName" type="text" minlength="2" maxlength="80" autocomplete="organization" required><label for="activeStudioIcon">Ícone do estúdio <span>URL de imagem, opcional</span></label><div class="studio-icon-field"><img id="activeStudioIconPreview" alt="Prévia do ícone do estúdio" hidden><input id="activeStudioIcon" type="url" maxlength="2048" inputmode="url" placeholder="https://…/icone.png"></div><label for="activeStudioDescription">Descrição <span>opcional</span></label><textarea id="activeStudioDescription" maxlength="500" placeholder="Uma breve descrição do estúdio."></textarea><button class="portal-button" type="submit">Salvar alterações</button><p class="form-status" id="studioSettingsStatus" aria-live="polite"></p></form></article>
                         <article class="admin-detail-panel" id="studioActivityPanel" hidden><div class="admin-detail-heading"><div><p class="panel-kicker">ATIVIDADE</p><h2>Alterações recentes</h2></div></div><div class="activity-list" id="studioActivityList"></div></article>
+                    </section>
+
+                    <section class="workspace-view" data-workspace-panel="create-studio" hidden>
+                        <p class="eyebrow">NOVO ESTÚDIO</p><h1>Comece um espaço novo.</h1><p class="workspace-lead">Você será a pessoa responsável inicial. Depois, convide colaboradores e organize os projetos compartilhados.</p>
+                        <article class="empty-panel"><span class="empty-symbol">＋</span><h2>Dê um nome ao estúdio.</h2><form class="studio-form" id="createStudioForm" hidden><label for="studioName">Nome do estúdio</label><input id="studioName" name="studioName" type="text" minlength="2" maxlength="80" autocomplete="organization" placeholder="Ex.: Luma Studio" required><label for="studioSlug">Endereço do estúdio <span>opcional</span></label><input id="studioSlug" name="studioSlug" type="text" maxlength="60" autocomplete="off" placeholder="luma-studio"><button class="portal-button" type="submit">Criar estúdio</button><p class="form-status" id="studioStatus" aria-live="polite"></p></form></article>
                     </section>
 
                     <section class="workspace-view" data-workspace-panel="projects" hidden>
@@ -96,7 +101,7 @@
         </section>
 
     </main>
-    <script src="config.js?v=20260924-2"></script>
-    <script src="account.js?v=20260924-2"></script>
+    <script src="config.js?v=20260924-3"></script>
+    <script src="account.js?v=20260924-3"></script>
 </body>
 </html>

@@ -16,7 +16,9 @@
     const profilePhone = document.getElementById("profilePhone");
     const profileStatus = document.getElementById("profileStatus");
     const memberArea = document.getElementById("memberArea");
-    const memberEmail = document.getElementById("memberEmail");
+    const memberName = document.getElementById("memberName");
+    const memberRole = document.getElementById("memberRole");
+    const themeToggle = document.getElementById("themeToggle");
     const planName = document.getElementById("planName");
     const planDescription = document.getElementById("planDescription");
     const billingPortal = document.getElementById("billingPortal");
@@ -56,8 +58,9 @@
     const studioSettingsPanel = document.getElementById("studioSettingsPanel");
     const studioSettingsForm = document.getElementById("studioSettingsForm");
     const activeStudioHeading = document.getElementById("activeStudioHeading");
-    const activeStudioRole = document.getElementById("activeStudioRole");
     const activeStudioName = document.getElementById("activeStudioName");
+    const activeStudioIcon = document.getElementById("activeStudioIcon");
+    const activeStudioIconPreview = document.getElementById("activeStudioIconPreview");
     const activeStudioDescription = document.getElementById("activeStudioDescription");
     const studioSettingsStatus = document.getElementById("studioSettingsStatus");
     const studioActivityPanel = document.getElementById("studioActivityPanel");
@@ -165,9 +168,10 @@
         return storedToken;
     }
 
-    function showMemberArea(user) {
+    function showMemberArea(user, profile) {
         currentUserId = user.id || currentUserId;
-        memberEmail.textContent = user.email || "Conta HeartSpace";
+        const metadata = user.user_metadata || {};
+        memberName.textContent = (profile && profile.full_name) || metadata.full_name || metadata.name || user.email || "Conta HeartSpace";
         securityEmail.textContent = user.email || "Conta HeartSpace";
         accountLoading.hidden = true;
         profileOnboarding.hidden = true;
@@ -182,6 +186,19 @@
             checkoutNotice.textContent = "O pagamento foi cancelado. Sua conta continua ativa no plano atual.";
         }
     }
+
+    function applyTheme(theme) {
+        const isLight = theme === "light";
+        document.body.classList.toggle("is-light", isLight);
+        themeToggle.setAttribute("aria-pressed", String(isLight));
+        themeToggle.textContent = isLight ? "Modo escuro" : "Modo claro";
+        localStorage.setItem("heartspace-account-theme", isLight ? "light" : "dark");
+    }
+
+    applyTheme(localStorage.getItem("heartspace-account-theme") || "dark");
+    themeToggle.addEventListener("click", function () {
+        applyTheme(document.body.classList.contains("is-light") ? "dark" : "light");
+    });
 
     function setProfileStatus(message, state) {
         profileStatus.textContent = message;
@@ -281,14 +298,15 @@
             const token = await getValidAccessToken(); if (!token) throw new Error("Sua sessão expirou. Entre novamente.");
             await studioRequest("update_profile", token, { full_name: profileFullName.value, age: Number(profileAge.value), profession: profileProfession.value, phone: profilePhone.value });
             const response = await fetch(config.supabaseUrl.replace(/\/$/, "") + "/auth/v1/user", { headers: { "apikey": config.supabaseAnonKey, "Authorization": "Bearer " + token } });
-            const user = response.ok ? await response.json() : { email: memberEmail.textContent };
-            showMemberArea(user); await loadEntitlements(token); await loadStudios(token);
+            const user = response.ok ? await response.json() : { email: securityEmail.textContent };
+            showMemberArea(user, { full_name: profileFullName.value.trim() }); await loadEntitlements(token); await loadStudios(token);
         } catch (error) { setProfileStatus(error.message || "Não foi possível salvar sua ficha agora.", "error"); }
         finally { button.disabled = false; }
     });
 
     function clearStudioAdministration() {
         activeStudioAdmin = null;
+        memberRole.hidden = true;
         studioSettingsPanel.hidden = true;
         studioActivityPanel.hidden = true;
         memberList.hidden = true;
@@ -304,9 +322,9 @@
         studioContextSelect.replaceChildren();
         overviewStudioCount.textContent = String(studios.length);
         if (!studios.length) {
-            studiosTitle.textContent = "Seu primeiro estúdio começa aqui.";
-            studiosCopy.textContent = "Crie um espaço para organizar equipe, projetos compartilhados e publicações. Você será o owner inicial.";
-            const option = new Option("Nenhum estúdio", ""); studioContextSelect.add(option); studioContextSelect.disabled = true;
+            studiosTitle.textContent = "Nenhum estúdio ainda.";
+            studiosCopy.textContent = "Use o seletor lateral e escolha “Criar novo estúdio” para começar.";
+            const option = new Option("Criar novo estúdio…", "__create__"); studioContextSelect.add(option); studioContextSelect.disabled = false;
             overviewStudioTitle.textContent = "Crie seu primeiro estúdio";
             overviewStudioCopy.textContent = "Seu estúdio organiza pessoas, acessos e projetos compartilhados. O trabalho continua local no Hub.";
             studioList.hidden = true;
@@ -317,7 +335,7 @@
             return;
         }
         studiosTitle.textContent = studios.length === 1 ? "1 estúdio conectado." : studios.length + " estúdios conectados.";
-        studiosCopy.textContent = "Você pode criar outro estúdio ou escolher um deles quando o seletor de estúdio for ativado.";
+        studiosCopy.textContent = "Escolha o espaço ativo pelo seletor lateral. Para criar outro, use a última opção da lista.";
         studios.forEach(function (membership) {
             const studio = membership.studios || membership.studio;
             if (!studio) return;
@@ -328,6 +346,7 @@
             const option = document.createElement("option"); option.value = studio.id; option.textContent = studio.name; inviteStudio.append(option);
             const contextOption = document.createElement("option"); contextOption.value = studio.id; contextOption.textContent = studio.name; studioContextSelect.append(contextOption);
         });
+        studioContextSelect.add(new Option("＋ Criar novo estúdio", "__create__"));
         studioList.hidden = studioList.childElementCount === 0;
         if (inviteStudio.childElementCount) {
             if (!Array.from(studioContextSelect.options).some(function (option) { return option.value === activeStudioId; })) activeStudioId = studioContextSelect.options[0].value;
@@ -369,6 +388,20 @@
         studioSettingsStatus.className = "form-status" + (state ? " is-" + state : "");
     }
 
+    function updateStudioIconPreview(value) {
+        const url = typeof value === "string" ? value.trim() : "";
+        activeStudioIconPreview.hidden = !url;
+        activeStudioIconPreview.removeAttribute("src");
+        if (url) activeStudioIconPreview.src = url;
+    }
+
+    activeStudioIcon.addEventListener("input", function () {
+        updateStudioIconPreview(activeStudioIcon.value);
+    });
+    activeStudioIconPreview.addEventListener("error", function () {
+        activeStudioIconPreview.hidden = true;
+    });
+
     function formatDate(value) {
         if (!value) return "—";
         const date = new Date(value);
@@ -392,8 +425,11 @@
         const canManage = role === "owner" || role === "admin";
         const isOwner = role === "owner";
         activeStudioHeading.textContent = studio.name;
-        activeStudioRole.textContent = role === "owner" ? "OWNER" : role === "admin" ? "ADMIN" : "MEMBRO";
+        memberRole.textContent = role === "owner" ? "Owner" : role === "admin" ? "Admin" : "Membro";
+        memberRole.hidden = false;
         activeStudioName.value = studio.name || "";
+        activeStudioIcon.value = studio.logo_url || "";
+        updateStudioIconPreview(activeStudioIcon.value);
         activeStudioDescription.value = studio.description || "";
         Array.from(studioSettingsForm.elements).forEach(function (element) { element.disabled = !canManage; });
         studioSettingsPanel.hidden = false;
@@ -448,6 +484,7 @@
             renderActiveStudio(data);
         } catch (error) {
             clearStudioAdministration();
+            memberRole.hidden = true;
             membersTitle.textContent = "Não foi possível carregar a equipe.";
             membersCopy.textContent = "Atualize a página ou confirme se a Function administrativa foi atualizada.";
         }
@@ -455,6 +492,14 @@
 
     studioContextSelect.addEventListener("change", async function () {
         activeStudioId = studioContextSelect.value;
+        if (activeStudioId === "__create__") {
+            activeStudioId = "";
+            sessionStorage.removeItem(sessionKey("active-studio"));
+            clearStudioAdministration();
+            selectWorkspaceView("create-studio");
+            studioName.focus();
+            return;
+        }
         sessionStorage.setItem(sessionKey("active-studio"), activeStudioId);
         const token = await getValidAccessToken().catch(function () { return null; });
         if (token) await loadActiveStudio(token);
@@ -466,7 +511,7 @@
         const button = studioSettingsForm.querySelector("button[type=submit]"); button.disabled = true; setSettingsStatus("Salvando alterações…", "");
         try {
             const token = await getValidAccessToken(); if (!token) throw new Error("Sua sessão expirou. Entre novamente.");
-            await studioRequest("update_studio", token, { studio_id: activeStudioId, name: activeStudioName.value.trim(), description: activeStudioDescription.value.trim() });
+            await studioRequest("update_studio", token, { studio_id: activeStudioId, name: activeStudioName.value.trim(), description: activeStudioDescription.value.trim(), logo_url: activeStudioIcon.value.trim() });
             setSettingsStatus("Alterações salvas.", "success"); await loadStudios(token);
         } catch (error) { setSettingsStatus(error.message || "Não foi possível salvar as alterações.", "error"); }
         finally { button.disabled = false; }
@@ -523,7 +568,7 @@
         try {
             const token = await getValidAccessToken(); if (!token) throw new Error("Sua sessão expirou. Entre novamente para continuar.");
             await studioRequest("create_studio", token, { name: studioName.value.trim(), slug: studioSlug.value.trim() });
-            createStudioForm.reset(); setStudioStatus("Estúdio criado. Você já é o owner inicial.", "success"); await loadStudios(token);
+            createStudioForm.reset(); setStudioStatus("Estúdio criado. Você já é o owner inicial.", "success"); await loadStudios(token); selectWorkspaceView("studios");
         } catch (error) {
             const localPreview = window.location.protocol === "file:";
             const unavailable = error instanceof TypeError;
@@ -604,7 +649,7 @@
                 showProfileOnboarding(profile);
                 return;
             }
-            showMemberArea(user);
+            showMemberArea(user, profile);
             await loadEntitlements(token);
             await loadStudios(token);
         } catch (error) {

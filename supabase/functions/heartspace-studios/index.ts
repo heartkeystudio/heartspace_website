@@ -224,7 +224,7 @@ Deno.serve(async (request) => {
     if (membershipError || !membership) return response({ error: "Você não possui acesso a este estúdio." }, 403, origin);
 
     const [studioResult, membersResult, projectsResult, activityResult, invitesResult] = await Promise.all([
-      admin.from("studios").select("id, name, description, created_at").eq("id", studioId).maybeSingle(),
+      admin.from("studios").select("id, name, description, logo_url, created_at").eq("id", studioId).maybeSingle(),
       admin.from("studio_members").select("user_id, role").eq("studio_id", studioId),
       admin.from("projects").select("id, name, description, cover_image, created_at").eq("studio_id", studioId).order("created_at", { ascending: false }),
       admin.from("studio_audit_log").select("id, actor_id, action, target_type, target_id, created_at").eq("studio_id", studioId).order("created_at", { ascending: false }).limit(20),
@@ -250,9 +250,15 @@ Deno.serve(async (request) => {
     const studioId = typeof payload.studio_id === "string" ? payload.studio_id : "";
     const name = typeof payload.name === "string" ? payload.name.trim().replace(/\s+/g, " ") : "";
     const description = typeof payload.description === "string" ? payload.description.trim() : "";
-    if (!studioId || name.length < 2 || name.length > 80 || description.length > 500) return response({ error: "Dados de estúdio inválidos." }, 400, origin);
-    const { data, error } = await admin.rpc("admin_update_studio", { p_actor_id: authData.user.id, p_studio_id: studioId, p_name: name, p_description: description });
-    if (error) return response({ error: error.code === "42501" ? "Você não pode editar este estúdio." : "Não foi possível atualizar o estúdio." }, error.code === "42501" ? 403 : 400, origin);
+    const logoUrl = typeof payload.logo_url === "string" ? payload.logo_url.trim() : "";
+    if (!studioId || name.length < 2 || name.length > 80 || description.length > 500 || logoUrl.length > 2048 || (logoUrl && !/^https:\/\//i.test(logoUrl))) return response({ error: "Dados de estúdio inválidos." }, 400, origin);
+    const { membership, error: membershipError } = await getMembership(admin, studioId, authData.user.id);
+    if (membershipError || !membership || !["owner", "admin"].includes(membership.role)) return response({ error: "Você não pode editar este estúdio." }, 403, origin);
+    const { data, error } = await admin.from("studios").update({ name, description: description || null, logo_url: logoUrl || null }).eq("id", studioId).select("id, name, description, logo_url, created_at").single();
+    if (error) {
+      console.error("update_studio failed", { code: error.code, message: error.message, details: error.details });
+      return response({ error: "Não foi possível atualizar o estúdio." }, 500, origin);
+    }
     return response({ studio: data }, 200, origin);
   }
 
