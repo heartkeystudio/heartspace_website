@@ -81,11 +81,25 @@
     const projectName = document.getElementById("projectName");
     const projectDescription = document.getElementById("projectDescription");
     const projectStatus = document.getElementById("projectStatus");
+    const projectContextLabel = document.getElementById("projectContextLabel");
+    const projectContextSelect = document.getElementById("projectContextSelect");
+    const projectSettingsPanel = document.getElementById("projectSettingsPanel");
+    const projectSettingsForm = document.getElementById("projectSettingsForm");
+    const activeProjectHeading = document.getElementById("activeProjectHeading");
+    const activeProjectName = document.getElementById("activeProjectName");
+    const activeProjectDescription = document.getElementById("activeProjectDescription");
+    const activeProjectImage = document.getElementById("activeProjectImage");
+    const activeProjectImageFile = document.getElementById("activeProjectImageFile");
+    const activeProjectImagePreview = document.getElementById("activeProjectImagePreview");
+    const projectSettingsStatus = document.getElementById("projectSettingsStatus");
     let currentStudios = [];
     let activeStudioId = sessionStorage.getItem(sessionKey("active-studio")) || "";
+    let activeProjectId = sessionStorage.getItem(sessionKey("active-project")) || "";
     let activeStudioAdmin = null;
+    let activeProjectAdmin = null;
     let currentUserId = "";
     let pendingStudioIconFile = null;
+    let pendingProjectImageFile = null;
     const planDetails = {
         indie: { name: "Indie — Studio", copy: "Colaboração e infraestrutura para quem já está construindo junto." },
         studio: { name: "Studio", copy: "Permissões, playtests e fluxos de produção para estúdios em crescimento." }
@@ -321,6 +335,13 @@
         pendingInvitesPanel.hidden = true;
         projectList.hidden = true;
         overviewProjectCount.textContent = "—";
+        clearProjectAdministration();
+    }
+
+    function clearProjectAdministration() {
+        activeProjectAdmin = null;
+        projectSettingsPanel.hidden = true;
+        projectContextLabel.hidden = true;
     }
 
     function renderStudios(studios) {
@@ -489,6 +510,17 @@
         projects.forEach(function (project) { appendListRow(projectList, project.name || "Projeto sem título", (project.description || "Sem descrição") + " · criado em " + formatDate(project.created_at)); });
         projectList.hidden = !projects.length;
         createProjectForm.hidden = !canManage;
+        projectContextSelect.replaceChildren();
+        projects.forEach(function (project) { projectContextSelect.add(new Option(project.name || "Projeto sem título", project.id)); });
+        projectContextLabel.hidden = !projects.length;
+        if (!projects.some(function (project) { return project.id === activeProjectId; })) activeProjectId = projects.length ? projects[0].id : "";
+        if (activeProjectId) {
+            projectContextSelect.value = activeProjectId;
+            sessionStorage.setItem(sessionKey("active-project"), activeProjectId);
+        } else {
+            sessionStorage.removeItem(sessionKey("active-project"));
+            clearProjectAdministration();
+        }
 
         memberList.replaceChildren();
         const members = Array.isArray(data.members) ? data.members : [];
@@ -532,6 +564,7 @@
         try {
             const data = await studioRequest("get_studio_admin", token, { studio_id: activeStudioId });
             renderActiveStudio(data);
+            if (activeProjectId) await loadActiveProject(token);
         } catch (error) {
             clearStudioAdministration();
             memberRole.hidden = true;
@@ -605,6 +638,108 @@
         projectStatus.className = "form-status" + (state ? " is-" + state : "");
     }
 
+    function setProjectSettingsStatus(message, state) {
+        projectSettingsStatus.textContent = message;
+        projectSettingsStatus.className = "form-status" + (state ? " is-" + state : "");
+    }
+
+    function updateProjectImagePreview(value) {
+        const url = typeof value === "string" ? value.trim() : "";
+        activeProjectImagePreview.hidden = !url;
+        activeProjectImagePreview.removeAttribute("src");
+        if (url) activeProjectImagePreview.src = url;
+    }
+
+    async function compressProjectImage(file) {
+        if (!file || !/^image\/(png|jpeg|webp)$/.test(file.type) || file.size > 12 * 1024 * 1024) throw new Error("Escolha uma imagem PNG, JPEG ou WebP de até 12 MB.");
+        const sourceUrl = URL.createObjectURL(file);
+        try {
+            const image = await new Promise(function (resolve, reject) { const element = new Image(); element.onload = function () { resolve(element); }; element.onerror = reject; element.src = sourceUrl; });
+            const scale = Math.min(1, 1600 / image.width, 900 / image.height);
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.max(1, Math.round(image.width * scale));
+            canvas.height = Math.max(1, Math.round(image.height * scale));
+            canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+            const blob = await new Promise(function (resolve) { canvas.toBlob(resolve, "image/webp", .82); });
+            if (!blob || blob.size > 600 * 1024) throw new Error("A imagem ficou grande demais após a compressão. Escolha outra imagem.");
+            return blob;
+        } finally { URL.revokeObjectURL(sourceUrl); }
+    }
+
+    function renderActiveProject(data) {
+        activeProjectAdmin = data;
+        const project = data.project;
+        const role = data.membership && data.membership.role;
+        const canManage = role === "owner" || role === "admin";
+        activeProjectHeading.textContent = project.name || "Projeto";
+        activeProjectName.value = project.name || "";
+        activeProjectDescription.value = project.description || "";
+        activeProjectImage.value = project.cover_image || "";
+        activeProjectImageFile.value = "";
+        pendingProjectImageFile = null;
+        updateProjectImagePreview(activeProjectImage.value);
+        Array.from(projectSettingsForm.elements).forEach(function (element) { element.disabled = !canManage; });
+        projectSettingsPanel.hidden = false;
+    }
+
+    async function loadActiveProject(token) {
+        if (!activeStudioId || !activeProjectId) return clearProjectAdministration();
+        try {
+            const data = await studioRequest("get_project_admin", token, { studio_id: activeStudioId, project_id: activeProjectId });
+            renderActiveProject(data);
+        } catch (error) {
+            clearProjectAdministration();
+            setProjectSettingsStatus(error.message || "Não foi possível carregar as configurações do projeto.", "error");
+        }
+    }
+
+    projectContextSelect.addEventListener("change", async function () {
+        activeProjectId = projectContextSelect.value;
+        sessionStorage.setItem(sessionKey("active-project"), activeProjectId);
+        const token = await getValidAccessToken().catch(function () { return null; });
+        if (token) await loadActiveProject(token);
+    });
+
+    activeProjectImage.addEventListener("input", function () {
+        pendingProjectImageFile = null;
+        updateProjectImagePreview(activeProjectImage.value);
+    });
+    activeProjectImagePreview.addEventListener("error", function () { activeProjectImagePreview.hidden = true; });
+    activeProjectImageFile.addEventListener("change", async function () {
+        const file = activeProjectImageFile.files && activeProjectImageFile.files[0];
+        if (!file) return;
+        try {
+            const compressed = await compressProjectImage(file);
+            pendingProjectImageFile = compressed;
+            updateProjectImagePreview(URL.createObjectURL(compressed));
+            setProjectSettingsStatus("Imagem pronta para salvar (até 1600 × 900 px).", "success");
+        } catch (error) {
+            pendingProjectImageFile = null;
+            activeProjectImageFile.value = "";
+            setProjectSettingsStatus(error.message || "Não foi possível preparar a imagem.", "error");
+        }
+    });
+
+    projectSettingsForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
+        if (!activeStudioId || !activeProjectId || !activeProjectName.checkValidity()) return activeProjectName.reportValidity();
+        const button = projectSettingsForm.querySelector("button[type=submit]"); button.disabled = true; setProjectSettingsStatus("Salvando alterações…", "");
+        try {
+            const token = await getValidAccessToken(); if (!token) throw new Error("Sua sessão expirou. Entre novamente.");
+            let coverImage = activeProjectImage.value.trim();
+            if (pendingProjectImageFile) {
+                const upload = await studioRequest("upload_project_image", token, { studio_id: activeStudioId, project_id: activeProjectId, image_base64: await blobToDataUrl(pendingProjectImageFile) });
+                coverImage = upload.cover_image || coverImage;
+                activeProjectImage.value = coverImage;
+                pendingProjectImageFile = null;
+            }
+            await studioRequest("update_project", token, { studio_id: activeStudioId, project_id: activeProjectId, name: activeProjectName.value.trim(), description: activeProjectDescription.value.trim(), cover_image: coverImage });
+            setProjectSettingsStatus("Alterações salvas.", "success");
+            await loadActiveStudio(token);
+        } catch (error) { setProjectSettingsStatus(error.message || "Não foi possível salvar o projeto.", "error"); }
+        finally { button.disabled = false; }
+    });
+
     createProjectForm.addEventListener("submit", async function (event) {
         event.preventDefault();
         if (!activeStudioId || !projectName.checkValidity()) return projectName.reportValidity();
@@ -615,6 +750,8 @@
             const data = await studioRequest("create_project", token, { studio_id: activeStudioId, name: projectName.value, description: projectDescription.value });
             createProjectForm.reset();
             setProjectStatus("Projeto criado. Abra o Hub para começar a trabalhar nele.", "success");
+            activeProjectId = data.project && data.project.id || activeProjectId;
+            if (activeProjectId) sessionStorage.setItem(sessionKey("active-project"), activeProjectId);
             await loadActiveStudio(token);
             if (data.project) projectStatus.textContent = "Projeto criado. Abra o Hub para começar a trabalhar nele.";
         } catch (error) { setProjectStatus(error.message || "Não foi possível criar o projeto agora.", "error"); }

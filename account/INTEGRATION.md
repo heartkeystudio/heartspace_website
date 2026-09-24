@@ -69,6 +69,8 @@ Antes de disponibilizar cada ação, aplique as migrations na ordem abaixo:
    remoção de membros, revogação e auditoria no console.
 10. `SUPABASE_STUDIO_ICONS.sql` — cria o bucket público de ícones leves de
     estúdio. O site reduz cada imagem para até 64 × 64 antes do envio.
+11. `SUPABASE_PROJECT_IMAGES.sql` — cria o bucket público de capas de projeto,
+    comprimidas pelo site para até 1600 × 900 e 600 KB.
 
 No dashboard, publique/atualize a Function com o nome **`heartspace-studio`**
 e configure `HEARTSPACE_ALLOWED_ORIGINS` com
