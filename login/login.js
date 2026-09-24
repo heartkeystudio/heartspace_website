@@ -29,7 +29,7 @@
     googleButton.addEventListener("click", () => {
         if (!configured) return;
         const url = new URL("/auth/v1/authorize", config.supabaseUrl);
-        url.searchParams.set("provider", "google"); url.searchParams.set("redirect_to", window.location.origin + window.location.pathname + window.location.search);
+        url.searchParams.set("provider", "google"); url.searchParams.set("prompt", "select_account"); url.searchParams.set("redirect_to", window.location.origin + window.location.pathname + window.location.search);
         window.location.assign(url.toString());
     });
     form.addEventListener("submit", async (event) => {

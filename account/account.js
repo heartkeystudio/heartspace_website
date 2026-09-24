@@ -10,7 +10,10 @@
     const accountLoading = document.getElementById("accountLoading");
     const profileOnboarding = document.getElementById("profileOnboarding");
     const profileForm = document.getElementById("profileForm");
+    const profileAvatarFile = document.getElementById("profileAvatarFile");
+    const profileAvatarPreview = document.getElementById("profileAvatarPreview");
     const profileFullName = document.getElementById("profileFullName");
+    const profileNickname = document.getElementById("profileNickname");
     const profileAge = document.getElementById("profileAge");
     const profileProfession = document.getElementById("profileProfession");
     const profilePhone = document.getElementById("profilePhone");
@@ -113,6 +116,7 @@
     let activeProjectAdmin = null;
     let currentUserId = "";
     let pendingStudioIconFile = null;
+    let pendingProfileAvatarFile = null;
     let pendingProjectImageFile = null;
     let pendingProjectBannerFile = null;
     const planDetails = {
@@ -249,11 +253,37 @@
         profileStatus.className = "form-status" + (state ? " is-" + state : "");
     }
 
+    async function compressProfileAvatar(file) {
+        if (!file || !/^image\/(png|jpeg|webp)$/.test(file.type) || file.size > 8 * 1024 * 1024) throw new Error("Escolha uma foto PNG, JPEG ou WebP de até 8 MB.");
+        const sourceUrl = URL.createObjectURL(file);
+        try {
+            const image = await new Promise(function (resolve, reject) { const element = new Image(); element.onload = function () { resolve(element); }; element.onerror = reject; element.src = sourceUrl; });
+            const scale = Math.min(1, 256 / image.width, 256 / image.height);
+            const canvas = document.createElement("canvas"); canvas.width = Math.max(1, Math.round(image.width * scale)); canvas.height = Math.max(1, Math.round(image.height * scale));
+            canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+            const blob = await new Promise(function (resolve) { canvas.toBlob(resolve, "image/webp", .84); });
+            if (!blob || blob.size > 160 * 1024) throw new Error("Não foi possível otimizar essa foto. Escolha outra imagem.");
+            return blob;
+        } finally { URL.revokeObjectURL(sourceUrl); }
+    }
+
+    profileAvatarFile.addEventListener("change", async function () {
+        const file = profileAvatarFile.files && profileAvatarFile.files[0]; if (!file) return;
+        try { pendingProfileAvatarFile = await compressProfileAvatar(file); profileAvatarPreview.src = URL.createObjectURL(pendingProfileAvatarFile); profileAvatarPreview.hidden = false; setProfileStatus("Foto pronta para salvar.", "success"); }
+        catch (error) { pendingProfileAvatarFile = null; profileAvatarFile.value = ""; setProfileStatus(error.message || "Não foi possível preparar a foto.", "error"); }
+    });
+    profileAvatarPreview.addEventListener("error", function () { profileAvatarPreview.hidden = true; });
+
     function showProfileOnboarding(profile) {
         profileFullName.value = profile.full_name || "";
+        profileNickname.value = profile.nickname || "";
         profileAge.value = Number.isInteger(profile.age) && profile.age > 0 ? String(profile.age) : "";
         profileProfession.value = profile.profession || "";
         profilePhone.value = profile.phone || "";
+        profileAvatarFile.value = "";
+        pendingProfileAvatarFile = null;
+        profileAvatarPreview.hidden = !profile.avatar_url;
+        if (profile.avatar_url) profileAvatarPreview.src = profile.avatar_url;
         accountLoading.hidden = true;
         memberArea.hidden = true;
         profileOnboarding.hidden = false;
@@ -340,10 +370,15 @@
         button.disabled = true; setProfileStatus("Salvando sua ficha…", "");
         try {
             const token = await getValidAccessToken(); if (!token) throw new Error("Sua sessão expirou. Entre novamente.");
-            await studioRequest("update_profile", token, { full_name: profileFullName.value, age: Number(profileAge.value), profession: profileProfession.value, phone: profilePhone.value });
+            let avatarUrl = profileAvatarPreview.getAttribute("src") || "";
+            if (pendingProfileAvatarFile) {
+                const upload = await studioRequest("upload_profile_avatar", token, { image_base64: await blobToDataUrl(pendingProfileAvatarFile) });
+                avatarUrl = upload.avatar_url || avatarUrl; pendingProfileAvatarFile = null;
+            }
+            await studioRequest("update_profile", token, { full_name: profileFullName.value, nickname: profileNickname.value, age: Number(profileAge.value), profession: profileProfession.value, phone: profilePhone.value, avatar_url: avatarUrl });
             const response = await fetch(config.supabaseUrl.replace(/\/$/, "") + "/auth/v1/user", { headers: { "apikey": config.supabaseAnonKey, "Authorization": "Bearer " + token } });
             const user = response.ok ? await response.json() : { email: securityEmail.textContent };
-            showMemberArea(user, { full_name: profileFullName.value.trim() }); await loadEntitlements(token); await loadStudios(token);
+            showMemberArea(user, { full_name: profileFullName.value.trim(), nickname: profileNickname.value.trim(), avatar_url: avatarUrl }); await loadEntitlements(token); await loadStudios(token);
         } catch (error) { setProfileStatus(error.message || "Não foi possível salvar sua ficha agora.", "error"); }
         finally { button.disabled = false; }
     });
@@ -1111,6 +1146,7 @@
 
         const authUrl = new URL("/auth/v1/authorize", config.supabaseUrl);
         authUrl.searchParams.set("provider", "google");
+        authUrl.searchParams.set("prompt", "select_account");
         authUrl.searchParams.set("redirect_to", window.location.origin + window.location.pathname);
         window.location.assign(authUrl.toString());
     });

@@ -6,7 +6,7 @@
     <meta name="description" content="Entre no HeartSpace para gerenciar seu estúdio, seus projetos e sua assinatura.">
     <meta name="theme-color" content="#9501d8">
     <title>Conta | HeartSpace</title>
-    <link rel="stylesheet" href="account.css?v=20260924-11">
+    <link rel="stylesheet" href="account.css?v=20260924-12">
 </head>
 <body>
     <main class="account-shell">
@@ -15,7 +15,7 @@
         <section class="profile-onboarding" id="profileOnboarding" hidden aria-labelledby="profileOnboardingTitle">
             <div class="profile-onboarding-brand"><span class="brand-icon" aria-hidden="true">🔑</span><strong>HeartSpace</strong></div>
             <p class="eyebrow">PRIMEIRO ACESSO</p><h1 id="profileOnboardingTitle">Antes de entrar, conte um pouco sobre você.</h1><p>Essa ficha deixa sua conta reconhecível no Hub e nos espaços em que você colaborar. Seus dados pessoais não viram informação pública.</p>
-            <form class="profile-form" id="profileForm"><label for="profileFullName">Nome completo</label><input id="profileFullName" type="text" minlength="2" maxlength="80" autocomplete="name" required><label for="profileAge">Idade</label><input id="profileAge" type="number" min="1" max="130" inputmode="numeric" required><label for="profileProfession">Profissão ou área de atuação</label><input id="profileProfession" type="text" minlength="2" maxlength="120" autocomplete="organization-title" placeholder="Ex.: ilustradora, estudante, desenvolvedor" required><label for="profilePhone">Telefone <span>opcional</span></label><input id="profilePhone" type="tel" maxlength="40" autocomplete="tel" placeholder="Somente para suporte e segurança da conta"><button class="portal-button" type="submit">Concluir e entrar</button><p class="form-status" id="profileStatus" aria-live="polite"></p><p class="profile-privacy">Ao continuar, você confirma que leu a <a href="../privacy/">Política de Privacidade</a>.</p></form>
+            <form class="profile-form" id="profileForm"><label for="profileAvatarFile">Foto de perfil <span>opcional · até 256 × 256 px</span></label><div class="profile-avatar-field"><img id="profileAvatarPreview" alt="Prévia da foto de perfil" hidden><input id="profileAvatarFile" type="file" accept="image/png,image/jpeg,image/webp"></div><label for="profileFullName">Nome completo</label><input id="profileFullName" type="text" minlength="2" maxlength="80" autocomplete="name" required><label for="profileNickname">Apelido</label><input id="profileNickname" type="text" minlength="2" maxlength="40" autocomplete="nickname" placeholder="Como quer aparecer no HeartSpace" required><label for="profileAge">Idade</label><input id="profileAge" type="number" min="1" max="130" inputmode="numeric" required><label for="profileProfession">Profissão ou área de atuação</label><input id="profileProfession" type="text" minlength="2" maxlength="120" autocomplete="organization-title" placeholder="Ex.: ilustradora, estudante, desenvolvedor" required><label for="profilePhone">Telefone <span>opcional</span></label><input id="profilePhone" type="tel" maxlength="40" autocomplete="tel" placeholder="Somente para suporte e segurança da conta"><button class="portal-button" type="submit">Concluir e entrar</button><p class="form-status" id="profileStatus" aria-live="polite"></p><p class="profile-privacy">Ao continuar, você confirma que leu a <a href="../privacy/">Política de Privacidade</a>.</p></form>
         </section>
 
         <section class="member-area workspace" id="memberArea" hidden aria-labelledby="memberTitle">
@@ -106,7 +106,7 @@
         </section>
 
     </main>
-    <script src="config.js?v=20260924-11"></script>
-    <script src="account.js?v=20260924-11"></script>
+    <script src="config.js?v=20260924-12"></script>
+    <script src="account.js?v=20260924-12"></script>
 </body>
 </html>

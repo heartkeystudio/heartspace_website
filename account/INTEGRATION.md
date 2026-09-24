@@ -75,6 +75,8 @@ Antes de disponibilizar cada ação, aplique as migrations na ordem abaixo:
 12. `SUPABASE_PROJECT_ROLE_SYSTEM.sql` — adiciona o modelo de estúdio e a
     tabela `project_members`, com papéis múltiplos por projeto. Não usa as
     tabelas legadas `workspaces` ou `workspace_members`.
+13. `SUPABASE_PROFILE_AVATARS.sql` — adiciona apelido e o bucket público de
+    avatares comprimidos para a ficha de primeiro acesso.
 
 No dashboard, publique/atualize a Function com o nome **`heartspace-studio`**
 e configure `HEARTSPACE_ALLOWED_ORIGINS` com

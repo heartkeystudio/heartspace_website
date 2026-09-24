@@ -188,7 +188,7 @@ Deno.serve(async (request) => {
 
   if (payload.action === "get_profile") {
     const { data, error } = await admin.from("profiles")
-      .select("id, email, full_name, age, profession, phone, profile_completed_at")
+      .select("id, email, full_name, nickname, age, profession, phone, avatar_url, profile_completed_at")
       .eq("id", authData.user.id).maybeSingle();
     if (error || !data) return response({ error: "Não foi possível carregar sua ficha de perfil." }, 500, origin);
     return response({ profile: data }, 200, origin);
@@ -196,23 +196,43 @@ Deno.serve(async (request) => {
 
   if (payload.action === "update_profile") {
     const fullName = typeof payload.full_name === "string" ? payload.full_name.trim().replace(/\s+/g, " ") : "";
+    const nickname = typeof payload.nickname === "string" ? payload.nickname.trim().replace(/\s+/g, " ") : "";
     const age = Number(payload.age);
     const profession = typeof payload.profession === "string" ? payload.profession.trim().replace(/\s+/g, " ") : "";
     const phone = typeof payload.phone === "string" ? payload.phone.trim() : "";
-    if (fullName.length < 2 || fullName.length > 80 || !Number.isInteger(age) || age < 1 || age > 130 || profession.length < 2 || profession.length > 120 || phone.length > 40) {
-      return response({ error: "Confira nome, idade e profissão antes de continuar." }, 400, origin);
+    const avatarUrl = typeof payload.avatar_url === "string" ? payload.avatar_url.trim() : "";
+    if (fullName.length < 2 || fullName.length > 80 || nickname.length < 2 || nickname.length > 40 || !Number.isInteger(age) || age < 1 || age > 130 || profession.length < 2 || profession.length > 120 || phone.length > 40 || avatarUrl.length > 2048 || (avatarUrl && !/^https:\/\//i.test(avatarUrl))) {
+      return response({ error: "Confira nome, apelido, idade e profissão antes de continuar." }, 400, origin);
     }
     const { data, error } = await admin.from("profiles").update({
       full_name: fullName,
+      nickname,
       age,
       profession,
       phone: phone || null,
+      avatar_url: avatarUrl || null,
       profile_completed_at: new Date().toISOString(),
-    }).eq("id", authData.user.id).select("id, email, full_name, age, profession, phone, profile_completed_at").single();
+    }).eq("id", authData.user.id).select("id, email, full_name, nickname, age, profession, phone, avatar_url, profile_completed_at").single();
     if (error) return response({ error: "Não foi possível salvar sua ficha agora." }, 500, origin);
     const metadata = authData.user.user_metadata || {};
     await admin.auth.admin.updateUserById(authData.user.id, { user_metadata: { ...metadata, full_name: fullName } });
     return response({ profile: data }, 200, origin);
+  }
+
+  if (payload.action === "upload_profile_avatar") {
+    const imageBase64 = typeof payload.image_base64 === "string" ? payload.image_base64 : "";
+    const match = imageBase64.match(/^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$/);
+    if (!match || imageBase64.length > 230000) return response({ error: "Envie uma imagem PNG, JPEG ou WebP válida e pequena." }, 400, origin);
+    let bytes: Uint8Array;
+    try { const binary = atob(match[2]); bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0)); }
+    catch { return response({ error: "A imagem não pôde ser lida." }, 400, origin); }
+    if (!bytes.length || bytes.length > 160 * 1024) return response({ error: "A foto comprimida deve ter no máximo 160 KB." }, 400, origin);
+    const extension = match[1] === "image/png" ? "png" : match[1] === "image/jpeg" ? "jpg" : "webp";
+    const path = `${authData.user.id}/avatar.${extension}`;
+    const { error: uploadError } = await admin.storage.from("profile-avatars").upload(path, bytes, { contentType: match[1], upsert: true, cacheControl: "31536000" });
+    if (uploadError) return response({ error: "Não foi possível enviar a foto agora." }, 500, origin);
+    const { data } = admin.storage.from("profile-avatars").getPublicUrl(path);
+    return response({ avatar_url: `${data.publicUrl}?v=${Date.now()}` }, 201, origin);
   }
 
   if (payload.action === "list_studios") {
