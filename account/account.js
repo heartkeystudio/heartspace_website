@@ -8,6 +8,13 @@
     const status = document.getElementById("authStatus");
     const accountCard = document.querySelector(".account-card");
     const accountLoading = document.getElementById("accountLoading");
+    const profileOnboarding = document.getElementById("profileOnboarding");
+    const profileForm = document.getElementById("profileForm");
+    const profileFullName = document.getElementById("profileFullName");
+    const profileAge = document.getElementById("profileAge");
+    const profileProfession = document.getElementById("profileProfession");
+    const profilePhone = document.getElementById("profilePhone");
+    const profileStatus = document.getElementById("profileStatus");
     const memberArea = document.getElementById("memberArea");
     const memberEmail = document.getElementById("memberEmail");
     const planName = document.getElementById("planName");
@@ -41,11 +48,33 @@
     const inviteLink = document.getElementById("inviteLink");
     const membersTitle = document.getElementById("membersTitle");
     const membersCopy = document.getElementById("membersCopy");
-    const studioContextName = document.getElementById("studioContextName");
+    const studioContextSelect = document.getElementById("studioContextSelect");
     const overviewStudioCount = document.getElementById("overviewStudioCount");
+    const overviewProjectCount = document.getElementById("overviewProjectCount");
     const overviewStudioTitle = document.getElementById("overviewStudioTitle");
     const overviewStudioCopy = document.getElementById("overviewStudioCopy");
+    const studioSettingsPanel = document.getElementById("studioSettingsPanel");
+    const studioSettingsForm = document.getElementById("studioSettingsForm");
+    const activeStudioHeading = document.getElementById("activeStudioHeading");
+    const activeStudioRole = document.getElementById("activeStudioRole");
+    const activeStudioName = document.getElementById("activeStudioName");
+    const activeStudioDescription = document.getElementById("activeStudioDescription");
+    const studioSettingsStatus = document.getElementById("studioSettingsStatus");
+    const studioActivityPanel = document.getElementById("studioActivityPanel");
+    const studioActivityList = document.getElementById("studioActivityList");
+    const memberList = document.getElementById("memberList");
+    const pendingInvitesPanel = document.getElementById("pendingInvitesPanel");
+    const pendingInviteList = document.getElementById("pendingInviteList");
+    const projectList = document.getElementById("projectList");
+    const projectsTitle = document.getElementById("projectsTitle");
+    const projectsCopy = document.getElementById("projectsCopy");
+    const createProjectForm = document.getElementById("createProjectForm");
+    const projectName = document.getElementById("projectName");
+    const projectDescription = document.getElementById("projectDescription");
+    const projectStatus = document.getElementById("projectStatus");
     let currentStudios = [];
+    let activeStudioId = sessionStorage.getItem(sessionKey("active-studio")) || "";
+    let activeStudioAdmin = null;
     const planDetails = {
         indie: { name: "Indie — Studio", copy: "Colaboração e infraestrutura para quem já está construindo junto." },
         studio: { name: "Studio", copy: "Permissões, playtests e fluxos de produção para estúdios em crescimento." }
@@ -139,6 +168,7 @@
         memberEmail.textContent = user.email || "Conta HeartSpace";
         securityEmail.textContent = user.email || "Conta HeartSpace";
         accountLoading.hidden = true;
+        profileOnboarding.hidden = true;
         memberArea.hidden = false;
         if (selectedPlan && planDetails[selectedPlan]) checkoutChoice.hidden = false;
         if (checkoutState === "success") {
@@ -149,6 +179,21 @@
             checkoutNotice.classList.add("is-cancelled");
             checkoutNotice.textContent = "O pagamento foi cancelado. Sua conta continua ativa no plano atual.";
         }
+    }
+
+    function setProfileStatus(message, state) {
+        profileStatus.textContent = message;
+        profileStatus.className = "form-status" + (state ? " is-" + state : "");
+    }
+
+    function showProfileOnboarding(profile) {
+        profileFullName.value = profile.full_name || "";
+        profileAge.value = Number.isInteger(profile.age) && profile.age > 0 ? String(profile.age) : "";
+        profileProfession.value = profile.profession || "";
+        profilePhone.value = profile.phone || "";
+        accountLoading.hidden = true;
+        memberArea.hidden = true;
+        profileOnboarding.hidden = false;
     }
 
     function selectWorkspaceView(viewName) {
@@ -191,19 +236,58 @@
         return data;
     }
 
+    async function loadProfile(token) {
+        if (!config.studioFunctionUrl) return null;
+        try {
+            const data = await studioRequest("get_profile", token);
+            return data.profile || null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    profileForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
+        if (!profileForm.checkValidity()) return profileForm.reportValidity();
+        const button = profileForm.querySelector("button[type=submit]");
+        button.disabled = true; setProfileStatus("Salvando sua ficha…", "");
+        try {
+            const token = await getValidAccessToken(); if (!token) throw new Error("Sua sessão expirou. Entre novamente.");
+            await studioRequest("update_profile", token, { full_name: profileFullName.value, age: Number(profileAge.value), profession: profileProfession.value, phone: profilePhone.value });
+            const response = await fetch(config.supabaseUrl.replace(/\/$/, "") + "/auth/v1/user", { headers: { "apikey": config.supabaseAnonKey, "Authorization": "Bearer " + token } });
+            const user = response.ok ? await response.json() : { email: memberEmail.textContent };
+            showMemberArea(user); await loadEntitlements(token); await loadStudios(token);
+        } catch (error) { setProfileStatus(error.message || "Não foi possível salvar sua ficha agora.", "error"); }
+        finally { button.disabled = false; }
+    });
+
+    function clearStudioAdministration() {
+        activeStudioAdmin = null;
+        studioSettingsPanel.hidden = true;
+        studioActivityPanel.hidden = true;
+        memberList.hidden = true;
+        pendingInvitesPanel.hidden = true;
+        projectList.hidden = true;
+        overviewProjectCount.textContent = "—";
+    }
+
     function renderStudios(studios) {
         currentStudios = studios;
         studioList.replaceChildren();
         inviteStudio.replaceChildren();
+        studioContextSelect.replaceChildren();
         overviewStudioCount.textContent = String(studios.length);
         if (!studios.length) {
             studiosTitle.textContent = "Seu primeiro estúdio começa aqui.";
             studiosCopy.textContent = "Crie um espaço para organizar equipe, projetos compartilhados e publicações. Você será o owner inicial.";
-            studioContextName.textContent = "Nenhum estúdio";
+            const option = new Option("Nenhum estúdio", ""); studioContextSelect.add(option); studioContextSelect.disabled = true;
             overviewStudioTitle.textContent = "Crie seu primeiro estúdio";
             overviewStudioCopy.textContent = "Seu estúdio organiza pessoas, acessos e projetos compartilhados. O trabalho continua local no Hub.";
             studioList.hidden = true;
             inviteMemberForm.hidden = true;
+            activeStudioId = "";
+            sessionStorage.removeItem(sessionKey("active-studio"));
+            clearStudioAdministration();
             return;
         }
         studiosTitle.textContent = studios.length === 1 ? "1 estúdio conectado." : studios.length + " estúdios conectados.";
@@ -216,22 +300,30 @@
             const role = document.createElement("span"); role.textContent = membership.role === "owner" ? "Owner" : membership.role;
             item.append(name, role); studioList.append(item);
             const option = document.createElement("option"); option.value = studio.id; option.textContent = studio.name; inviteStudio.append(option);
+            const contextOption = document.createElement("option"); contextOption.value = studio.id; contextOption.textContent = studio.name; studioContextSelect.append(contextOption);
         });
         studioList.hidden = studioList.childElementCount === 0;
         if (inviteStudio.childElementCount) {
-            const activeStudioName = inviteStudio.options[0].textContent || "Estúdio ativo";
-            studioContextName.textContent = activeStudioName;
+            if (!Array.from(studioContextSelect.options).some(function (option) { return option.value === activeStudioId; })) activeStudioId = studioContextSelect.options[0].value;
+            studioContextSelect.value = activeStudioId;
+            studioContextSelect.disabled = false;
+            inviteStudio.value = activeStudioId;
+            const selectedName = studioContextSelect.options[studioContextSelect.selectedIndex].textContent || "Estúdio ativo";
             overviewStudioTitle.textContent = studios.length === 1 ? "Seu estúdio está pronto." : studios.length + " estúdios, um só controle.";
-            overviewStudioCopy.textContent = "" + activeStudioName + " está conectado à sua conta. Use os papéis e convites para organizar quem pode colaborar.";
+            overviewStudioCopy.textContent = selectedName + " está conectado à sua conta. Use os papéis e convites para organizar quem pode colaborar.";
             membersTitle.textContent = "Convide alguém para colaborar.";
             membersCopy.textContent = "O link vale por 7 dias e só pode ser aceito pela conta do e-mail informado.";
-            inviteMemberForm.hidden = false;
+            sessionStorage.setItem(sessionKey("active-studio"), activeStudioId);
         }
     }
 
     async function loadStudios(token) {
         if (!config.studioFunctionUrl) return;
-        try { const data = await studioRequest("list_studios", token); renderStudios(Array.isArray(data.studios) ? data.studios : []); }
+        try {
+            const data = await studioRequest("list_studios", token);
+            renderStudios(Array.isArray(data.studios) ? data.studios : []);
+            if (activeStudioId) await loadActiveStudio(token);
+        }
         catch (error) {
             studiosTitle.textContent = "Não foi possível carregar seus estúdios.";
             studiosCopy.textContent = "Confira sua conexão e tente novamente mais tarde.";
@@ -239,6 +331,156 @@
             overviewStudioCopy.textContent = "A sua sessão continua protegida; tente atualizar a página para consultar seus espaços.";
         }
     }
+
+    function setSettingsStatus(message, state) {
+        studioSettingsStatus.textContent = message;
+        studioSettingsStatus.className = "form-status" + (state ? " is-" + state : "");
+    }
+
+    function formatDate(value) {
+        if (!value) return "—";
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? "—" : date.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
+    }
+
+    function appendListRow(container, title, meta, controls) {
+        const row = document.createElement("div"); row.className = "admin-list-row";
+        const details = document.createElement("div");
+        const heading = document.createElement("strong"); heading.textContent = title;
+        const detail = document.createElement("span"); detail.textContent = meta;
+        details.append(heading, detail); row.append(details);
+        if (controls) row.append(controls);
+        container.append(row);
+    }
+
+    function renderActiveStudio(data) {
+        activeStudioAdmin = data;
+        const studio = data.studio;
+        const role = data.membership && data.membership.role;
+        const canManage = role === "owner" || role === "admin";
+        const isOwner = role === "owner";
+        activeStudioHeading.textContent = studio.name;
+        activeStudioRole.textContent = role === "owner" ? "OWNER" : role === "admin" ? "ADMIN" : "MEMBRO";
+        activeStudioName.value = studio.name || "";
+        activeStudioDescription.value = studio.description || "";
+        Array.from(studioSettingsForm.elements).forEach(function (element) { element.disabled = !canManage; });
+        studioSettingsPanel.hidden = false;
+
+        projectList.replaceChildren();
+        const projects = Array.isArray(data.projects) ? data.projects : [];
+        overviewProjectCount.textContent = String(projects.length);
+        projectsTitle.textContent = projects.length ? (projects.length === 1 ? "1 projeto neste estúdio." : projects.length + " projetos neste estúdio.") : "Seu próximo projeto começa aqui.";
+        projectsCopy.textContent = projects.length ? "Os projetos criados aqui já podem ser reconhecidos pelo Hub. O conteúdo e os arquivos continuam locais." : "O site cria a referência compartilhada. Quando você abrir o Hub, ela se transforma no seu espaço de trabalho local.";
+        projects.forEach(function (project) { appendListRow(projectList, project.name || "Projeto sem título", (project.description || "Sem descrição") + " · criado em " + formatDate(project.created_at)); });
+        projectList.hidden = !projects.length;
+        createProjectForm.hidden = !canManage;
+
+        memberList.replaceChildren();
+        const members = Array.isArray(data.members) ? data.members : [];
+        members.forEach(function (member) {
+            const controls = document.createElement("div"); controls.className = "row-controls";
+            if (isOwner && member.role !== "owner") {
+                const select = document.createElement("select"); select.className = "compact-select"; select.dataset.memberRole = member.user_id; select.value = member.role;
+                ["member", "admin"].forEach(function (memberRole) { const option = new Option(memberRole === "admin" ? "Admin" : "Membro", memberRole); select.add(option); });
+                const remove = document.createElement("button"); remove.type = "button"; remove.className = "row-button row-button-danger"; remove.dataset.removeMember = member.user_id; remove.textContent = "Remover";
+                controls.append(select, remove);
+            }
+            const display = member.display_name || member.email || "Conta HeartSpace";
+            appendListRow(memberList, display, (member.role === "owner" ? "Owner" : member.role === "admin" ? "Admin" : "Membro") + " · desde " + formatDate(member.created_at), controls.childElementCount ? controls : null);
+        });
+        memberList.hidden = !members.length;
+        membersTitle.textContent = members.length === 1 ? "1 pessoa no estúdio." : members.length + " pessoas no estúdio.";
+        membersCopy.textContent = isOwner ? "Você pode ajustar os papéis de admins e membros ou remover acessos a qualquer momento." : "Os papéis e acessos são controlados pelos owners do estúdio.";
+
+        pendingInviteList.replaceChildren();
+        const invites = Array.isArray(data.invites) ? data.invites : [];
+        invites.forEach(function (invite) {
+            const controls = document.createElement("div"); controls.className = "row-controls";
+            const revoke = document.createElement("button"); revoke.type = "button"; revoke.className = "row-button row-button-danger"; revoke.dataset.revokeInvite = invite.id; revoke.textContent = "Revogar"; controls.append(revoke);
+            appendListRow(pendingInviteList, invite.email, (invite.role === "admin" ? "Admin" : "Membro") + " · expira " + formatDate(invite.expires_at), controls);
+        });
+        pendingInvitesPanel.hidden = !invites.length;
+        inviteMemberForm.hidden = !canManage;
+        inviteStudio.value = studio.id;
+
+        studioActivityList.replaceChildren();
+        const activity = Array.isArray(data.activity) ? data.activity : [];
+        activity.forEach(function (event) { appendListRow(studioActivityList, String(event.action || "alteração").replace(/\./g, " · "), formatDate(event.created_at)); });
+        studioActivityPanel.hidden = !activity.length;
+    }
+
+    async function loadActiveStudio(token) {
+        if (!activeStudioId) return clearStudioAdministration();
+        try {
+            const data = await studioRequest("get_studio_admin", token, { studio_id: activeStudioId });
+            renderActiveStudio(data);
+        } catch (error) {
+            clearStudioAdministration();
+            membersTitle.textContent = "Não foi possível carregar a equipe.";
+            membersCopy.textContent = "Atualize a página ou confirme se a Function administrativa foi atualizada.";
+        }
+    }
+
+    studioContextSelect.addEventListener("change", async function () {
+        activeStudioId = studioContextSelect.value;
+        sessionStorage.setItem(sessionKey("active-studio"), activeStudioId);
+        const token = await getValidAccessToken().catch(function () { return null; });
+        if (token) await loadActiveStudio(token);
+    });
+
+    studioSettingsForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
+        if (!activeStudioId || !activeStudioName.checkValidity()) return activeStudioName.reportValidity();
+        const button = studioSettingsForm.querySelector("button[type=submit]"); button.disabled = true; setSettingsStatus("Salvando alterações…", "");
+        try {
+            const token = await getValidAccessToken(); if (!token) throw new Error("Sua sessão expirou. Entre novamente.");
+            await studioRequest("update_studio", token, { studio_id: activeStudioId, name: activeStudioName.value.trim(), description: activeStudioDescription.value.trim() });
+            setSettingsStatus("Alterações salvas.", "success"); await loadStudios(token);
+        } catch (error) { setSettingsStatus(error.message || "Não foi possível salvar as alterações.", "error"); }
+        finally { button.disabled = false; }
+    });
+
+    function setProjectStatus(message, state) {
+        projectStatus.textContent = message;
+        projectStatus.className = "form-status" + (state ? " is-" + state : "");
+    }
+
+    createProjectForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
+        if (!activeStudioId || !projectName.checkValidity()) return projectName.reportValidity();
+        const button = createProjectForm.querySelector("button[type=submit]");
+        button.disabled = true; setProjectStatus("Criando projeto…", "");
+        try {
+            const token = await getValidAccessToken(); if (!token) throw new Error("Sua sessão expirou. Entre novamente.");
+            const data = await studioRequest("create_project", token, { studio_id: activeStudioId, name: projectName.value, description: projectDescription.value });
+            createProjectForm.reset();
+            setProjectStatus("Projeto criado. Abra o Hub para começar a trabalhar nele.", "success");
+            await loadActiveStudio(token);
+            if (data.project) projectStatus.textContent = "Projeto criado. Abra o Hub para começar a trabalhar nele.";
+        } catch (error) { setProjectStatus(error.message || "Não foi possível criar o projeto agora.", "error"); }
+        finally { button.disabled = false; }
+    });
+
+    memberList.addEventListener("change", async function (event) {
+        const target = event.target;
+        if (!target.matches("[data-member-role]")) return;
+        try { const token = await getValidAccessToken(); if (!token) throw new Error("Sessão expirada."); await studioRequest("update_member_role", token, { studio_id: activeStudioId, target_id: target.dataset.memberRole, role: target.value }); await loadActiveStudio(token); }
+        catch (error) { inviteStatus.textContent = error.message || "Não foi possível alterar o papel."; }
+    });
+
+    memberList.addEventListener("click", async function (event) {
+        const target = event.target.closest("[data-remove-member]"); if (!target) return;
+        if (!window.confirm("Remover esta pessoa do estúdio?")) return;
+        try { const token = await getValidAccessToken(); if (!token) throw new Error("Sessão expirada."); await studioRequest("remove_member", token, { studio_id: activeStudioId, target_id: target.dataset.removeMember }); await loadActiveStudio(token); }
+        catch (error) { inviteStatus.textContent = error.message || "Não foi possível remover a pessoa."; }
+    });
+
+    pendingInviteList.addEventListener("click", async function (event) {
+        const target = event.target.closest("[data-revoke-invite]"); if (!target) return;
+        if (!window.confirm("Revogar este convite?")) return;
+        try { const token = await getValidAccessToken(); if (!token) throw new Error("Sessão expirada."); await studioRequest("revoke_invite", token, { studio_id: activeStudioId, target_id: target.dataset.revokeInvite }); await loadActiveStudio(token); }
+        catch (error) { inviteStatus.textContent = error.message || "Não foi possível revogar o convite."; }
+    });
 
     if (config.studioFunctionUrl) createStudioForm.hidden = false;
     createStudioForm.addEventListener("submit", async function (event) {
@@ -325,6 +567,11 @@
             });
             if (!response.ok) throw new Error("Sessão expirada");
             const user = await response.json();
+            const profile = await loadProfile(token);
+            if (profile && !profile.profile_completed_at) {
+                showProfileOnboarding(profile);
+                return;
+            }
             showMemberArea(user);
             await loadEntitlements(token);
             await loadStudios(token);

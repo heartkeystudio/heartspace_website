@@ -58,9 +58,15 @@ Antes de disponibilizar cada ação, aplique as migrations na ordem abaixo:
    existente deste projeto.
 4. `SUPABASE_PROFILE_BRIDGE.sql` — necessário porque `studio_members` possui
    uma FK legada para `profiles`.
-5. `SUPABASE_STUDIO_INVITES.sql`
-6. `SUPABASE_INVITE_PROFILE_BRIDGE.sql` — garante a mesma ponte de perfil ao
+5. `SUPABASE_PROFILE_AUTH_SYNC.sql` — sincroniza e-mail e nome do Auth para o
+   perfil legado, sem substituir dados que o Hub já tenha preenchido.
+6. `SUPABASE_PROFILE_ONBOARDING.sql` — adiciona a ficha de primeiro acesso:
+   nome, idade, profissão e telefone opcional.
+7. `SUPABASE_STUDIO_INVITES.sql`
+8. `SUPABASE_INVITE_PROFILE_BRIDGE.sql` — garante a mesma ponte de perfil ao
    aceitar um convite.
+9. `SUPABASE_STUDIO_ADMINISTRATION.sql` — libera configurações, papéis,
+   remoção de membros, revogação e auditoria no console.
 
 No dashboard, publique/atualize a Function com o nome **`heartspace-studio`**
 e configure `HEARTSPACE_ALLOWED_ORIGINS` com
