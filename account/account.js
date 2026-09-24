@@ -74,6 +74,7 @@
     const memberList = document.getElementById("memberList");
     const pendingInvitesPanel = document.getElementById("pendingInvitesPanel");
     const pendingInviteList = document.getElementById("pendingInviteList");
+    const roleCatalog = document.getElementById("roleCatalog");
     const projectList = document.getElementById("projectList");
     const projectsTitle = document.getElementById("projectsTitle");
     const projectsCopy = document.getElementById("projectsCopy");
@@ -337,6 +338,7 @@
         studioDangerPanel.hidden = true;
         memberList.hidden = true;
         pendingInvitesPanel.hidden = true;
+        roleCatalog.hidden = true;
         projectList.hidden = true;
         overviewProjectCount.textContent = "—";
         clearProjectAdministration();
@@ -531,7 +533,7 @@
         members.forEach(function (member) {
             const controls = document.createElement("div"); controls.className = "row-controls";
             if (isOwner && member.role !== "owner") {
-                const select = document.createElement("select"); select.className = "compact-select"; select.dataset.memberRole = member.user_id; select.value = member.role;
+                const select = document.createElement("select"); select.className = "compact-select"; select.dataset.memberRole = member.user_id; select.dataset.previousRole = member.role; select.value = member.role; select.setAttribute("aria-label", "Alterar cargo de " + (member.display_name || member.email || "membro"));
                 ["member", "admin"].forEach(function (memberRole) { const option = new Option(memberRole === "admin" ? "Admin" : "Membro", memberRole); select.add(option); });
                 const remove = document.createElement("button"); remove.type = "button"; remove.className = "row-button row-button-danger"; remove.dataset.removeMember = member.user_id; remove.textContent = "Remover";
                 controls.append(select, remove);
@@ -542,6 +544,7 @@
         memberList.hidden = !members.length;
         membersTitle.textContent = members.length === 1 ? "1 pessoa no estúdio." : members.length + " pessoas no estúdio.";
         membersCopy.textContent = isOwner ? "Você pode ajustar os papéis de admins e membros ou remover acessos a qualquer momento." : "Os papéis e acessos são controlados pelos owners do estúdio.";
+        roleCatalog.hidden = !members.length;
 
         pendingInviteList.replaceChildren();
         const invites = Array.isArray(data.invites) ? data.invites : [];
@@ -819,8 +822,17 @@
     memberList.addEventListener("change", async function (event) {
         const target = event.target;
         if (!target.matches("[data-member-role]")) return;
-        try { const token = await getValidAccessToken(); if (!token) throw new Error("Sessão expirada."); await studioRequest("update_member_role", token, { studio_id: activeStudioId, target_id: target.dataset.memberRole, role: target.value }); await loadActiveStudio(token); }
-        catch (error) { inviteStatus.textContent = error.message || "Não foi possível alterar o papel."; }
+        const previousRole = target.dataset.previousRole || "member";
+        const nextLabel = target.value === "admin" ? "Admin" : "Membro";
+        if (!window.confirm("Alterar o cargo desta pessoa para “" + nextLabel + "”?")) { target.value = previousRole; return; }
+        target.disabled = true;
+        try {
+            const token = await getValidAccessToken(); if (!token) throw new Error("Sessão expirada.");
+            await studioRequest("update_member_role", token, { studio_id: activeStudioId, target_id: target.dataset.memberRole, role: target.value });
+            await loadActiveStudio(token);
+        }
+        catch (error) { target.value = previousRole; inviteStatus.textContent = error.message || "Não foi possível alterar o cargo."; }
+        finally { target.disabled = false; }
     });
 
     memberList.addEventListener("click", async function (event) {
