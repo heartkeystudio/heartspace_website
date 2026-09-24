@@ -88,6 +88,69 @@ async function memberDetails(admin: any, rows: Array<any>) {
   }));
 }
 
+const productionTemplates: Record<string, { label: string; permissions: Record<string, Record<string, boolean>>; colors: Record<string, string> }> = {
+  game_development: {
+    label: "Desenvolvimento de jogos",
+    permissions: {
+      game_designer: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true, create_sprints: true },
+      artist: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true },
+      programmer: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true },
+      audio: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true },
+      narrative: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true },
+      qa: { can_view_wiki: true, can_comment_wiki: true, view_all_tasks: true },
+      producer: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true, create_sprints: true, delete_sprints: true, manage_wiki_visibility: true },
+      marketing: { can_view_wiki: true, can_comment_wiki: true, view_all_tasks: true },
+    },
+    colors: { game_designer: "#a855f7", artist: "#ec4899", programmer: "#22c55e", audio: "#f59e0b", narrative: "#38bdf8", qa: "#f97316", producer: "#e879f9", marketing: "#60a5fa" },
+  },
+  creative_studio: {
+    label: "Estúdio criativo",
+    permissions: {
+      direction: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true, create_sprints: true, manage_wiki_visibility: true },
+      design: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true },
+      illustration: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true },
+      video: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true },
+      writing: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true },
+      production: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true, create_sprints: true, delete_sprints: true },
+    },
+    colors: { direction: "#a855f7", design: "#ec4899", illustration: "#f97316", video: "#38bdf8", writing: "#22c55e", production: "#e879f9" },
+  },
+  marketing: {
+    label: "Marketing",
+    permissions: {
+      strategy: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true, create_sprints: true },
+      content: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true },
+      design: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true },
+      paid_media: { can_view_wiki: true, can_comment_wiki: true, view_all_tasks: true },
+      social: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true },
+      analytics: { can_view_wiki: true, can_comment_wiki: true, view_all_tasks: true },
+    },
+    colors: { strategy: "#a855f7", content: "#38bdf8", design: "#ec4899", paid_media: "#f59e0b", social: "#22c55e", analytics: "#f97316" },
+  },
+  accounting: {
+    label: "Contabilidade",
+    permissions: {
+      management: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true, create_sprints: true },
+      accounting: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true },
+      tax: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true },
+      payroll: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true },
+      finance: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true },
+      service: { can_view_wiki: true, can_comment_wiki: true, view_all_tasks: true },
+    },
+    colors: { management: "#a855f7", accounting: "#22c55e", tax: "#f59e0b", payroll: "#38bdf8", finance: "#ec4899", service: "#94a3b8" },
+  },
+  blank: { label: "Em branco", permissions: {}, colors: {} },
+};
+
+function templateKey(value: unknown) {
+  return typeof value === "string" && productionTemplates[value] ? value : "blank";
+}
+
+function cleanRoleKeys(value: unknown, permissions: Record<string, Record<string, boolean>>) {
+  if (!Array.isArray(value)) return [];
+  return Array.from(new Set(value.filter((role): role is string => typeof role === "string" && Object.prototype.hasOwnProperty.call(permissions, role))));
+}
+
 Deno.serve(async (request) => {
   const origin = allowedOrigin(request.headers.get("origin"));
   if (request.method === "OPTIONS") return new Response(null, { status: origin ? 204 : 403, headers: { ...corsHeaders, ...(origin ? { "Access-Control-Allow-Origin": origin } : {}) } });
@@ -175,6 +238,7 @@ Deno.serve(async (request) => {
   if (payload.action === "create_studio") {
     const name = typeof payload.name === "string" ? payload.name.trim().replace(/\s+/g, " ") : "";
     const slug = slugFrom(typeof payload.slug === "string" && payload.slug.trim() ? payload.slug : name);
+    const roleTemplateKey = templateKey(payload.role_template_key);
     if (name.length < 2 || name.length > 80 || !/^[a-z0-9](?:[a-z0-9-]{1,58}[a-z0-9])?$/.test(slug)) {
       return response({ error: "Escolha um nome entre 2 e 80 caracteres que gere um endereço válido." }, 400, origin);
     }
@@ -189,7 +253,15 @@ Deno.serve(async (request) => {
       const duplicate = error.code === "23505";
       return response({ error: duplicate ? "Esse endereço de estúdio já está em uso. Escolha outro nome." : "Não foi possível criar o estúdio." }, duplicate ? 409 : 500, origin);
     }
-    return response({ studio: data }, 201, origin);
+    const studioId = data?.id || data;
+    if (typeof studioId === "string") {
+      const { error: templateError } = await admin.from("studios").update({ role_template_key: roleTemplateKey }).eq("id", studioId);
+      if (templateError) {
+        console.error("create_studio template failed", { code: templateError.code, message: templateError.message });
+        return response({ error: "O estúdio foi criado, mas o modelo de papéis não pôde ser aplicado. Execute a migration de papéis e tente novamente." }, 500, origin);
+      }
+    }
+    return response({ studio: data, role_template_key: roleTemplateKey }, 201, origin);
   }
 
   if (payload.action === "upload_studio_icon") {
@@ -227,10 +299,16 @@ Deno.serve(async (request) => {
     if (membershipError || !membership || !["owner", "admin"].includes(membership.role)) {
       return response({ error: "Você não pode criar projetos neste estúdio." }, 403, origin);
     }
-    const projectPayload: Record<string, unknown> = { studio_id: studioId, owner_id: authData.user.id, name };
+    const { data: studio, error: studioError } = await admin.from("studios").select("role_template_key").eq("id", studioId).maybeSingle();
+    if (studioError || !studio) return response({ error: "Não foi possível carregar o modelo deste estúdio." }, 500, origin);
+    const template = productionTemplates[templateKey(studio.role_template_key)];
+    const projectPayload: Record<string, unknown> = {
+      studio_id: studioId, owner_id: authData.user.id, name,
+      role_permissions: template.permissions, role_colors: template.colors,
+    };
     if (description) projectPayload.description = description;
     const { data, error } = await admin.from("projects").insert(projectPayload)
-      .select("id, studio_id, name, description, cover_image, created_at").single();
+      .select("id, studio_id, name, description, cover_image, banner_image, role_permissions, role_colors, created_at").single();
     if (error) {
       console.error("create_project failed", { code: error.code, message: error.message, details: error.details });
       return response({ error: "Não foi possível criar o projeto agora." }, 500, origin);
@@ -248,10 +326,53 @@ Deno.serve(async (request) => {
     const { membership, error: membershipError } = await getMembership(admin, studioId, authData.user.id);
     if (membershipError || !membership) return response({ error: "Você não possui acesso a este projeto." }, 403, origin);
     const { data: project, error } = await admin.from("projects")
-      .select("id, studio_id, name, description, cover_image, banner_image, created_at")
+      .select("id, studio_id, name, description, cover_image, banner_image, role_permissions, role_colors, created_at")
       .eq("id", projectId).eq("studio_id", studioId).maybeSingle();
     if (error || !project) return response({ error: "Não foi possível carregar o projeto." }, 404, origin);
-    return response({ project, membership }, 200, origin);
+    const { data: studioMembers, error: studioMembersError } = await admin.from("studio_members")
+      .select("user_id, role").eq("studio_id", studioId);
+    const { data: roleRows, error: roleRowsError } = await admin.from("project_members")
+      .select("user_id, role, roles").eq("project_id", projectId);
+    if (studioMembersError || roleRowsError) return response({ error: "Não foi possível carregar os papéis do projeto." }, 500, origin);
+    const details = await memberDetails(admin, studioMembers || []);
+    const rolesByUser = new Map((roleRows || []).map((row) => [row.user_id, row]));
+    const projectMembers = details.map((member) => ({
+      ...member,
+      project_roles: Array.isArray(rolesByUser.get(member.user_id)?.roles)
+        ? rolesByUser.get(member.user_id).roles
+        : rolesByUser.get(member.user_id)?.role ? [rolesByUser.get(member.user_id).role] : [],
+    }));
+    return response({ project, membership, project_members: projectMembers }, 200, origin);
+  }
+
+  if (payload.action === "set_project_member_roles") {
+    const studioId = typeof payload.studio_id === "string" ? payload.studio_id : "";
+    const projectId = typeof payload.project_id === "string" ? payload.project_id : "";
+    const targetId = typeof payload.target_id === "string" ? payload.target_id : "";
+    if (!studioId || !projectId || !targetId) return response({ error: "Dados de papel inválidos." }, 400, origin);
+    const { membership, error: membershipError } = await getMembership(admin, studioId, authData.user.id);
+    if (membershipError || !membership || !["owner", "admin"].includes(membership.role)) return response({ error: "Você não pode alterar os papéis deste projeto." }, 403, origin);
+    const [{ data: project }, { membership: targetMembership }] = await Promise.all([
+      admin.from("projects").select("id, role_permissions").eq("id", projectId).eq("studio_id", studioId).maybeSingle(),
+      getMembership(admin, studioId, targetId),
+    ]);
+    if (!project || !targetMembership) return response({ error: "Essa pessoa não faz parte deste estúdio." }, 400, origin);
+    const permissions = project.role_permissions && typeof project.role_permissions === "object" ? project.role_permissions : {};
+    const roles = cleanRoleKeys(payload.roles, permissions);
+    const primaryRole = roles[0] || "reader";
+    const { data: existing, error: existingError } = await admin.from("project_members")
+      .select("user_id").eq("project_id", projectId).eq("user_id", targetId).maybeSingle();
+    if (existingError) return response({ error: "Não foi possível consultar os papéis atuais." }, 500, origin);
+    const mutation = existing
+      ? admin.from("project_members").update({ role: primaryRole, roles, updated_at: new Date().toISOString() }).eq("project_id", projectId).eq("user_id", targetId)
+      : admin.from("project_members").insert({ project_id: projectId, user_id: targetId, role: primaryRole, roles });
+    const { error: saveError } = await mutation;
+    if (saveError) {
+      console.error("set_project_member_roles failed", { code: saveError.code, message: saveError.message });
+      return response({ error: "Não foi possível salvar os papéis deste membro." }, 500, origin);
+    }
+    await admin.from("studio_audit_log").insert({ studio_id: studioId, actor_id: authData.user.id, action: "project.roles_updated", target_type: "project", target_id: projectId });
+    return response({ ok: true, roles }, 200, origin);
   }
 
   if (payload.action === "upload_project_image") {
@@ -311,7 +432,7 @@ Deno.serve(async (request) => {
     if (membershipError || !membership) return response({ error: "Você não possui acesso a este estúdio." }, 403, origin);
 
     const [studioResult, membersResult, projectsResult, activityResult, invitesResult] = await Promise.all([
-      admin.from("studios").select("id, name, description, logo_url, created_at").eq("id", studioId).maybeSingle(),
+      admin.from("studios").select("id, name, description, logo_url, role_template_key, created_at").eq("id", studioId).maybeSingle(),
       admin.from("studio_members").select("user_id, role").eq("studio_id", studioId),
       admin.from("projects").select("id, name, description, cover_image, banner_image, created_at").eq("studio_id", studioId).order("created_at", { ascending: false }),
       admin.from("studio_audit_log").select("id, actor_id, action, target_type, target_id, created_at").eq("studio_id", studioId).order("created_at", { ascending: false }).limit(20),
@@ -338,10 +459,11 @@ Deno.serve(async (request) => {
     const name = typeof payload.name === "string" ? payload.name.trim().replace(/\s+/g, " ") : "";
     const description = typeof payload.description === "string" ? payload.description.trim() : "";
     const logoUrl = typeof payload.logo_url === "string" ? payload.logo_url.trim() : "";
+    const roleTemplateKey = templateKey(payload.role_template_key);
     if (!studioId || name.length < 2 || name.length > 80 || description.length > 500 || logoUrl.length > 2048 || (logoUrl && !/^https:\/\//i.test(logoUrl))) return response({ error: "Dados de estúdio inválidos." }, 400, origin);
     const { membership, error: membershipError } = await getMembership(admin, studioId, authData.user.id);
     if (membershipError || !membership || !["owner", "admin"].includes(membership.role)) return response({ error: "Você não pode editar este estúdio." }, 403, origin);
-    const { data, error } = await admin.from("studios").update({ name, description: description || null, logo_url: logoUrl || null }).eq("id", studioId).select("id, name, description, logo_url, created_at").single();
+    const { data, error } = await admin.from("studios").update({ name, description: description || null, logo_url: logoUrl || null, role_template_key: roleTemplateKey }).eq("id", studioId).select("id, name, description, logo_url, role_template_key, created_at").single();
     if (error) {
       console.error("update_studio failed", { code: error.code, message: error.message, details: error.details });
       return response({ error: "Não foi possível atualizar o estúdio." }, 500, origin);

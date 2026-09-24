@@ -72,11 +72,20 @@ Antes de disponibilizar cada ação, aplique as migrations na ordem abaixo:
 11. `SUPABASE_PROJECT_IMAGES.sql` — cria o bucket público de imagens; mantém
     `cover_image` como perfil quadrado que o Hub já consome e adiciona
     `banner_image` para a capa horizontal (até 1600 × 900 e 600 KB).
+12. `SUPABASE_PROJECT_ROLE_SYSTEM.sql` — adiciona o modelo de estúdio e a
+    tabela `project_members`, com papéis múltiplos por projeto. Não usa as
+    tabelas legadas `workspaces` ou `workspace_members`.
 
 No dashboard, publique/atualize a Function com o nome **`heartspace-studio`**
 e configure `HEARTSPACE_ALLOWED_ORIGINS` com
 `https://heartspace.tools,https://www.heartspace.tools`. A service role fica
 somente no ambiente da Function; o navegador usa apenas a publishable key.
+
+Os modelos iniciais disponíveis são Desenvolvimento de jogos, Estúdio criativo,
+Marketing, Contabilidade e Em branco. O modelo é salvo no estúdio e seus papéis
+são copiados para cada projeto novo. Cargos administrativos (Owner, Admin e
+Membro) continuam sendo do estúdio; os cargos de produção são cumulativos e
+existem apenas dentro de cada projeto.
 
 ## Edge Function `heartspace-billing`
 

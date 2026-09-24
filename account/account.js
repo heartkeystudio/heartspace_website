@@ -41,6 +41,7 @@
     const createStudioForm = document.getElementById("createStudioForm");
     const studioName = document.getElementById("studioName");
     const studioSlug = document.getElementById("studioSlug");
+    const studioTemplate = document.getElementById("studioTemplate");
     const studioStatus = document.getElementById("studioStatus");
     const inviteMemberForm = document.getElementById("inviteMemberForm");
     const inviteStudio = document.getElementById("inviteStudio");
@@ -59,6 +60,7 @@
     const studioSettingsForm = document.getElementById("studioSettingsForm");
     const activeStudioHeading = document.getElementById("activeStudioHeading");
     const activeStudioName = document.getElementById("activeStudioName");
+    const activeStudioTemplate = document.getElementById("activeStudioTemplate");
     const activeStudioIcon = document.getElementById("activeStudioIcon");
     const activeStudioIconFile = document.getElementById("activeStudioIconFile");
     const activeStudioIconPreview = document.getElementById("activeStudioIconPreview");
@@ -96,6 +98,9 @@
     const activeProjectBannerFile = document.getElementById("activeProjectBannerFile");
     const activeProjectBannerPreview = document.getElementById("activeProjectBannerPreview");
     const projectSettingsStatus = document.getElementById("projectSettingsStatus");
+    const projectRolesPanel = document.getElementById("projectRolesPanel");
+    const productionRoleList = document.getElementById("productionRoleList");
+    const projectRolesStatus = document.getElementById("projectRolesStatus");
     let currentStudios = [];
     let activeStudioId = sessionStorage.getItem(sessionKey("active-studio")) || "";
     let activeProjectId = sessionStorage.getItem(sessionKey("active-project")) || "";
@@ -347,6 +352,8 @@
     function clearProjectAdministration() {
         activeProjectAdmin = null;
         projectSettingsPanel.hidden = true;
+        projectRolesPanel.hidden = true;
+        productionRoleList.replaceChildren();
         projectContextLabel.hidden = true;
     }
 
@@ -500,6 +507,7 @@
         memberRole.textContent = role === "owner" ? "Owner" : role === "admin" ? "Admin" : "Membro";
         memberRole.hidden = false;
         activeStudioName.value = studio.name || "";
+        activeStudioTemplate.value = studio.role_template_key || "blank";
         activeStudioIcon.value = studio.logo_url || "";
         activeStudioIconFile.value = "";
         pendingStudioIconFile = null;
@@ -608,7 +616,7 @@
                 activeStudioIcon.value = logoUrl;
                 pendingStudioIconFile = null;
             }
-            await studioRequest("update_studio", token, { studio_id: activeStudioId, name: activeStudioName.value.trim(), description: activeStudioDescription.value.trim(), logo_url: logoUrl });
+            await studioRequest("update_studio", token, { studio_id: activeStudioId, name: activeStudioName.value.trim(), description: activeStudioDescription.value.trim(), logo_url: logoUrl, role_template_key: activeStudioTemplate.value });
             setSettingsStatus("Alterações salvas.", "success"); await loadStudios(token);
         } catch (error) { setSettingsStatus(error.message || "Não foi possível salvar as alterações.", "error"); }
         finally { button.disabled = false; }
@@ -696,6 +704,42 @@
         } finally { URL.revokeObjectURL(sourceUrl); }
     }
 
+    function humanizeProductionRole(key) {
+        const labels = { game_designer: "Game Designer", artist: "Artista", programmer: "Programador(a)", audio: "Áudio", narrative: "Narrativa", qa: "QA", producer: "Produção", marketing: "Marketing", direction: "Direção", design: "Design", illustration: "Ilustração", video: "Vídeo", writing: "Redação", production: "Produção", strategy: "Estratégia", content: "Conteúdo", paid_media: "Mídia paga", social: "Social", analytics: "Analytics", management: "Gestão", accounting: "Contábil", tax: "Fiscal", payroll: "Folha", finance: "Financeiro", service: "Atendimento" };
+        return labels[key] || key.replace(/_/g, " ").replace(/\b\w/g, function (letter) { return letter.toUpperCase(); });
+    }
+
+    function renderProjectRoles(data, canManage) {
+        productionRoleList.replaceChildren();
+        const permissions = data.project && data.project.role_permissions && typeof data.project.role_permissions === "object" ? data.project.role_permissions : {};
+        const keys = Object.keys(permissions);
+        if (!keys.length) {
+            const note = document.createElement("p"); note.className = "field-note";
+            note.textContent = "Este estúdio foi criado sem um modelo de papéis. Os próximos projetos podem nascer com um modelo ao criar outro estúdio.";
+            productionRoleList.append(note);
+            projectRolesPanel.hidden = false;
+            return;
+        }
+        (data.project_members || []).forEach(function (member) {
+            const row = document.createElement("div"); row.className = "production-member-row";
+            const identity = document.createElement("div");
+            const name = document.createElement("strong"); name.textContent = member.display_name || member.email || "Membro";
+            const meta = document.createElement("small"); meta.textContent = member.role === "owner" ? "Owner do estúdio" : member.role === "admin" ? "Admin do estúdio" : "Membro do estúdio";
+            identity.append(name, meta);
+            const checks = document.createElement("div"); checks.className = "production-role-checks";
+            const activeRoles = Array.isArray(member.project_roles) ? member.project_roles : [];
+            keys.forEach(function (roleKey) {
+                const label = document.createElement("label"); label.className = "production-role-option";
+                const input = document.createElement("input"); input.type = "checkbox"; input.value = roleKey; input.checked = activeRoles.includes(roleKey); input.disabled = !canManage;
+                input.dataset.projectRoleMember = member.user_id;
+                const text = document.createElement("span"); text.textContent = humanizeProductionRole(roleKey);
+                label.append(input, text); checks.append(label);
+            });
+            row.append(identity, checks); productionRoleList.append(row);
+        });
+        projectRolesPanel.hidden = false;
+    }
+
     function renderActiveProject(data) {
         activeProjectAdmin = data;
         const project = data.project;
@@ -714,6 +758,7 @@
         updateProjectBannerPreview(activeProjectBanner.value);
         Array.from(projectSettingsForm.elements).forEach(function (element) { element.disabled = !canManage; });
         projectSettingsPanel.hidden = false;
+        renderProjectRoles(data, canManage);
     }
 
     async function loadActiveProject(token) {
@@ -732,6 +777,28 @@
         sessionStorage.setItem(sessionKey("active-project"), activeProjectId);
         const token = await getValidAccessToken().catch(function () { return null; });
         if (token) await loadActiveProject(token);
+    });
+
+    productionRoleList.addEventListener("change", async function (event) {
+        const target = event.target;
+        if (!target.matches("[data-project-role-member]") || !activeStudioId || !activeProjectId) return;
+        const memberId = target.dataset.projectRoleMember;
+        const selected = Array.from(productionRoleList.querySelectorAll("[data-project-role-member='" + memberId + "']:checked")).map(function (input) { return input.value; });
+        const inputs = Array.from(productionRoleList.querySelectorAll("[data-project-role-member='" + memberId + "']"));
+        inputs.forEach(function (input) { input.disabled = true; });
+        projectRolesStatus.textContent = "Salvando papéis…";
+        projectRolesStatus.className = "form-status";
+        try {
+            const token = await getValidAccessToken(); if (!token) throw new Error("Sua sessão expirou. Entre novamente.");
+            await studioRequest("set_project_member_roles", token, { studio_id: activeStudioId, project_id: activeProjectId, target_id: memberId, roles: selected });
+            projectRolesStatus.textContent = "Papéis atualizados para este projeto.";
+            projectRolesStatus.className = "form-status is-success";
+            await loadActiveProject(token);
+        } catch (error) {
+            projectRolesStatus.textContent = error.message || "Não foi possível salvar os papéis.";
+            projectRolesStatus.className = "form-status is-error";
+            const token = await getValidAccessToken().catch(function () { return null; }); if (token) await loadActiveProject(token);
+        } finally { inputs.forEach(function (input) { input.disabled = false; }); }
     });
 
     activeProjectImage.addEventListener("input", function () {
@@ -857,7 +924,7 @@
         submitButton.disabled = true; setStudioStatus("Criando seu estúdio…", "");
         try {
             const token = await getValidAccessToken(); if (!token) throw new Error("Sua sessão expirou. Entre novamente para continuar.");
-            await studioRequest("create_studio", token, { name: studioName.value.trim(), slug: studioSlug.value.trim() });
+            await studioRequest("create_studio", token, { name: studioName.value.trim(), slug: studioSlug.value.trim(), role_template_key: studioTemplate.value });
             createStudioForm.reset(); setStudioStatus("Estúdio criado. Você já é o owner inicial.", "success"); await loadStudios(token); selectWorkspaceView("studios");
         } catch (error) {
             const localPreview = window.location.protocol === "file:";
