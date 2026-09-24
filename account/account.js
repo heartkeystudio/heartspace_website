@@ -75,6 +75,7 @@
     let currentStudios = [];
     let activeStudioId = sessionStorage.getItem(sessionKey("active-studio")) || "";
     let activeStudioAdmin = null;
+    let currentUserId = "";
     const planDetails = {
         indie: { name: "Indie — Studio", copy: "Colaboração e infraestrutura para quem já está construindo junto." },
         studio: { name: "Studio", copy: "Permissões, playtests e fluxos de produção para estúdios em crescimento." }
@@ -165,6 +166,7 @@
     }
 
     function showMemberArea(user) {
+        currentUserId = user.id || currentUserId;
         memberEmail.textContent = user.email || "Conta HeartSpace";
         securityEmail.textContent = user.email || "Conta HeartSpace";
         accountLoading.hidden = true;
@@ -234,6 +236,29 @@
         const data = await response.json().catch(function () { return {}; });
         if (!response.ok) throw new Error(data.error || "Não foi possível concluir esta ação agora.");
         return data;
+    }
+
+    async function listStudiosWithRls(token) {
+        const restBase = config.supabaseUrl.replace(/\/$/, "") + "/rest/v1/";
+        const headers = { "apikey": config.supabaseAnonKey, "Authorization": "Bearer " + token };
+        const membersUrl = new URL(restBase + "studio_members");
+        membersUrl.searchParams.set("select", "studio_id,role,created_at");
+        membersUrl.searchParams.set("order", "created_at.asc");
+        if (currentUserId) membersUrl.searchParams.set("user_id", "eq." + currentUserId);
+        const membershipsResponse = await fetch(membersUrl.toString(), { headers: headers });
+        const memberships = await membershipsResponse.json().catch(function () { return []; });
+        if (!membershipsResponse.ok || !Array.isArray(memberships)) throw new Error("A lista de estúdios não respondeu.");
+        const studioIds = memberships.map(function (membership) { return membership.studio_id; }).filter(Boolean);
+        if (!studioIds.length) return [];
+        const studiosUrl = new URL(restBase + "studios");
+        // `slug` é opcional na estrutura legada do Hub; a lista não depende dele.
+        studiosUrl.searchParams.set("select", "id,name,created_at");
+        studiosUrl.searchParams.set("id", "in.(" + studioIds.join(",") + ")");
+        const studiosResponse = await fetch(studiosUrl.toString(), { headers: headers });
+        const studios = await studiosResponse.json().catch(function () { return []; });
+        if (!studiosResponse.ok || !Array.isArray(studios)) throw new Error("Os dados dos estúdios não responderam.");
+        const studiosById = new Map(studios.map(function (studio) { return [studio.id, studio]; }));
+        return memberships.map(function (membership) { return Object.assign({}, membership, { studios: studiosById.get(membership.studio_id) }); }).filter(function (membership) { return membership.studios; });
     }
 
     async function loadProfile(token) {
@@ -325,10 +350,16 @@
             if (activeStudioId) await loadActiveStudio(token);
         }
         catch (error) {
-            studiosTitle.textContent = "Não foi possível carregar seus estúdios.";
-            studiosCopy.textContent = "Confira sua conexão e tente novamente mais tarde.";
-            overviewStudioTitle.textContent = "Estúdios indisponíveis agora";
-            overviewStudioCopy.textContent = "A sua sessão continua protegida; tente atualizar a página para consultar seus espaços.";
+            try {
+                const studios = await listStudiosWithRls(token);
+                renderStudios(studios);
+                if (activeStudioId) await loadActiveStudio(token);
+            } catch (fallbackError) {
+                studiosTitle.textContent = "Não foi possível carregar seus estúdios.";
+                studiosCopy.textContent = "A conexão com a conta falhou. Atualize a página; se persistir, use o Hub enquanto verificamos o serviço.";
+                overviewStudioTitle.textContent = "Estúdios indisponíveis agora";
+                overviewStudioCopy.textContent = "A sua sessão continua protegida; tente atualizar a página para consultar seus espaços.";
+            }
         }
     }
 
