@@ -152,19 +152,26 @@
         return "heartspace-account-" + name;
     }
 
+    function migrateLegacySession() {
+        const accessToken = localStorage.getItem(sessionKey("access-token")) || sessionStorage.getItem(sessionKey("access-token"));
+        if (!accessToken || localStorage.getItem(sessionKey("access-token"))) return;
+        localStorage.setItem(sessionKey("access-token"), accessToken);
+        ["refresh-token", "expires-at"].forEach(function (name) { const value = sessionStorage.getItem(sessionKey(name)); if (value) localStorage.setItem(sessionKey(name), value); });
+    }
+
     function saveSession(accessToken, refreshToken, expiresAt) {
         if (!accessToken) return;
-        sessionStorage.setItem(sessionKey("access-token"), accessToken);
-        if (refreshToken) sessionStorage.setItem(sessionKey("refresh-token"), refreshToken);
-        else sessionStorage.removeItem(sessionKey("refresh-token"));
-        if (expiresAt) sessionStorage.setItem(sessionKey("expires-at"), String(expiresAt));
-        else sessionStorage.removeItem(sessionKey("expires-at"));
+        localStorage.setItem(sessionKey("access-token"), accessToken);
+        if (refreshToken) localStorage.setItem(sessionKey("refresh-token"), refreshToken);
+        else localStorage.removeItem(sessionKey("refresh-token"));
+        if (expiresAt) localStorage.setItem(sessionKey("expires-at"), String(expiresAt));
+        else localStorage.removeItem(sessionKey("expires-at"));
     }
 
     function clearSession() {
-        sessionStorage.removeItem(sessionKey("access-token"));
-        sessionStorage.removeItem(sessionKey("refresh-token"));
-        sessionStorage.removeItem(sessionKey("expires-at"));
+        localStorage.removeItem(sessionKey("access-token"));
+        localStorage.removeItem(sessionKey("refresh-token"));
+        localStorage.removeItem(sessionKey("expires-at"));
     }
 
     function readCallbackSession() {
@@ -178,12 +185,12 @@
     }
 
     function accessTokenExpiresSoon() {
-        const expiresAt = Number(sessionStorage.getItem(sessionKey("expires-at")) || 0);
+        const expiresAt = Number(localStorage.getItem(sessionKey("expires-at")) || 0);
         return Boolean(expiresAt && expiresAt <= (Date.now() / 1000) + 60);
     }
 
     async function refreshAccessToken() {
-        const refreshToken = sessionStorage.getItem(sessionKey("refresh-token"));
+        const refreshToken = localStorage.getItem(sessionKey("refresh-token"));
         if (!refreshToken) return null;
         const response = await fetch(config.supabaseUrl.replace(/\/$/, "") + "/auth/v1/token?grant_type=refresh_token", {
             method: "POST",
@@ -197,9 +204,10 @@
     }
 
     async function getValidAccessToken() {
+        migrateLegacySession();
         const callbackToken = readCallbackSession();
         if (callbackToken && !accessTokenExpiresSoon()) return callbackToken;
-        const storedToken = sessionStorage.getItem(sessionKey("access-token"));
+        const storedToken = localStorage.getItem(sessionKey("access-token"));
         if (!storedToken || accessTokenExpiresSoon()) return refreshAccessToken();
         return storedToken;
     }
@@ -1178,7 +1186,7 @@
     });
 
     signOut.addEventListener("click", function () {
-        const token = sessionStorage.getItem(sessionKey("access-token"));
+        const token = localStorage.getItem(sessionKey("access-token"));
         clearSession();
         memberArea.hidden = true;
         window.location.replace("../login/");
