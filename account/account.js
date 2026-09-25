@@ -117,6 +117,9 @@
     const publicationVisibility = document.getElementById("publicationVisibility");
     const publicationStatus = document.getElementById("publicationStatus");
     const publicationStatusMessage = document.getElementById("publicationStatusMessage");
+    const appsProjectSelect = document.getElementById("appsProjectSelect");
+    const appsEmptyState = document.getElementById("appsEmptyState");
+    const projectAppsList = document.getElementById("projectAppsList");
     const projectSettingsStatus = document.getElementById("projectSettingsStatus");
     const projectRoleCatalogPanel = document.getElementById("projectRoleCatalogPanel");
     const roleCatalogEditor = document.getElementById("roleCatalogEditor");
@@ -324,6 +327,7 @@
         button.addEventListener("click", function () {
             selectWorkspaceView(button.dataset.workspaceView);
             if (button.dataset.workspaceView === "publications") loadPublications();
+            if (button.dataset.workspaceView === "apps") loadProjectApps();
         });
     });
 
@@ -392,6 +396,27 @@
         } catch (error) { setPublicationStatus(error.message || "Não foi possível salvar a publicação.", "error"); }
         finally { button.disabled = false; }
     });
+
+    const appCatalog = [
+        ["docs", "Docs", "Decisões, GDDs e referências vivas."], ["tasks", "Tasks", "Backlog, sprints, bugs e playtests."],
+        ["canvas", "Canvas", "Arte 2D e animação."], ["beats", "Beats", "Áudio adaptativo."], ["states", "States", "Lógica visual."],
+        ["dialogues", "Dialogues", "Narrativa interativa."], ["polygons", "Polygons", "Arte 3D low poly."], ["designs", "Designs", "UI e UX."],
+    ];
+    async function loadProjectApps() {
+        const projectId = appsProjectSelect.value; projectAppsList.replaceChildren(); projectAppsList.hidden = true;
+        if (!activeStudioId || !projectId) { appsEmptyState.textContent = "Crie ou selecione um projeto para configurar seus apps."; return; }
+        try {
+            const token = await getValidAccessToken(); if (!token) throw new Error("Sessão expirada.");
+            const data = await studioRequest("list_project_apps", token, { studio_id: activeStudioId, project_id: projectId });
+            const state = new Map((data.apps || []).map(function (item) { return [item.app_key, item.enabled]; }));
+            appCatalog.forEach(function (app) {
+                const card = document.createElement("article"); const name = document.createElement("strong"); name.textContent = app[1]; const copy = document.createElement("p"); copy.textContent = app[2];
+                const label = document.createElement("label"); label.className = "production-role-option"; const input = document.createElement("input"); input.type = "checkbox"; input.checked = state.has(app[0]) ? state.get(app[0]) : ["docs", "tasks"].includes(app[0]); const text = document.createElement("span"); text.textContent = input.checked ? "Ativo" : "Desativado"; label.append(input, text); input.addEventListener("change", async function () { input.disabled = true; try { const fresh = await getValidAccessToken(); if (!fresh) throw new Error("Sessão expirada."); await studioRequest("set_project_app", fresh, { studio_id: activeStudioId, project_id: projectId, app_key: app[0], enabled: input.checked }); text.textContent = input.checked ? "Ativo" : "Desativado"; } catch (_) { input.checked = !input.checked; text.textContent = "Erro ao salvar"; } finally { input.disabled = false; } }); card.append(name, copy, label); projectAppsList.append(card);
+            });
+            appsEmptyState.textContent = "Ative apenas as ferramentas que este projeto precisa."; projectAppsList.hidden = false;
+        } catch (error) { appsEmptyState.textContent = error.message || "Não foi possível carregar os apps."; }
+    }
+    appsProjectSelect.addEventListener("change", loadProjectApps);
 
     Array.from(document.querySelectorAll("[data-go-to]")).forEach(function (button) {
         button.addEventListener("click", function () {
@@ -686,6 +711,10 @@
         projects.forEach(function (project) { publicationProjectSelect.add(new Option(project.name || "Projeto sem título", project.id)); });
         publicationProjectSelect.disabled = !projects.length;
         if (projects.length) publicationProjectSelect.value = activeProjectId && projects.some(function (project) { return project.id === activeProjectId; }) ? activeProjectId : projects[0].id;
+        appsProjectSelect.replaceChildren();
+        projects.forEach(function (project) { appsProjectSelect.add(new Option(project.name || "Projeto sem título", project.id)); });
+        appsProjectSelect.disabled = !projects.length;
+        if (projects.length) appsProjectSelect.value = activeProjectId && projects.some(function (project) { return project.id === activeProjectId; }) ? activeProjectId : projects[0].id;
         projectContextLabel.hidden = !projects.length;
         if (!projects.some(function (project) { return project.id === activeProjectId; })) activeProjectId = projects.length ? projects[0].id : "";
         if (activeProjectId) {

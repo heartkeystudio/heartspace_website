@@ -34,6 +34,7 @@
                     <button class="workspace-nav-item is-active" type="button" data-workspace-view="overview"><span>⌂</span>Visão geral</button>
                     <button class="workspace-nav-item" type="button" data-workspace-view="studios"><span>◇</span>Estúdios</button>
                     <button class="workspace-nav-item" type="button" data-workspace-view="projects"><span>▣</span>Projetos</button>
+                    <button class="workspace-nav-item" type="button" data-workspace-view="apps"><span>▦</span>Apps</button>
                     <button class="workspace-nav-item" type="button" data-workspace-view="members"><span>◎</span>Membros</button>
                     <button class="workspace-nav-item" type="button" data-workspace-view="publications"><span>↗</span>Publicações</button>
                     <p class="workspace-nav-label workspace-nav-label-lower">CONTA</p>
@@ -82,6 +83,12 @@
                         <p class="workspace-lead">Convites, permissões e histórico de membros pertencem ao estúdio — nunca a um link público ou a um arquivo local compartilhado por acidente.</p>
                         <article class="empty-panel members-panel"><span class="empty-symbol">◎</span><h2 id="membersTitle">Você criará um estúdio antes de convidar pessoas.</h2><p id="membersCopy">O fluxo terá papéis claros, revogação de convite e uma visão de quem possui acesso a cada espaço.</p><div class="admin-list" id="memberList" hidden></div><div class="admin-subsection" id="pendingInvitesPanel" hidden><p class="panel-kicker">CONVITES PENDENTES</p><div class="admin-list" id="pendingInviteList"></div></div><form class="studio-form" id="inviteMemberForm" hidden><p class="panel-kicker">ADICIONAR PESSOA</p><label for="inviteStudio">Estúdio</label><select id="inviteStudio" required></select><label for="inviteEmail">E-mail da pessoa</label><input id="inviteEmail" type="email" autocomplete="email" placeholder="pessoa@estudio.com" required><label for="inviteRole">Cargo inicial</label><select id="inviteRole"><option value="member">Membro</option><option value="admin">Admin</option></select><button class="portal-button" type="submit">Criar link de convite</button><p class="form-status" id="inviteStatus" aria-live="polite"></p><a class="hub-link" id="inviteLink" hidden target="_blank" rel="noreferrer">Abrir convite →</a></form></article>
                         <article class="role-catalog" id="roleCatalog" hidden><p class="panel-kicker">CARGOS E PERMISSÕES</p><h2>Um papel claro para cada pessoa.</h2><div class="role-grid"><article><strong>Owner</strong><p>Responsável pelo estúdio. Pode apagar o espaço, alterar cargos e remover membros.</p></article><article><strong>Admin</strong><p>Gerencia configurações, projetos e convites. Não altera Owner nem remove pessoas.</p></article><article><strong>Membro</strong><p>Colabora no estúdio e acessa o trabalho compartilhado conforme o projeto.</p></article></div><p class="field-note">Os cargos são deliberadamente fixos para manter a mesma regra no site e no Hub. A mudança de cargo fica registrada no histórico do estúdio.</p></article>
+                    </section>
+
+                    <section class="workspace-view" data-workspace-panel="apps" hidden>
+                        <p class="eyebrow">APPS</p><h1>Ferramentas no contexto certo.</h1>
+                        <p class="workspace-lead">Escolha quais apps aparecem e podem trabalhar com cada projeto. Os arquivos e a produção continuam locais no Hub.</p>
+                        <article class="empty-panel"><h2>Apps do projeto</h2><label class="project-context" for="appsProjectSelect">Projeto em edição<select id="appsProjectSelect" aria-label="Escolher projeto para configurar apps"></select></label><p class="field-note" id="appsEmptyState">Selecione um projeto para configurar seus apps.</p><div class="role-grid" id="projectAppsList" hidden></div></article>
                     </section>
 
                     <section class="workspace-view" data-workspace-panel="publications" hidden>

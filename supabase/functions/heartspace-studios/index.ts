@@ -370,6 +370,34 @@ Deno.serve(async (request) => {
     return response({ publication: data }, publicationId ? 200 : 201, origin);
   }
 
+  if (payload.action === "list_project_apps") {
+    const studioId = typeof payload.studio_id === "string" ? payload.studio_id : "";
+    const projectId = typeof payload.project_id === "string" ? payload.project_id : "";
+    if (!studioId || !projectId) return response({ error: "Selecione um projeto." }, 400, origin);
+    const { membership, error: membershipError } = await getMembership(admin, studioId, authData.user.id);
+    if (membershipError || !membership) return response({ error: "Você não possui acesso a este projeto." }, 403, origin);
+    const { data, error } = await admin.from("project_apps").select("app_key, enabled, updated_at").eq("project_id", projectId);
+    if (error) return response({ error: "Não foi possível carregar os apps." }, 500, origin);
+    return response({ apps: data || [] }, 200, origin);
+  }
+
+  if (payload.action === "set_project_app") {
+    const studioId = typeof payload.studio_id === "string" ? payload.studio_id : "";
+    const projectId = typeof payload.project_id === "string" ? payload.project_id : "";
+    const appKey = typeof payload.app_key === "string" ? payload.app_key : "";
+    const enabled = typeof payload.enabled === "boolean" ? payload.enabled : null;
+    const allowedApps = ["docs", "tasks", "canvas", "beats", "states", "dialogues", "polygons", "designs"];
+    if (!studioId || !projectId || !allowedApps.includes(appKey) || enabled === null) return response({ error: "Configuração de app inválida." }, 400, origin);
+    const { membership, error: membershipError } = await getMembership(admin, studioId, authData.user.id);
+    if (membershipError || !membership || !["owner", "admin"].includes(membership.role)) return response({ error: "Você não pode configurar apps neste projeto." }, 403, origin);
+    const { data: project } = await admin.from("projects").select("id").eq("id", projectId).eq("studio_id", studioId).maybeSingle();
+    if (!project) return response({ error: "Projeto não encontrado." }, 404, origin);
+    const { error } = await admin.from("project_apps").upsert({ project_id: projectId, app_key: appKey, enabled, updated_at: new Date().toISOString() }, { onConflict: "project_id,app_key" });
+    if (error) return response({ error: "Não foi possível salvar o app." }, 500, origin);
+    await admin.from("studio_audit_log").insert({ studio_id: studioId, actor_id: authData.user.id, action: enabled ? "project.app_enabled" : "project.app_disabled", target_type: "project", target_id: projectId });
+    return response({ app_key: appKey, enabled }, 200, origin);
+  }
+
   if (payload.action === "create_project") {
     const studioId = typeof payload.studio_id === "string" ? payload.studio_id : "";
     const name = typeof payload.name === "string" ? payload.name.trim().replace(/\s+/g, " ") : "";
