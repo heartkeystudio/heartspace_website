@@ -335,8 +335,7 @@
                 if (!token) throw new Error("Sua sessão expirou.");
                 currentProfile = await loadProfile(token);
             }
-            if (!currentProfile) throw new Error("Não foi possível carregar sua ficha agora.");
-            showProfileOnboarding(currentProfile, true);
+            showProfileOnboarding(currentProfile || {}, true);
         } catch (error) {
             window.alert(error.message || "Não foi possível abrir o perfil.");
         }
@@ -1354,8 +1353,9 @@
             const user = await response.json();
             const profile = await loadProfile(token);
             currentProfile = profile;
-            if (profile && !profile.profile_completed_at) {
-                showProfileOnboarding(profile);
+            const profileComplete = profile && profile.profile_completed_at && profile.full_name && profile.nickname && Number(profile.age) > 0 && profile.profession;
+            if (!profileComplete) {
+                showProfileOnboarding(profile || {});
                 return;
             }
             showMemberArea(user, profile);
