@@ -55,6 +55,8 @@
     const membersTitle = document.getElementById("membersTitle");
     const membersCopy = document.getElementById("membersCopy");
     const studioContextSelect = document.getElementById("studioContextSelect");
+    const studioContextImage = document.getElementById("studioContextImage");
+    const studioContextFallback = document.getElementById("studioContextFallback");
     const overviewStudioCount = document.getElementById("overviewStudioCount");
     const overviewProjectCount = document.getElementById("overviewProjectCount");
     const overviewStudioTitle = document.getElementById("overviewStudioTitle");
@@ -239,7 +241,7 @@
         const isLight = theme === "light";
         document.body.classList.toggle("is-light", isLight);
         themeToggle.setAttribute("aria-pressed", String(isLight));
-        themeToggle.textContent = isLight ? "Modo escuro" : "Modo claro";
+        themeToggle.textContent = isLight ? "🌙" : "☀️";
         localStorage.setItem("heartspace-theme", isLight ? "light" : "dark");
     }
 
@@ -389,6 +391,7 @@
         studioSettingsPanel.hidden = true;
         studioActivityPanel.hidden = true;
         studioDangerPanel.hidden = true;
+        studioDangerPanel.open = false;
         memberList.hidden = true;
         pendingInvitesPanel.hidden = true;
         roleCatalog.hidden = true;
@@ -407,6 +410,23 @@
         projectContextLabel.hidden = true;
     }
 
+    function updateStudioContextMark(studio) {
+        const logoUrl = studio && studio.logo_url;
+        studioContextImage.hidden = !logoUrl;
+        studioContextFallback.hidden = Boolean(logoUrl);
+        studioContextImage.removeAttribute("src");
+        if (logoUrl) studioContextImage.src = logoUrl;
+    }
+
+    function activeStudioFromMemberships(studios) {
+        return studios.map(function (membership) { return membership.studios || membership.studio; }).find(function (studio) { return studio && studio.id === activeStudioId; }) || null;
+    }
+
+    studioContextImage.addEventListener("error", function () {
+        studioContextImage.hidden = true;
+        studioContextFallback.hidden = false;
+    });
+
     function renderStudios(studios) {
         currentStudios = studios;
         studioList.replaceChildren();
@@ -422,6 +442,7 @@
             studioList.hidden = true;
             inviteMemberForm.hidden = true;
             activeStudioId = "";
+            updateStudioContextMark(null);
             sessionStorage.removeItem(sessionKey("active-studio"));
             clearStudioAdministration();
             return;
@@ -445,6 +466,7 @@
             studioContextSelect.value = activeStudioId;
             studioContextSelect.disabled = false;
             inviteStudio.value = activeStudioId;
+            updateStudioContextMark(activeStudioFromMemberships(studios));
             const selectedName = studioContextSelect.options[studioContextSelect.selectedIndex].textContent || "Estúdio ativo";
             overviewStudioTitle.textContent = studios.length === 1 ? "Seu estúdio está pronto." : studios.length + " estúdios, um só controle.";
             overviewStudioCopy.textContent = selectedName + " está conectado à sua conta. Use os papéis e convites para organizar quem pode colaborar.";
@@ -620,6 +642,7 @@
         activity.forEach(function (event) { appendListRow(studioActivityList, String(event.action || "alteração").replace(/\./g, " · "), formatDate(event.created_at)); });
         studioActivityPanel.hidden = !activity.length;
         studioDangerPanel.hidden = !isOwner;
+        studioDangerPanel.open = false;
         deleteStudioName.textContent = studio.name;
         deleteStudioConfirmation.value = "";
     }
@@ -642,12 +665,14 @@
         activeStudioId = studioContextSelect.value;
         if (activeStudioId === "__create__") {
             activeStudioId = "";
+            updateStudioContextMark(null);
             sessionStorage.removeItem(sessionKey("active-studio"));
             clearStudioAdministration();
             selectWorkspaceView("create-studio");
             studioName.focus();
             return;
         }
+        updateStudioContextMark(activeStudioFromMemberships(currentStudios));
         sessionStorage.setItem(sessionKey("active-studio"), activeStudioId);
         const token = await getValidAccessToken().catch(function () { return null; });
         if (token) await loadActiveStudio(token);
