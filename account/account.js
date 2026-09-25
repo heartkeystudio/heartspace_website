@@ -328,17 +328,8 @@
         profileOnboarding.hidden = false;
     }
 
-    profileWorkspaceButton.addEventListener("click", async function () {
-        try {
-            if (!currentProfile) {
-                const token = await getValidAccessToken();
-                if (!token) throw new Error("Sua sessão expirou.");
-                currentProfile = await loadProfile(token);
-            }
-            showProfileOnboarding(currentProfile || {}, true);
-        } catch (error) {
-            window.alert(error.message || "Não foi possível abrir o perfil.");
-        }
+    profileWorkspaceButton.addEventListener("click", function () {
+        showProfileOnboarding(currentProfile || {}, true);
     });
 
     function selectWorkspaceView(viewName) {
