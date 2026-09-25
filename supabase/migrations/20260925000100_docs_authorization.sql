@@ -110,6 +110,47 @@ create policy heartspace_docs_update on public.docs for update to authenticated
 create policy heartspace_docs_delete on public.docs for delete to authenticated
   using (public.heartspace_has_project_capability(project_id, 'docs_edit'));
 
+-- Instalações que ainda não executaram a migration histórica de colaboração
+-- recebem as tabelas aqui, antes das respectivas políticas RLS.
+create table if not exists public.doc_comments (
+  id uuid primary key default gen_random_uuid(),
+  doc_id uuid not null references public.docs(id) on delete cascade,
+  block_id text not null,
+  parent_id uuid references public.doc_comments(id) on delete cascade,
+  author_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  author_name text not null default 'Membro',
+  body text not null check (char_length(body) between 1 and 8000),
+  quote text not null default '',
+  resolved_at timestamptz,
+  resolved_by uuid references auth.users(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists doc_comments_doc_block_idx on public.doc_comments(doc_id, block_id, created_at);
+
+create table if not exists public.doc_notifications (
+  id uuid primary key default gen_random_uuid(),
+  recipient_id uuid not null references auth.users(id) on delete cascade,
+  doc_id uuid not null references public.docs(id) on delete cascade,
+  comment_id uuid references public.doc_comments(id) on delete cascade,
+  kind text not null default 'mention',
+  message text not null default '',
+  read_at timestamptz,
+  created_at timestamptz not null default now()
+);
+create index if not exists doc_notifications_recipient_idx on public.doc_notifications(recipient_id, read_at, created_at desc);
+
+create table if not exists public.doc_activity (
+  id bigint generated always as identity primary key,
+  doc_id uuid not null references public.docs(id) on delete cascade,
+  actor_id uuid default auth.uid() references auth.users(id) on delete set null,
+  actor_name text not null default 'Membro',
+  event_type text not null,
+  details jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+create index if not exists doc_activity_doc_created_idx on public.doc_activity(doc_id, created_at desc);
+
 alter table public.doc_comments enable row level security;
 drop policy if exists heartspace_doc_comments_read on public.doc_comments;
 drop policy if exists heartspace_doc_comments_insert on public.doc_comments;
