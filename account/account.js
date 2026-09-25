@@ -370,6 +370,7 @@
             publications.forEach(function (publication) {
                 const controls = document.createElement("div"); controls.className = "row-controls";
                 const edit = document.createElement("button"); edit.type = "button"; edit.className = "row-button"; edit.textContent = "Editar"; edit.addEventListener("click", function () { editPublication(publication); }); controls.append(edit);
+                if (publication.status === "published") { const open = document.createElement("a"); open.className = "row-button"; open.href = "../p/?id=" + encodeURIComponent(publication.id); open.target = "_blank"; open.rel = "noreferrer"; open.textContent = "Abrir"; controls.append(open); }
                 appendListRow(publicationList, publication.title, (publication.status === "published" ? "Publicada" : publication.status === "withdrawn" ? "Retirada do ar" : "Rascunho") + " · " + (publication.visibility === "unlisted" ? "Não listada" : "Pública") + " · /" + publication.slug, controls);
             });
             publicationList.hidden = !publications.length;

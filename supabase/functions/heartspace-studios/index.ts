@@ -170,21 +170,34 @@ Deno.serve(async (request) => {
   if (!origin) return response({ error: "Origem não autorizada." }, 403);
   if (request.method !== "POST") return response({ error: "Método não permitido." }, 405, origin);
 
-  const authorization = request.headers.get("authorization") || "";
-  if (!authorization.startsWith("Bearer ")) return response({ error: "Autenticação necessária." }, 401, origin);
-
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!supabaseUrl || !serviceRoleKey) return response({ error: "Serviço indisponível." }, 503, origin);
 
   const admin = createClient(supabaseUrl, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } });
+  let payload: Record<string, unknown>;
+  try { payload = await request.json(); } catch { return response({ error: "Corpo da requisição inválido." }, 400, origin); }
+
+  if (payload.action === "get_publication") {
+    const publicationId = typeof payload.publication_id === "string" ? payload.publication_id : "";
+    if (!publicationId) return response({ error: "Publicação inválida." }, 400, origin);
+    const { data: publication, error } = await admin.from("project_publications")
+      .select("id, studio_id, project_id, title, slug, summary, source_url, visibility, status, published_at, updated_at")
+      .eq("id", publicationId).eq("status", "published").maybeSingle();
+    if (error || !publication) return response({ error: "Publicação não encontrada." }, 404, origin);
+    const [{ data: project }, { data: studio }] = await Promise.all([
+      admin.from("projects").select("name, cover_image, banner_image").eq("id", publication.project_id).maybeSingle(),
+      admin.from("studios").select("name, logo_url").eq("id", publication.studio_id).maybeSingle(),
+    ]);
+    return response({ publication, project: project || {}, studio: studio || {} }, 200, origin);
+  }
+
+  const authorization = request.headers.get("authorization") || "";
+  if (!authorization.startsWith("Bearer ")) return response({ error: "Autenticação necessária." }, 401, origin);
   const token = authorization.slice("Bearer ".length);
   const { data: authData, error: authError } = await admin.auth.getUser(token);
   if (authError || !authData.user) return response({ error: "Sessão inválida ou expirada." }, 401, origin);
   await syncProfileFromAuth(admin, authData.user);
-
-  let payload: Record<string, unknown>;
-  try { payload = await request.json(); } catch { return response({ error: "Corpo da requisição inválido." }, 400, origin); }
 
   if (payload.action === "get_profile") {
     const { data, error } = await admin.from("profiles")
