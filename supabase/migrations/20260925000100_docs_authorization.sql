@@ -52,8 +52,8 @@ begin
     into capabilities
     from (
       select distinct permission_key
-      from jsonb_array_elements_text(member_roles) role_key
-      cross join lateral jsonb_each(coalesce(target_project.role_permissions -> role_key, '{}'::jsonb)) granted(permission_key, enabled)
+      from jsonb_array_elements_text(member_roles) as role_key(value)
+      cross join lateral jsonb_each(coalesce(target_project.role_permissions -> role_key.value, '{}'::jsonb)) granted(permission_key, enabled)
       where granted.enabled = to_jsonb(true)
     ) permissions;
     if effective_role in ('commenter', 'commentator') then
