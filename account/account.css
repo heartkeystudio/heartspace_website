@@ -236,6 +236,9 @@ body.is-light .workspace-breadcrumb, body.is-light .workspace-lead, body.is-ligh
 body.is-light .workspace-breadcrumb strong { color: #302c35; }
 body.is-light .workspace-nav-item { color: #625d68; } body.is-light .workspace-nav-item.is-active { color: #fff; background: #32213a; }
 body.is-light .studio-context, body.is-light .studio-list-item, body.is-light .overview-metrics, body.is-light .overview-card, body.is-light .empty-panel, body.is-light .admin-detail-panel, body.is-light .member-panel, body.is-light .security-list > div, body.is-light .admin-list-row { border-color: #dfdde3; background: #fff; }
+body.is-light .overview-metrics article { border-color: #dfdde3; }
+body.is-light .overview-metrics article span { color: #292530; }
+body.is-light .overview-metrics article small { color: #696370; }
 body.is-light .studio-context select, body.is-light .studio-context select option { color: #2e2934; background: #fff; color-scheme: light; }
 body.is-light select, body.is-light select option { color: #292530; border-color: #d9d6df; background: #fff; color-scheme: light; }
 body.is-light .studio-context small, body.is-light .workspace-nav-label { color: #77717d; }
