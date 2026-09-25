@@ -71,7 +71,10 @@ create or replace function public.heartspace_approve_doc_revision(p_revision_id 
 returns jsonb language plpgsql security definer set search_path = public as $$
 declare revision public.doc_revisions%rowtype; project_id uuid;
 begin
-  select r.*, d.project_id into revision, project_id from public.doc_revisions r join public.docs d on d.id = r.doc_id where r.id = p_revision_id;
+  select * into revision from public.doc_revisions where id = p_revision_id;
+  if found then
+    select project_id into project_id from public.docs where id = revision.doc_id;
+  end if;
   if not found or not public.heartspace_has_project_capability(project_id, 'manage_workspace') then return jsonb_build_object('success', false, 'reason', 'forbidden'); end if;
   update public.doc_revisions set approved_by = auth.uid(), approved_at = now() where id = p_revision_id and approved_at is null;
   insert into public.doc_activity (doc_id, event_type, details) values (revision.doc_id, 'revision.approved', jsonb_build_object('revision_id', p_revision_id, 'revision_number', revision.revision_number));
