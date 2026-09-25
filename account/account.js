@@ -328,7 +328,19 @@
         profileOnboarding.hidden = false;
     }
 
-    profileWorkspaceButton.addEventListener("click", function () { if (currentProfile) showProfileOnboarding(currentProfile, true); });
+    profileWorkspaceButton.addEventListener("click", async function () {
+        try {
+            if (!currentProfile) {
+                const token = await getValidAccessToken();
+                if (!token) throw new Error("Sua sessão expirou.");
+                currentProfile = await loadProfile(token);
+            }
+            if (!currentProfile) throw new Error("Não foi possível carregar sua ficha agora.");
+            showProfileOnboarding(currentProfile, true);
+        } catch (error) {
+            window.alert(error.message || "Não foi possível abrir o perfil.");
+        }
+    });
 
     function selectWorkspaceView(viewName) {
         workspaceButtons.forEach(function (button) {
