@@ -120,6 +120,9 @@
     const appsProjectSelect = document.getElementById("appsProjectSelect");
     const appsEmptyState = document.getElementById("appsEmptyState");
     const projectAppsList = document.getElementById("projectAppsList");
+    const refreshAuditLog = document.getElementById("refreshAuditLog");
+    const auditLogNotice = document.getElementById("auditLogNotice");
+    const auditLogList = document.getElementById("auditLogList");
     const projectSettingsStatus = document.getElementById("projectSettingsStatus");
     const projectRoleCatalogPanel = document.getElementById("projectRoleCatalogPanel");
     const roleCatalogEditor = document.getElementById("roleCatalogEditor");
@@ -328,6 +331,7 @@
             selectWorkspaceView(button.dataset.workspaceView);
             if (button.dataset.workspaceView === "publications") loadPublications();
             if (button.dataset.workspaceView === "apps") loadProjectApps();
+            if (button.dataset.workspaceView === "security") loadAuditLog();
         });
     });
 
@@ -417,6 +421,19 @@
         } catch (error) { appsEmptyState.textContent = error.message || "Não foi possível carregar os apps."; }
     }
     appsProjectSelect.addEventListener("change", loadProjectApps);
+
+    async function loadAuditLog() {
+        auditLogList.replaceChildren();
+        if (!activeStudioId) { auditLogNotice.textContent = "Escolha um estúdio ativo para consultar as alterações registradas."; return; }
+        try {
+            const token = await getValidAccessToken(); if (!token) throw new Error("Sessão expirada.");
+            const data = await studioRequest("list_studio_audit", token, { studio_id: activeStudioId });
+            const events = Array.isArray(data.events) ? data.events : [];
+            events.forEach(function (event) { appendListRow(auditLogList, String(event.action || "alteração").replace(/\./g, " · "), formatDate(event.created_at)); });
+            auditLogNotice.textContent = events.length ? "Últimos eventos registrados para este estúdio." : "Ainda não há eventos registrados para este estúdio.";
+        } catch (error) { auditLogNotice.textContent = error.message || "Não foi possível carregar a auditoria."; }
+    }
+    refreshAuditLog.addEventListener("click", loadAuditLog);
 
     Array.from(document.querySelectorAll("[data-go-to]")).forEach(function (button) {
         button.addEventListener("click", function () {

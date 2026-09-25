@@ -398,6 +398,17 @@ Deno.serve(async (request) => {
     return response({ app_key: appKey, enabled }, 200, origin);
   }
 
+  if (payload.action === "list_studio_audit") {
+    const studioId = typeof payload.studio_id === "string" ? payload.studio_id : "";
+    if (!studioId) return response({ error: "Selecione um estúdio." }, 400, origin);
+    const { membership, error: membershipError } = await getMembership(admin, studioId, authData.user.id);
+    if (membershipError || !membership) return response({ error: "Você não possui acesso a este estúdio." }, 403, origin);
+    const { data, error } = await admin.from("studio_audit_log")
+      .select("id, action, target_type, target_id, created_at").eq("studio_id", studioId).order("created_at", { ascending: false }).limit(100);
+    if (error) return response({ error: "Não foi possível carregar o histórico de auditoria." }, 500, origin);
+    return response({ events: data || [] }, 200, origin);
+  }
+
   if (payload.action === "create_project") {
     const studioId = typeof payload.studio_id === "string" ? payload.studio_id : "";
     const name = typeof payload.name === "string" ? payload.name.trim().replace(/\s+/g, " ") : "";
