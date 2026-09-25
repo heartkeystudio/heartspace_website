@@ -95,6 +95,7 @@
     const projectSettingsForm = document.getElementById("projectSettingsForm");
     const activeProjectHeading = document.getElementById("activeProjectHeading");
     const activeProjectName = document.getElementById("activeProjectName");
+    const activeProjectStatus = document.getElementById("activeProjectStatus");
     const activeProjectDescription = document.getElementById("activeProjectDescription");
     const activeProjectImage = document.getElementById("activeProjectImage");
     const activeProjectImageFile = document.getElementById("activeProjectImageFile");
@@ -593,7 +594,7 @@
         overviewProjectCount.textContent = String(projects.length);
         projectsTitle.textContent = projects.length ? (projects.length === 1 ? "1 projeto neste estúdio." : projects.length + " projetos neste estúdio.") : "Seu próximo projeto começa aqui.";
         projectsCopy.textContent = projects.length ? "Os projetos criados aqui já podem ser reconhecidos pelo Hub. O conteúdo e os arquivos continuam locais." : "O site cria a referência compartilhada. Quando você abrir o Hub, ela se transforma no seu espaço de trabalho local.";
-        projects.forEach(function (project) { appendListRow(projectList, project.name || "Projeto sem título", (project.description || "Sem descrição") + " · criado em " + formatDate(project.created_at)); });
+        projects.forEach(function (project) { appendListRow(projectList, project.name || "Projeto sem título", (project.status === "archived" ? "Arquivado" : "Ativo") + " · " + (project.description || "Sem descrição") + " · criado em " + formatDate(project.created_at)); });
         projectList.hidden = !projects.length;
         createProjectForm.hidden = !canManage;
         projectContextSelect.replaceChildren();
@@ -863,6 +864,7 @@
         const canManage = role === "owner" || role === "admin";
         activeProjectHeading.textContent = project.name || "Projeto";
         activeProjectName.value = project.name || "";
+        activeProjectStatus.value = project.status === "archived" ? "archived" : "active";
         activeProjectDescription.value = project.description || "";
         activeProjectImage.value = project.cover_image || "";
         activeProjectBanner.value = project.banner_image || "";
@@ -1011,7 +1013,7 @@
                 activeProjectBanner.value = bannerImage;
                 pendingProjectBannerFile = null;
             }
-            await studioRequest("update_project", token, { studio_id: activeStudioId, project_id: activeProjectId, name: activeProjectName.value.trim(), description: activeProjectDescription.value.trim(), cover_image: coverImage, banner_image: bannerImage });
+            await studioRequest("update_project", token, { studio_id: activeStudioId, project_id: activeProjectId, name: activeProjectName.value.trim(), description: activeProjectDescription.value.trim(), cover_image: coverImage, banner_image: bannerImage, status: activeProjectStatus.value });
             setProjectSettingsStatus("Alterações salvas.", "success");
             await loadActiveStudio(token);
         } catch (error) { setProjectSettingsStatus(error.message || "Não foi possível salvar o projeto.", "error"); }

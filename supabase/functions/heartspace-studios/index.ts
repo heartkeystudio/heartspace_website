@@ -337,11 +337,11 @@ Deno.serve(async (request) => {
     const template = productionTemplates[templateKey(studio.role_template_key)];
     const projectPayload: Record<string, unknown> = {
       studio_id: studioId, owner_id: authData.user.id, name,
-      role_permissions: template.permissions, role_colors: template.colors, role_labels: labelsForTemplate(template),
+      status: "active", role_permissions: template.permissions, role_colors: template.colors, role_labels: labelsForTemplate(template),
     };
     if (description) projectPayload.description = description;
     const { data, error } = await admin.from("projects").insert(projectPayload)
-      .select("id, studio_id, name, description, cover_image, banner_image, role_permissions, role_colors, role_labels, created_at").single();
+      .select("id, studio_id, name, description, cover_image, banner_image, status, archived_at, role_permissions, role_colors, role_labels, created_at").single();
     if (error) {
       console.error("create_project failed", { code: error.code, message: error.message, details: error.details });
       return response({ error: "Não foi possível criar o projeto agora." }, 500, origin);
@@ -359,7 +359,7 @@ Deno.serve(async (request) => {
     const { membership, error: membershipError } = await getMembership(admin, studioId, authData.user.id);
     if (membershipError || !membership) return response({ error: "Você não possui acesso a este projeto." }, 403, origin);
     const { data: project, error } = await admin.from("projects")
-      .select("id, studio_id, name, description, cover_image, banner_image, role_permissions, role_colors, role_labels, created_at")
+      .select("id, studio_id, name, description, cover_image, banner_image, status, archived_at, role_permissions, role_colors, role_labels, created_at")
       .eq("id", projectId).eq("studio_id", studioId).maybeSingle();
     if (error || !project) return response({ error: "Não foi possível carregar o projeto." }, 404, origin);
     const { data: studioMembers, error: studioMembersError } = await admin.from("studio_members")
@@ -483,16 +483,17 @@ Deno.serve(async (request) => {
     const description = typeof payload.description === "string" ? payload.description.trim() : "";
     const coverImage = typeof payload.cover_image === "string" ? payload.cover_image.trim() : "";
     const bannerImage = typeof payload.banner_image === "string" ? payload.banner_image.trim() : "";
-    if (!studioId || !projectId || !name || name.length > 140 || description.length > 1200 || coverImage.length > 2048 || bannerImage.length > 2048 || (coverImage && !/^https:\/\//i.test(coverImage)) || (bannerImage && !/^https:\/\//i.test(bannerImage))) return response({ error: "Dados de projeto inválidos." }, 400, origin);
+    const status = payload.status === "archived" ? "archived" : payload.status === "active" || payload.status === undefined ? "active" : "";
+    if (!studioId || !projectId || !name || !status || name.length > 140 || description.length > 1200 || coverImage.length > 2048 || bannerImage.length > 2048 || (coverImage && !/^https:\/\//i.test(coverImage)) || (bannerImage && !/^https:\/\//i.test(bannerImage))) return response({ error: "Dados de projeto inválidos." }, 400, origin);
     const { membership, error: membershipError } = await getMembership(admin, studioId, authData.user.id);
     if (membershipError || !membership || !["owner", "admin"].includes(membership.role)) return response({ error: "Você não pode editar este projeto." }, 403, origin);
-    const { data, error } = await admin.from("projects").update({ name, description: description || null, cover_image: coverImage || null, banner_image: bannerImage || null })
-      .eq("id", projectId).eq("studio_id", studioId).select("id, studio_id, name, description, cover_image, banner_image, created_at").single();
+    const { data, error } = await admin.from("projects").update({ name, description: description || null, cover_image: coverImage || null, banner_image: bannerImage || null, status, archived_at: status === "archived" ? new Date().toISOString() : null })
+      .eq("id", projectId).eq("studio_id", studioId).select("id, studio_id, name, description, cover_image, banner_image, status, archived_at, created_at").single();
     if (error) {
       console.error("update_project failed", { code: error.code, message: error.message, details: error.details });
       return response({ error: "Não foi possível atualizar o projeto." }, 500, origin);
     }
-    await admin.from("studio_audit_log").insert({ studio_id: studioId, actor_id: authData.user.id, action: "project.updated", target_type: "project", target_id: projectId });
+    await admin.from("studio_audit_log").insert({ studio_id: studioId, actor_id: authData.user.id, action: status === "archived" ? "project.archived" : "project.updated", target_type: "project", target_id: projectId });
     return response({ project: data }, 200, origin);
   }
 
@@ -505,7 +506,7 @@ Deno.serve(async (request) => {
     const [studioResult, membersResult, projectsResult, activityResult, invitesResult] = await Promise.all([
       admin.from("studios").select("id, name, description, logo_url, role_template_key, created_at").eq("id", studioId).maybeSingle(),
       admin.from("studio_members").select("user_id, role").eq("studio_id", studioId),
-      admin.from("projects").select("id, name, description, cover_image, banner_image, created_at").eq("studio_id", studioId).order("created_at", { ascending: false }),
+      admin.from("projects").select("id, name, description, cover_image, banner_image, status, archived_at, created_at").eq("studio_id", studioId).order("created_at", { ascending: false }),
       admin.from("studio_audit_log").select("id, actor_id, action, target_type, target_id, created_at").eq("studio_id", studioId).order("created_at", { ascending: false }).limit(20),
       membership.role === "owner" || membership.role === "admin"
         ? admin.from("studio_invites").select("id, email, role, expires_at, created_at").eq("studio_id", studioId).is("accepted_at", null).is("revoked_at", null).order("created_at", { ascending: false })
