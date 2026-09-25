@@ -134,6 +134,8 @@
     const usageMembers = document.getElementById("usageMembers");
     const usagePublications = document.getElementById("usagePublications");
     const usageStatus = document.getElementById("usageStatus");
+    const profileWorkspaceButton = document.getElementById("profileWorkspaceButton");
+    const profileOnboardingTitle = document.getElementById("profileOnboardingTitle");
     const projectSettingsStatus = document.getElementById("projectSettingsStatus");
     const projectRoleCatalogPanel = document.getElementById("projectRoleCatalogPanel");
     const roleCatalogEditor = document.getElementById("roleCatalogEditor");
@@ -149,6 +151,7 @@
     let activeStudioAdmin = null;
     let activeProjectAdmin = null;
     let currentStudioProjects = [];
+    let currentProfile = null;
     let currentUserId = "";
     let pendingStudioIconFile = null;
     let pendingProfileAvatarFile = null;
@@ -309,7 +312,7 @@
     });
     profileAvatarPreview.addEventListener("error", function () { profileAvatarPreview.hidden = true; });
 
-    function showProfileOnboarding(profile) {
+    function showProfileOnboarding(profile, editing) {
         profileFullName.value = profile.full_name || "";
         profileNickname.value = profile.nickname || "";
         profileAge.value = Number.isInteger(profile.age) && profile.age > 0 ? String(profile.age) : "";
@@ -319,10 +322,13 @@
         pendingProfileAvatarFile = null;
         profileAvatarPreview.hidden = !profile.avatar_url;
         if (profile.avatar_url) profileAvatarPreview.src = profile.avatar_url;
+        profileOnboardingTitle.textContent = editing ? "Edite seu perfil." : "Antes de entrar, conte um pouco sobre você.";
         accountLoading.hidden = true;
         memberArea.hidden = true;
         profileOnboarding.hidden = false;
     }
+
+    profileWorkspaceButton.addEventListener("click", function () { if (currentProfile) showProfileOnboarding(currentProfile, true); });
 
     function selectWorkspaceView(viewName) {
         workspaceButtons.forEach(function (button) {
@@ -526,6 +532,7 @@
                 avatarUrl = upload.avatar_url || avatarUrl; pendingProfileAvatarFile = null;
             }
             await studioRequest("update_profile", token, { full_name: profileFullName.value, nickname: profileNickname.value, age: Number(profileAge.value), profession: profileProfession.value, phone: profilePhone.value, avatar_url: avatarUrl });
+            currentProfile = { full_name: profileFullName.value.trim(), nickname: profileNickname.value.trim(), age: Number(profileAge.value), profession: profileProfession.value.trim(), phone: profilePhone.value.trim(), avatar_url: avatarUrl, profile_completed_at: new Date().toISOString() };
             const response = await fetch(config.supabaseUrl.replace(/\/$/, "") + "/auth/v1/user", { headers: { "apikey": config.supabaseAnonKey, "Authorization": "Bearer " + token } });
             const user = response.ok ? await response.json() : { email: securityEmail.textContent };
             showMemberArea(user, { full_name: profileFullName.value.trim(), nickname: profileNickname.value.trim(), avatar_url: avatarUrl }); await loadEntitlements(token); await loadStudios(token);
@@ -1334,6 +1341,7 @@
             if (!response.ok) throw new Error("Sessão expirada");
             const user = await response.json();
             const profile = await loadProfile(token);
+            currentProfile = profile;
             if (profile && !profile.profile_completed_at) {
                 showProfileOnboarding(profile);
                 return;
