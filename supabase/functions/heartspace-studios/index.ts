@@ -219,7 +219,8 @@ Deno.serve(async (request) => {
     if (fullName.length < 2 || fullName.length > 80 || nickname.length < 2 || nickname.length > 40 || !Number.isInteger(age) || age < 1 || age > 130 || profession.length < 2 || profession.length > 120 || phone.length > 40 || avatarUrl.length > 2048 || (avatarUrl && !/^https:\/\//i.test(avatarUrl))) {
       return response({ error: "Confira nome, apelido, idade e profissão antes de continuar." }, 400, origin);
     }
-    const { data, error } = await admin.from("profiles").update({
+    const { data, error } = await admin.from("profiles").upsert({
+      id: authData.user.id,
       full_name: fullName,
       nickname,
       age,
@@ -227,8 +228,12 @@ Deno.serve(async (request) => {
       phone: phone || null,
       avatar_url: avatarUrl || null,
       profile_completed_at: new Date().toISOString(),
-    }).eq("id", authData.user.id).select("id, email, full_name, nickname, age, profession, phone, avatar_url, profile_completed_at").single();
-    if (error) return response({ error: "Não foi possível salvar sua ficha agora." }, 500, origin);
+    }, { onConflict: "id" }).select("id, email, full_name, nickname, age, profession, phone, avatar_url, profile_completed_at").single();
+    if (error) {
+      console.error("update_profile failed", { code: error.code, message: error.message, details: error.details });
+      const missingSchema = error.code === "42703" || /column .* does not exist/i.test(error.message || "");
+      return response({ error: missingSchema ? "A ficha ainda precisa da migration de perfil. Execute SUPABASE_PROFILE_REPAIR.sql no Supabase." : "Não foi possível salvar sua ficha agora." }, 500, origin);
+    }
     const metadata = authData.user.user_metadata || {};
     await admin.auth.admin.updateUserById(authData.user.id, { user_metadata: { ...metadata, full_name: fullName } });
     return response({ profile: data }, 200, origin);

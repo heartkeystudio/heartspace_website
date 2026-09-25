@@ -77,6 +77,8 @@ Antes de disponibilizar cada ação, aplique as migrations na ordem abaixo:
     tabelas legadas `workspaces` ou `workspace_members`.
 13. `SUPABASE_PROFILE_AVATARS.sql` — adiciona apelido e o bucket público de
     avatares comprimidos para a ficha de primeiro acesso.
+14. `SUPABASE_PROFILE_REPAIR.sql` — reparo idempotente para instalações em que
+    a ficha foi publicada antes de todas as colunas existirem.
 
 No dashboard, publique/atualize a Function com o nome **`heartspace-studio`**
 e configure `HEARTSPACE_ALLOWED_ORIGINS` com

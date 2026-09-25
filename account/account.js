@@ -37,6 +37,7 @@
     const checkoutNotice = document.getElementById("checkoutNotice");
     const securityEmail = document.getElementById("securityEmail");
     const workspaceButtons = Array.from(document.querySelectorAll("[data-workspace-view]"));
+    const studioRequiredButtons = Array.from(document.querySelectorAll("[data-studio-required]"));
     const workspacePanels = Array.from(document.querySelectorAll("[data-workspace-panel]"));
     const studiosTitle = document.getElementById("studiosTitle");
     const studiosCopy = document.getElementById("studiosCopy");
@@ -152,6 +153,7 @@
     let activeProjectAdmin = null;
     let currentStudioProjects = [];
     let currentProfile = null;
+    let hasManagedStudio = false;
     let currentUserId = "";
     let pendingStudioIconFile = null;
     let pendingProfileAvatarFile = null;
@@ -347,6 +349,11 @@
 
     workspaceButtons.forEach(function (button) {
         button.addEventListener("click", function () {
+            if (button.hasAttribute("data-studio-required") && !hasManagedStudio) {
+                selectWorkspaceView("create-studio");
+                studioName.focus();
+                return;
+            }
             selectWorkspaceView(button.dataset.workspaceView);
             if (button.dataset.workspaceView === "publications") loadPublications();
             if (button.dataset.workspaceView === "apps") loadProjectApps();
@@ -588,14 +595,20 @@
 
     function renderStudios(studios) {
         currentStudios = studios;
+        hasManagedStudio = studios.some(function (membership) { return membership.role === "owner" || membership.role === "admin"; });
+        studioRequiredButtons.forEach(function (button) {
+            button.classList.toggle("is-unavailable", !hasManagedStudio);
+            button.setAttribute("aria-disabled", String(!hasManagedStudio));
+            button.title = hasManagedStudio ? "" : "Crie um estúdio ou tenha acesso de Admin para usar esta área.";
+        });
         studioList.replaceChildren();
         inviteStudio.replaceChildren();
         studioContextSelect.replaceChildren();
         overviewStudioCount.textContent = String(studios.length);
         if (!studios.length) {
             studiosTitle.textContent = "Nenhum estúdio ainda.";
-            studiosCopy.textContent = "Use o seletor lateral e escolha “Criar novo estúdio” para começar.";
-            const option = new Option("Criar novo estúdio…", "__create__"); studioContextSelect.add(option); studioContextSelect.disabled = false;
+            studiosCopy.textContent = "Comece criando o primeiro estúdio da sua conta.";
+            const option = new Option("Criar novo estúdio…", "__create__"); studioContextSelect.add(option); studioContextSelect.value = "__create__"; studioContextSelect.disabled = false;
             overviewStudioTitle.textContent = "Crie seu primeiro estúdio";
             overviewStudioCopy.textContent = "Seu estúdio organiza pessoas, acessos e projetos compartilhados. O trabalho continua local no Hub.";
             studioList.hidden = true;
@@ -604,6 +617,8 @@
             updateStudioContextMark(null);
             sessionStorage.removeItem(sessionKey("active-studio"));
             clearStudioAdministration();
+            selectWorkspaceView("create-studio");
+            requestAnimationFrame(function () { studioName.focus(); });
             return;
         }
         studiosTitle.textContent = studios.length === 1 ? "1 estúdio conectado." : studios.length + " estúdios conectados.";
