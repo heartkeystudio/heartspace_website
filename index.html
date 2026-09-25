@@ -68,7 +68,7 @@
            ========================================== */
         .navbar {
             position: fixed; top: 0; left: 0; width: 100%;
-            display: flex; justify-content: space-between; align-items: center;
+            display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
             padding: 15px 5%;
             background: var(--bg-nav);
             backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
@@ -77,15 +77,14 @@
             transition: 0.4s ease;
         }
 
-        .brand { font-size: 1.2rem; font-weight: 900; letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-main); }
-        .brand-icon { background: #9501d8; color: #fff; width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+        .brand { justify-self: start; font-size: 1.2rem; font-weight: 900; letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-main); }
 
-        .nav-links { display: flex; gap: 30px; }
+        .nav-links { justify-self: center; display: flex; gap: 30px; }
         .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: 0.2s; }
         .nav-links a:hover { color: var(--text-main); }
         .mobile-account-link { display: none; }
 
-        .nav-actions { display: flex; gap: 15px; align-items: center; }
+        .nav-actions { justify-self: end; display: flex; gap: 15px; align-items: center; }
         #guestActions, #signedInActions { display: flex; gap: 15px; align-items: center; }
         #guestActions[hidden], #signedInActions[hidden] { display: none !important; }
         .login-link { color: var(--text-main); text-decoration: none; font-size: 0.9rem; font-weight: 600; }
@@ -108,7 +107,7 @@
         .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px var(--primary-glow); }
 
         @media (max-width: 760px) {
-            .navbar { padding: 12px 5%; }
+            .navbar { display: flex; justify-content: space-between; padding: 12px 5%; }
             .nav-links {
                 display: none; position: absolute; top: calc(100% + 8px); left: 5%; right: 5%;
                 flex-direction: column; gap: 4px; padding: 10px; border: 1px solid var(--border);
@@ -142,18 +141,8 @@
         }
 
         body.light-mode .hero-glow {
-            background: radial-gradient(circle, rgba(149,1,216,0.2) 0%, rgba(0,234,255,0.1) 40%, transparent 70%);
+            display: none;
         }
-
-        .tag-launch {
-            background: var(--bg-card); border: 1px solid var(--border);
-            padding: 6px 16px; border-radius: 30px;
-            font-size: 0.8rem; font-weight: 600; color: var(--text-main);
-            margin-bottom: 25px; display: inline-block;
-            backdrop-filter: blur(10px);
-        }
-        .tag-launch span { color: var(--primary); }
-        body.light-mode .tag-launch span { color: #7410a5; }
 
         .hero h1 {
             font-size: 4.5rem; font-weight: 900; letter-spacing: -2px; line-height: 1.1;
@@ -179,7 +168,7 @@
         .floating-shapes {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            overflow: hidden;
+            overflow: hidden; position: relative;
             z-index: 0; 
             pointer-events: none; 
         }
@@ -302,8 +291,8 @@
         }
 
         .mockup-window {
-            width: 100%; height: 500px;
-            background: var(--bg-card);
+            width: 100%; height: 560px;
+            background: #121212;
             border: 1px solid var(--border);
             border-radius: 20px 20px 0 0;
             box-shadow: var(--shadow-soft);
@@ -321,45 +310,39 @@
         }
 
         /* Falso Header do Mac/Windows dentro do Mockup */
-        .mockup-header {
-            height: 40px; background: rgba(0,0,0,0.1); border-bottom: 1px solid var(--border);
-            display: flex; align-items: center; padding: 0 15px; gap: 6px;
-        }
+        .mockup-header { height: 34px; background: #151515; border-bottom: 1px solid rgba(255,255,255,.1); display: flex; align-items: center; justify-content: center; position: relative; color: #d5d5d5; font-size: .65rem; font-weight: 600; }
+        .mockup-header::after { content: 'HUB — HEARTSPACE'; letter-spacing: .04em; }
+        .mockup-header .mockup-controls { position: absolute; right: 12px; display: flex; gap: 7px; }
         .mockup-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border); }
         .dot-r { background: #ff5252; } .dot-y { background: #ffc107; } .dot-g { background: #9501d8; }
 
-        /* Prévia visual do Hub */
-        .mockup-body {
-            padding: 20px; display: grid; grid-template-columns: 200px 1fr; gap: 20px; height: 100%;
-        }
-        .mockup-sidebar { background: rgba(255,255,255,0.035); border: 1px solid var(--border); border-radius: 12px; height: 100%; padding: 18px 14px; }
-        .mockup-sidebar strong { display: block; font-size: 0.8rem; margin-bottom: 24px; }
-        .mockup-sidebar span { display: block; color: var(--text-muted); font-size: 0.72rem; padding: 9px 8px; margin-bottom: 3px; border-radius: 6px; }
-        .mockup-sidebar .active { color: var(--text-main); background: rgba(149,1,216,0.17); }
-        .mockup-content { display: flex; flex-direction: column; gap: 15px; min-width: 0; }
-        .hub-topline { display: flex; align-items: center; justify-content: space-between; }
-        .hub-topline p { color: var(--text-muted); font-size: 0.75rem; }
-        .hub-topline h3 { font-size: 1.2rem; margin-top: 4px; }
-        .hub-status { color: #c987ff; border: 1px solid rgba(149,1,216,0.4); border-radius: 20px; padding: 6px 10px; font-size: 0.65rem; }
-        .hub-overview { display: grid; grid-template-columns: 1.3fr 0.7fr; gap: 15px; }
-        .hub-panel { border: 1px solid var(--border); border-radius: 12px; padding: 16px; background: rgba(255,255,255,0.025); }
-        .hub-panel small { color: var(--text-muted); font-size: 0.68rem; }
-        .hub-panel h4 { margin-top: 7px; font-size: 1rem; }
-        .progress-track { height: 7px; margin-top: 18px; border-radius: 9px; background: var(--border); overflow: hidden; }
-        .progress-track i { display: block; width: 62%; height: 100%; background: var(--primary); border-radius: inherit; }
-        .hub-apps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-        .hub-app { min-height: 100px; border: 1px solid var(--border); border-radius: 12px; padding: 14px; background: rgba(255,255,255,0.02); transition: 0.25s; }
-        .hub-app:hover { border-color: var(--primary); transform: translateY(-2px); }
-        .hub-app b { display: block; margin-top: 15px; font-size: 0.82rem; }
-        .hub-app span { color: var(--text-muted); font-size: 0.65rem; }
+        /* Dashboard Hub: visual neutro e próximo da aplicação real. */
+        .mockup-body { height: calc(100% - 34px); display: grid; grid-template-columns: 66px 1fr; color: #f2f2f2; }
+        .mockup-sidebar { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 14px 9px; border-right: 1px solid rgba(255,255,255,.08); background: #141414; }
+        .hub-avatar { display: grid; place-items: center; width: 35px; height: 35px; border-radius: 50%; background: #323744; color: #f3f3f3; font-size: .76rem; font-weight: 800; }
+        .hub-project-space { flex: 1; min-height: 120px; }
+        .hub-nav-button { display: grid; place-items: center; width: 38px; height: 38px; border: 1px solid transparent; border-radius: 8px; transition: .2s; cursor: default; }
+        .hub-nav-button img, .hub-utility img { width: 19px; height: 19px; object-fit: contain; filter: grayscale(1) brightness(3); opacity: .9; }
+        .hub-nav-button:hover, .hub-nav-button.active { border-color: #9501d8; background: rgba(149,1,216,.14); box-shadow: 0 0 15px rgba(149,1,216,.35); }
+        .hub-home-icon { position: relative; width: 17px; height: 14px; margin-top: 4px; border: 2px solid #f2f2f2; border-top: 0; border-radius: 2px; }.hub-home-icon::before { content: ''; position: absolute; width: 12px; height: 12px; top: -7px; left: .5px; border-top: 2px solid #f2f2f2; border-left: 2px solid #f2f2f2; transform: rotate(45deg); }.hub-home-icon::after { content: ''; position: absolute; bottom: 0; left: 5px; width: 4px; height: 7px; background: #f2f2f2; }
+        .mockup-content { min-width: 0; padding: 18px 22px 12px; display: grid; grid-template-rows: auto 1fr auto; gap: 14px; }
+        .hub-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+        .hub-toolbar h3 { font-size: 1rem; letter-spacing: .08em; } .hub-toolbar small { display: block; margin-top: 3px; color: #9a9a9a; font-size: .61rem; }
+        .hub-utilities { display: flex; align-items: center; gap: 11px; }.hub-utility { display: grid; place-items: center; width: 25px; height: 25px; }.hub-utility.profile { width: 27px; height: 27px; border: 2px solid #73e1aa; border-radius: 50%; background: #b6b6b6; }
+        .hub-dashboard { display: grid; grid-template-columns: minmax(0,1.48fr) minmax(0,.92fr); gap: 13px; }
+        .hub-dashboard-left { display: grid; grid-template-rows: 180px 1fr; gap: 13px; }.hub-welcome { border: 1px solid rgba(149,1,216,.45); border-radius: 12px; padding: 20px; background: linear-gradient(180deg, rgba(149,1,216,.34), rgba(20,20,20,.92) 55%); box-shadow: inset 0 1px rgba(255,255,255,.08); }.hub-welcome small { color: #e2d5e9; }.hub-welcome h2 { margin-top: 44px; font-size: clamp(1.35rem,2.2vw,2.2rem); letter-spacing: -.05em; }.hub-welcome h2 span { color: #fff; text-shadow: 0 0 14px rgba(230,112,255,.7); }
+        .hub-task-area { display: grid; grid-template-columns: minmax(0,310px) minmax(130px,1fr); gap: 10px; }.hub-task-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }.task-card { min-height: 62px; padding: 10px; border: 1px solid rgba(255,255,255,.08); border-radius: 8px; background: #282828; transition: .2s; }.task-card.completed { grid-column: span 2; }.task-card:hover { border-color: #9501d8; box-shadow: 0 0 16px rgba(149,1,216,.38); }.task-card strong { display: block; font-size: .61rem; }.task-card b { display: block; margin-top: 5px; text-align: center; font-size: 1.35rem; font-weight: 500; }
+        .hub-focus-panel { display: flex; flex-direction: column; justify-content: space-between; padding: 12px; border: 1px solid rgba(255,255,255,.1); border-radius: 8px; background: #222; }.hub-focus-panel h4 { font-size: .66rem; }.hub-focus-panel p { margin-top: 7px; color: #abb1ba; font-size: .64rem; line-height: 1.45; }.hub-focus-actions { display: flex; gap: 5px; margin-top: 8px; }.hub-focus-actions span { padding: 4px 5px; border: 1px solid rgba(255,255,255,.12); border-radius: 4px; color: #d9d9df; font-size: .54rem; }
+        .hub-notes { padding: 14px; border: 1px solid rgba(255,255,255,.12); border-radius: 12px; background: #282828; }.hub-notes h4 { font-size: .8rem; font-weight: 600; }.hub-notes select { width: 100%; height: 28px; margin: 9px 0 6px; padding: 0 8px; border: 0; border-radius: 4px; color: #e6e6e6; background: #202020; font: inherit; font-size: .69rem; }.notes-surface { height: 108px; border: 1px solid rgba(255,255,255,.06); border-radius: 3px; background: #222; }
+        .hub-lower-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }.hub-wide-panel { min-height: 115px; padding: 15px; border: 1px solid rgba(255,255,255,.12); border-radius: 12px; background: #282828; }.hub-wide-panel h4 { font-size: .82rem; }.hub-wide-panel p { margin-top: 10px; color: #b5bbc6; font-size: .7rem; }.milestone-track { display: grid; grid-template-columns: repeat(5,1fr); gap: 4px; margin-top: 22px; }.milestone-track i { height: 4px; background: #6f6f6f; }.milestone-track i:first-child { background: #fff; }.hub-statusbar { display: flex; justify-content: center; gap: 16px; color: #aaa; font: 600 .58rem 'JetBrains Mono', monospace; }.hub-statusbar .online-dot { display: inline-block; width: 6px; height: 6px; margin-right: 4px; border-radius: 50%; background: #70f7af; }
+        .hub-chat-button { position: absolute; right: 22px; bottom: 17px; display: grid; place-items: center; width: 43px; height: 43px; border: 1px solid rgba(255,255,255,.55); border-radius: 50%; background: #101010; box-shadow: 0 0 0 3px rgba(0,0,0,.4); }.hub-chat-button img { width: 19px; height: 19px; filter: grayscale(1) brightness(3); }
 
         @media (max-width: 900px) {
             .hero h1 { font-size: 3rem; }
             .hero-cta-group { flex-direction: column; }
-            .mockup-body { grid-template-columns: 1fr; }
-            .mockup-sidebar { display: none; }
-            .hub-overview { grid-template-columns: 1fr; }
+            .mockup-window { height: 470px; }.mockup-body { grid-template-columns: 52px 1fr; }.mockup-sidebar { padding: 10px 6px; }.hub-nav-button { width: 32px; height: 32px; }.hub-project-space { min-height: 80px; }.mockup-content { padding: 14px; }.hub-dashboard { grid-template-columns: 1fr; }.hub-notes { display: none; }.hub-welcome { min-height: 130px; }.hub-dashboard-left { grid-template-rows: auto auto; }.hub-task-area { grid-template-columns: minmax(0,260px) 1fr; }.hub-lower-grid { display: none; }.hub-statusbar { justify-content: flex-start; }.hub-chat-button { width: 35px; height: 35px; right: 12px; bottom: 12px; }
         }
+        @media (max-width: 560px) { .hub-task-area { grid-template-columns: 1fr; }.hub-focus-panel { display: none; } }
 
         /* ==========================================
            5. SECÇÃO DE FUNCIONALIDADES (BENTO GRID)
@@ -430,18 +413,6 @@
         /* Tamanhos Assimétricos */
         .col-2 { grid-column: span 2; }
         .row-2 { grid-row: span 2; }
-
-        /* Conteúdo dos Cartões */
-        .bento-icon {
-            width: 50px; height: 50px;
-            border-radius: 12px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.5rem;
-            background: rgba(149, 1, 216, 0.12);
-            color: var(--primary);
-            margin-bottom: 20px;
-            border: 1px solid var(--primary-glow);
-        }
 
         .bento-card h3 {
             font-size: 1.3rem;
@@ -843,10 +814,7 @@
 <body>
 
     <nav class="navbar">
-        <div class="brand">
-            <div class="brand-icon">🔑</div>
-            HeartSpace
-        </div>
+        <div class="brand">HeartSpace</div>
         <div class="nav-links" id="primaryNav">
             <a href="#ecosystem">Ecossistema</a>
             <a href="#publications">Publicações</a>
@@ -885,47 +853,49 @@
             <div class="shape shape-6   "></div>
         </div>
 
-        <div class="tag-launch"><span>✦</span> Um ecossistema local-first para estúdios indie</div>
-        
         <h1><span class="text-gradient">Seu estúdio, conectado.</span></h1>
         
         <p>O HeartSpace Hub reúne seu estúdio, seus projetos e apps especializados. Crie localmente, sincronize quando houver rede e mantenha seus arquivos sempre seus.</p>
         
         <div class="hero-cta-group">
-            <a id="primaryDownload" href="#download" class="btn-primary btn-large">Baixar o Hub grátis &rarr;</a>
+            <a id="primaryDownload" href="#download" class="btn-primary btn-large">Baixar o Hub grátis</a>
             <a href="#ecosystem" class="btn-primary btn-outline btn-large">Explorar o ecossistema</a>
         </div>
 
         <div class="hero-mockup-container">
             <div class="mockup-window">
                 <div class="mockup-header">
-                    <div class="mockup-dot dot-r"></div><div class="mockup-dot dot-y"></div><div class="mockup-dot dot-g"></div>
+                    <div class="mockup-controls"><i class="mockup-dot"></i><i class="mockup-dot"></i><i class="mockup-dot"></i></div>
                 </div>
                 <div class="mockup-body">
                     <aside class="mockup-sidebar">
-                        <strong>✦ HeartSpace</strong>
-                        <span class="active">Visão geral</span>
-                        <span>Projetos</span>
-                        <span>Apps</span>
-                        <span>Atividade</span>
-                        <span>Publicações</span>
+                        <div class="hub-avatar">H</div>
+                        <span class="hub-project-space" aria-hidden="true"></span>
+                        <span class="hub-nav-button"><img src="assets/icons/media_play.svg" alt="Apps"></span>
+                        <span class="hub-nav-button"><img src="assets/icons/docs.svg" alt="Documents"></span>
+                        <span class="hub-nav-button"><img src="assets/icons/apps_icon.svg" alt="Apps"></span>
+                        <span class="hub-nav-button active"><i class="hub-home-icon" aria-label="Dashboard"></i></span>
                     </aside>
                     <div class="mockup-content">
-                        <div class="hub-topline">
-                            <div><p>Projeto atual</p><h3>Aurora Vale</h3></div>
-                            <span class="hub-status">● Sincronizado</span>
+                        <div class="hub-toolbar">
+                            <div><h3>HEARTSPACE</h3><small>CREATIVE WORKSPACE</small></div>
+                            <div class="hub-utilities"><span class="hub-utility profile"></span><span class="hub-utility"><img src="assets/icons/notifications_section.svg" alt="Notifications"></span><span class="hub-utility"><img src="assets/icons/settings_icon.svg" alt="Settings"></span></div>
                         </div>
-                        <div class="hub-overview">
-                            <div class="hub-panel"><small>Progresso da sprint</small><h4>Vertical Slice</h4><div class="progress-track"><i></i></div></div>
-                            <div class="hub-panel"><small>Atividade</small><h4>12 atualizações</h4></div>
+                        <div class="hub-dashboard">
+                            <div class="hub-dashboard-left">
+                                <div class="hub-welcome"><small>WORKSPACE OVERVIEW</small><h2>Welcome<br><span>back.</span></h2></div>
+                                <div class="hub-task-area"><div class="hub-task-cards"><article class="task-card"><strong>TASKS — TOTAL</strong><b>0</b></article><article class="task-card"><strong>IN PROGRESS</strong><b>0</b></article><article class="task-card completed"><strong>COMPLETED</strong><b>0</b></article></div><aside class="hub-focus-panel"><div><h4>GET STARTED</h4><p>CREATE TASKS, CAPTURE NOTES, AND KEEP YOUR WORKFLOW CONNECTED.</p></div><div class="hub-focus-actions"><span>CREATE</span><span>INVITE</span></div></aside></div>
+                            </div>
+                            <aside class="hub-notes"><h4>QUICK NOTES</h4><select aria-label="Note visibility"><option>Private</option></select><div class="notes-surface"></div></aside>
                         </div>
-                        <div class="hub-apps">
-                            <div class="hub-app"><span>▤</span><b>Docs</b><span>3 decisões novas</span></div>
-                            <div class="hub-app"><span>✓</span><b>Tasks</b><span>8 em andamento</span></div>
-                            <div class="hub-app"><span>◒</span><b>Canvas</b><span>2 assets alterados</span></div>
+                        <div class="hub-lower-grid">
+                            <article class="hub-wide-panel"><h4>PROJECT MILESTONES</h4><p>YOUR ROADMAP IS READY TO TAKE SHAPE.</p><div class="milestone-track"><i></i><i></i><i></i><i></i><i></i></div></article>
+                            <article class="hub-wide-panel"><h4>UPCOMING TASKS</h4><p>NOTHING SCHEDULED YET.</p></article>
                         </div>
+                        <div class="hub-statusbar"><span><b class="online-dot"></b> ONLINE</span><span>SYNCED</span><span>PLAN: FREE</span></div>
                     </div>
                 </div>
+                <span class="hub-chat-button"><img src="assets/icons/message_icon.svg" alt="Chat"></span>
             </div>
         </div>
     </section>
@@ -939,7 +909,6 @@
         <div class="bento-grid">
             
             <div class="bento-card col-2">
-                <div class="bento-icon">✦</div>
                 <h3>HeartSpace Hub</h3>
                 <p>Conta, estúdio, membros, projetos, apps instalados, busca, notificações e sincronização. Abra cada ferramenta já no contexto certo do projeto.</p>
                 <div class="bento-art mini-kanban">
@@ -950,7 +919,6 @@
             </div>
 
             <div class="bento-card row-2">
-                <div class="bento-icon" style="color: #00eaff; background: rgba(0, 234, 255, 0.1); border-color: rgba(0, 234, 255, 0.3);">▤</div>
                 <h3>Decida e produza</h3>
                 <p>Docs e Tasks unem GDDs, decisões, backlog, sprints, bugs e playtests — com referências em vez de cópias perdidas entre ferramentas.</p>
                 <div class="tool-split" aria-label="Docs e Tasks">
@@ -966,7 +934,6 @@
             </div>
 
             <div class="bento-card">
-                <div class="bento-icon" style="color: #e040fb; background: rgba(224, 64, 251, 0.1); border-color: rgba(224, 64, 251, 0.3);">◒</div>
                 <h3>Apps especializados</h3>
                 <p>Canvas, Beats, States, Dialogues, Polygons e Designs. Cada app resolve uma parte profunda do seu estúdio.</p>
                 <div class="app-chips" aria-label="Apps HeartSpace">
@@ -980,7 +947,6 @@
             </div>
 
             <div class="bento-card">
-                <div class="bento-icon" style="color: #ffc107; background: rgba(255, 193, 7, 0.1); border-color: rgba(255, 193, 7, 0.3);">↗</div>
                 <h3>Arquivos que continuam seus</h3>
                 <p>Trabalhe offline, exporte em formatos documentados e sincronize com segurança. A assinatura paga colaboração e infraestrutura, nunca a posse do seu trabalho.</p>
                 <div class="bento-art mini-chart">
@@ -1095,10 +1061,7 @@
         <div class="footer-grid">
             
             <div class="footer-brand">
-                <div class="brand">
-                    <div class="brand-icon">🔑</div>
-                    HeartSpace
-                </div>
+                <div class="brand">HeartSpace</div>
                 <p>HeartSpace é o ecossistema local-first para estúdios indie criarem, decidirem, produzirem e entregarem jogos.</p>
             </div>
 
