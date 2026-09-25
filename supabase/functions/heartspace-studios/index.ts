@@ -154,6 +154,8 @@ function cleanRoleKeys(value: unknown, permissions: Record<string, Record<string
 const allowedProjectPermissions = new Set([
   "manage_workspace", "manage_roles", "manage_billing", "delete_sprints", "create_sprints", "view_all_tasks",
   "manage_wiki_visibility", "can_edit_wiki", "can_comment_wiki", "can_view_wiki",
+  "docs_view", "docs_edit", "tasks_view", "tasks_edit", "canvas_view", "canvas_edit", "beats_view", "beats_edit",
+  "states_view", "states_edit", "dialogues_view", "dialogues_edit", "polygons_view", "polygons_edit", "designs_view", "designs_edit",
 ]);
 
 function defaultRoleLabel(key: string) {

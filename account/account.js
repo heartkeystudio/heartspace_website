@@ -928,7 +928,11 @@
     const projectPermissionLabels = {
         manage_workspace: "Gerenciar projeto", manage_roles: "Gerenciar cargos", manage_billing: "Gerenciar assinatura",
         delete_sprints: "Excluir sprints", create_sprints: "Criar sprints", view_all_tasks: "Ver todas as tarefas",
-        manage_wiki_visibility: "Controlar visibilidade da wiki", can_edit_wiki: "Editar wiki", can_comment_wiki: "Comentar na wiki", can_view_wiki: "Ver wiki"
+        manage_wiki_visibility: "Controlar visibilidade da wiki", can_edit_wiki: "Editar wiki", can_comment_wiki: "Comentar na wiki", can_view_wiki: "Ver wiki",
+        docs_view: "Ver Docs", docs_edit: "Editar Docs", tasks_view: "Ver Tasks", tasks_edit: "Editar Tasks",
+        canvas_view: "Ver Canvas", canvas_edit: "Editar Canvas", beats_view: "Ver Beats", beats_edit: "Editar Beats",
+        states_view: "Ver States", states_edit: "Editar States", dialogues_view: "Ver Dialogues", dialogues_edit: "Editar Dialogues",
+        polygons_view: "Ver Polygons", polygons_edit: "Editar Polygons", designs_view: "Ver Designs", designs_edit: "Editar Designs"
     };
 
     function appendRoleEditor(role, canManage) {
