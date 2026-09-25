@@ -103,6 +103,11 @@
     const activeProjectBanner = document.getElementById("activeProjectBanner");
     const activeProjectBannerFile = document.getElementById("activeProjectBannerFile");
     const activeProjectBannerPreview = document.getElementById("activeProjectBannerPreview");
+    const projectDangerPanel = document.getElementById("projectDangerPanel");
+    const deleteProjectForm = document.getElementById("deleteProjectForm");
+    const deleteProjectName = document.getElementById("deleteProjectName");
+    const deleteProjectConfirmation = document.getElementById("deleteProjectConfirmation");
+    const deleteProjectStatus = document.getElementById("deleteProjectStatus");
     const publicationProjectSelect = document.getElementById("publicationProjectSelect");
     const publicationEmptyState = document.getElementById("publicationEmptyState");
     const publicationList = document.getElementById("publicationList");
@@ -533,6 +538,8 @@
         projectRolesPanel.hidden = true;
         productionRoleList.replaceChildren();
         projectContextLabel.hidden = true;
+        projectDangerPanel.hidden = true;
+        projectDangerPanel.open = false;
     }
 
     function updateStudioContextMark(studio) {
@@ -1011,6 +1018,10 @@
         projectSettingsPanel.hidden = false;
         renderRoleCatalog(data, canManage);
         renderProjectRoles(data, canManage);
+        projectDangerPanel.hidden = role !== "owner";
+        projectDangerPanel.open = false;
+        deleteProjectName.textContent = project.name || "";
+        deleteProjectConfirmation.value = "";
     }
 
     async function loadActiveProject(token) {
@@ -1150,6 +1161,20 @@
             setProjectSettingsStatus("Alterações salvas.", "success");
             await loadActiveStudio(token);
         } catch (error) { setProjectSettingsStatus(error.message || "Não foi possível salvar o projeto.", "error"); }
+        finally { button.disabled = false; }
+    });
+
+    deleteProjectForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
+        const name = activeProjectAdmin && activeProjectAdmin.project && activeProjectAdmin.project.name || "";
+        if (!activeStudioId || !activeProjectId || deleteProjectConfirmation.value.trim() !== name) { deleteProjectStatus.textContent = "Digite o nome do projeto exatamente como aparece acima."; deleteProjectStatus.className = "form-status is-error"; return; }
+        if (!window.confirm("Excluir definitivamente o projeto ‘" + name + "’? Essa ação não pode ser desfeita.")) return;
+        const button = deleteProjectForm.querySelector("button[type=submit]"); button.disabled = true; deleteProjectStatus.textContent = "Excluindo projeto…";
+        try {
+            const token = await getValidAccessToken(); if (!token) throw new Error("Sessão expirada.");
+            await studioRequest("delete_project", token, { studio_id: activeStudioId, project_id: activeProjectId, confirmation: name });
+            activeProjectId = ""; sessionStorage.removeItem(sessionKey("active-project")); await loadActiveStudio(token);
+        } catch (error) { deleteProjectStatus.textContent = error.message || "Não foi possível excluir o projeto."; deleteProjectStatus.className = "form-status is-error"; }
         finally { button.disabled = false; }
     });
 

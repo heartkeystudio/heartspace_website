@@ -585,6 +585,24 @@ Deno.serve(async (request) => {
     return response({ project: data }, 200, origin);
   }
 
+  if (payload.action === "delete_project") {
+    const studioId = typeof payload.studio_id === "string" ? payload.studio_id : "";
+    const projectId = typeof payload.project_id === "string" ? payload.project_id : "";
+    const confirmation = typeof payload.confirmation === "string" ? payload.confirmation.trim() : "";
+    if (!studioId || !projectId) return response({ error: "Projeto inválido." }, 400, origin);
+    const { membership, error: membershipError } = await getMembership(admin, studioId, authData.user.id);
+    if (membershipError || !membership || membership.role !== "owner") return response({ error: "Apenas a pessoa Owner pode excluir este projeto." }, 403, origin);
+    const { data: project } = await admin.from("projects").select("id, name").eq("id", projectId).eq("studio_id", studioId).maybeSingle();
+    if (!project) return response({ error: "Projeto não encontrado." }, 404, origin);
+    if (confirmation !== project.name) return response({ error: "Digite o nome do projeto para confirmar a exclusão." }, 400, origin);
+    const { data: files } = await admin.storage.from("project-images").list(`${studioId}/${projectId}`);
+    if (files && files.length) await admin.storage.from("project-images").remove(files.map((file: any) => `${studioId}/${projectId}/${file.name}`));
+    const { error } = await admin.from("projects").delete().eq("id", projectId).eq("studio_id", studioId);
+    if (error) return response({ error: "Não foi possível excluir o projeto." }, 500, origin);
+    await admin.from("studio_audit_log").insert({ studio_id: studioId, actor_id: authData.user.id, action: "project.deleted", target_type: "project", target_id: projectId });
+    return response({ ok: true }, 200, origin);
+  }
+
   if (payload.action === "get_studio_admin") {
     const studioId = typeof payload.studio_id === "string" ? payload.studio_id : "";
     if (!studioId) return response({ error: "Estúdio inválido." }, 400, origin);
