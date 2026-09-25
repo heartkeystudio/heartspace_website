@@ -321,6 +321,42 @@ Deno.serve(async (request) => {
     return response({ logo_url: `${data.publicUrl}?v=${Date.now()}` }, 201, origin);
   }
 
+  if (payload.action === "list_publications") {
+    const studioId = typeof payload.studio_id === "string" ? payload.studio_id : "";
+    const projectId = typeof payload.project_id === "string" ? payload.project_id : "";
+    if (!studioId || !projectId) return response({ error: "Selecione um projeto." }, 400, origin);
+    const { membership, error: membershipError } = await getMembership(admin, studioId, authData.user.id);
+    if (membershipError || !membership) return response({ error: "Você não possui acesso a este projeto." }, 403, origin);
+    const { data, error } = await admin.from("project_publications")
+      .select("id, project_id, title, slug, summary, source_url, visibility, status, published_at, created_at, updated_at")
+      .eq("studio_id", studioId).eq("project_id", projectId).order("updated_at", { ascending: false });
+    if (error) return response({ error: "Não foi possível carregar as publicações." }, 500, origin);
+    return response({ publications: data || [] }, 200, origin);
+  }
+
+  if (payload.action === "save_publication") {
+    const studioId = typeof payload.studio_id === "string" ? payload.studio_id : "";
+    const projectId = typeof payload.project_id === "string" ? payload.project_id : "";
+    const publicationId = typeof payload.publication_id === "string" ? payload.publication_id : "";
+    const title = typeof payload.title === "string" ? payload.title.trim().replace(/\s+/g, " ") : "";
+    const slug = slugFrom(typeof payload.slug === "string" ? payload.slug : title);
+    const summary = typeof payload.summary === "string" ? payload.summary.trim() : "";
+    const sourceUrl = typeof payload.source_url === "string" ? payload.source_url.trim() : "";
+    const visibility = payload.visibility === "unlisted" ? "unlisted" : payload.visibility === "public" ? "public" : "";
+    const status = typeof payload.status === "string" && ["draft", "published", "withdrawn"].includes(payload.status) ? payload.status : "";
+    if (!studioId || !projectId || !title || !slug || !visibility || !status || title.length > 160 || summary.length > 500 || sourceUrl.length > 2048 || (sourceUrl && !/^https:\/\//i.test(sourceUrl))) return response({ error: "Dados de publicação inválidos." }, 400, origin);
+    const { membership, error: membershipError } = await getMembership(admin, studioId, authData.user.id);
+    if (membershipError || !membership || !["owner", "admin"].includes(membership.role)) return response({ error: "Você não pode administrar publicações deste estúdio." }, 403, origin);
+    const publication = { studio_id: studioId, project_id: projectId, title, slug, summary: summary || null, source_url: sourceUrl || null, visibility, status, published_at: status === "published" ? new Date().toISOString() : null, updated_at: new Date().toISOString() };
+    const query = publicationId
+      ? admin.from("project_publications").update(publication).eq("id", publicationId).eq("studio_id", studioId).eq("project_id", projectId)
+      : admin.from("project_publications").insert(publication);
+    const { data, error } = await query.select("id, project_id, title, slug, summary, source_url, visibility, status, published_at, created_at, updated_at").single();
+    if (error) return response({ error: error.code === "23505" ? "Já existe uma publicação com este endereço neste projeto." : "Não foi possível salvar a publicação." }, 500, origin);
+    await admin.from("studio_audit_log").insert({ studio_id: studioId, actor_id: authData.user.id, action: `publication.${status}`, target_type: "publication", target_id: data.id });
+    return response({ publication: data }, publicationId ? 200 : 201, origin);
+  }
+
   if (payload.action === "create_project") {
     const studioId = typeof payload.studio_id === "string" ? payload.studio_id : "";
     const name = typeof payload.name === "string" ? payload.name.trim().replace(/\s+/g, " ") : "";

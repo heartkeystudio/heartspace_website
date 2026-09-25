@@ -103,6 +103,20 @@
     const activeProjectBanner = document.getElementById("activeProjectBanner");
     const activeProjectBannerFile = document.getElementById("activeProjectBannerFile");
     const activeProjectBannerPreview = document.getElementById("activeProjectBannerPreview");
+    const publicationProjectSelect = document.getElementById("publicationProjectSelect");
+    const publicationEmptyState = document.getElementById("publicationEmptyState");
+    const publicationList = document.getElementById("publicationList");
+    const publicationEditorPanel = document.getElementById("publicationEditorPanel");
+    const publicationEditorTitle = document.getElementById("publicationEditorTitle");
+    const publicationForm = document.getElementById("publicationForm");
+    const publicationId = document.getElementById("publicationId");
+    const publicationTitle = document.getElementById("publicationTitle");
+    const publicationSlug = document.getElementById("publicationSlug");
+    const publicationSummary = document.getElementById("publicationSummary");
+    const publicationSourceUrl = document.getElementById("publicationSourceUrl");
+    const publicationVisibility = document.getElementById("publicationVisibility");
+    const publicationStatus = document.getElementById("publicationStatus");
+    const publicationStatusMessage = document.getElementById("publicationStatusMessage");
     const projectSettingsStatus = document.getElementById("projectSettingsStatus");
     const projectRoleCatalogPanel = document.getElementById("projectRoleCatalogPanel");
     const roleCatalogEditor = document.getElementById("roleCatalogEditor");
@@ -117,6 +131,7 @@
     let activeProjectId = sessionStorage.getItem(sessionKey("active-project")) || "";
     let activeStudioAdmin = null;
     let activeProjectAdmin = null;
+    let currentStudioProjects = [];
     let currentUserId = "";
     let pendingStudioIconFile = null;
     let pendingProfileAvatarFile = null;
@@ -308,7 +323,73 @@
     workspaceButtons.forEach(function (button) {
         button.addEventListener("click", function () {
             selectWorkspaceView(button.dataset.workspaceView);
+            if (button.dataset.workspaceView === "publications") loadPublications();
         });
+    });
+
+    function setPublicationStatus(message, state) {
+        publicationStatusMessage.textContent = message;
+        publicationStatusMessage.className = "form-status" + (state ? " is-" + state : "");
+    }
+
+    function resetPublicationEditor() {
+        publicationId.value = "";
+        publicationTitle.value = "";
+        publicationSlug.value = "";
+        publicationSummary.value = "";
+        publicationSourceUrl.value = "";
+        publicationVisibility.value = "public";
+        publicationStatus.value = "draft";
+        publicationEditorTitle.textContent = "Nova publicação";
+        publicationEditorPanel.hidden = !publicationProjectSelect.value;
+        setPublicationStatus("", "");
+    }
+
+    function editPublication(publication) {
+        publicationId.value = publication.id;
+        publicationTitle.value = publication.title || "";
+        publicationSlug.value = publication.slug || "";
+        publicationSummary.value = publication.summary || "";
+        publicationSourceUrl.value = publication.source_url || "";
+        publicationVisibility.value = publication.visibility || "public";
+        publicationStatus.value = publication.status || "draft";
+        publicationEditorTitle.textContent = "Editar publicação";
+        publicationEditorPanel.hidden = false;
+    }
+
+    async function loadPublications() {
+        const projectId = publicationProjectSelect.value;
+        publicationList.replaceChildren();
+        publicationList.hidden = true;
+        publicationEditorPanel.hidden = true;
+        if (!activeStudioId || !projectId) { publicationEmptyState.textContent = "Crie ou selecione um projeto para administrar publicações."; return; }
+        try {
+            const token = await getValidAccessToken(); if (!token) throw new Error("Sessão expirada.");
+            const data = await studioRequest("list_publications", token, { studio_id: activeStudioId, project_id: projectId });
+            const publications = Array.isArray(data.publications) ? data.publications : [];
+            publications.forEach(function (publication) {
+                const controls = document.createElement("div"); controls.className = "row-controls";
+                const edit = document.createElement("button"); edit.type = "button"; edit.className = "row-button"; edit.textContent = "Editar"; edit.addEventListener("click", function () { editPublication(publication); }); controls.append(edit);
+                appendListRow(publicationList, publication.title, (publication.status === "published" ? "Publicada" : publication.status === "withdrawn" ? "Retirada do ar" : "Rascunho") + " · " + (publication.visibility === "unlisted" ? "Não listada" : "Pública") + " · /" + publication.slug, controls);
+            });
+            publicationList.hidden = !publications.length;
+            publicationEmptyState.textContent = publications.length ? "Escolha uma publicação para editar ou comece outra abaixo." : "Ainda não há publicações para este projeto.";
+            resetPublicationEditor();
+        } catch (error) { publicationEmptyState.textContent = error.message || "Não foi possível carregar as publicações."; }
+    }
+
+    publicationProjectSelect.addEventListener("change", loadPublications);
+    publicationTitle.addEventListener("input", function () { if (!publicationId.value) publicationSlug.value = publicationTitle.value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60); });
+    publicationForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
+        if (!activeStudioId || !publicationProjectSelect.value || !publicationTitle.checkValidity() || !publicationSlug.checkValidity()) return publicationTitle.reportValidity();
+        const button = publicationForm.querySelector("button[type=submit]"); button.disabled = true; setPublicationStatus("Salvando publicação…", "");
+        try {
+            const token = await getValidAccessToken(); if (!token) throw new Error("Sessão expirada.");
+            await studioRequest("save_publication", token, { studio_id: activeStudioId, project_id: publicationProjectSelect.value, publication_id: publicationId.value || undefined, title: publicationTitle.value, slug: publicationSlug.value, summary: publicationSummary.value, source_url: publicationSourceUrl.value, visibility: publicationVisibility.value, status: publicationStatus.value });
+            await loadPublications(); setPublicationStatus("Publicação salva.", "success");
+        } catch (error) { setPublicationStatus(error.message || "Não foi possível salvar a publicação.", "error"); }
+        finally { button.disabled = false; }
     });
 
     Array.from(document.querySelectorAll("[data-go-to]")).forEach(function (button) {
@@ -591,6 +672,7 @@
 
         projectList.replaceChildren();
         const projects = Array.isArray(data.projects) ? data.projects : [];
+        currentStudioProjects = projects;
         overviewProjectCount.textContent = String(projects.length);
         projectsTitle.textContent = projects.length ? (projects.length === 1 ? "1 projeto neste estúdio." : projects.length + " projetos neste estúdio.") : "Seu próximo projeto começa aqui.";
         projectsCopy.textContent = projects.length ? "Os projetos criados aqui já podem ser reconhecidos pelo Hub. O conteúdo e os arquivos continuam locais." : "O site cria a referência compartilhada. Quando você abrir o Hub, ela se transforma no seu espaço de trabalho local.";
@@ -599,6 +681,10 @@
         createProjectForm.hidden = !canManage;
         projectContextSelect.replaceChildren();
         projects.forEach(function (project) { projectContextSelect.add(new Option(project.name || "Projeto sem título", project.id)); });
+        publicationProjectSelect.replaceChildren();
+        projects.forEach(function (project) { publicationProjectSelect.add(new Option(project.name || "Projeto sem título", project.id)); });
+        publicationProjectSelect.disabled = !projects.length;
+        if (projects.length) publicationProjectSelect.value = activeProjectId && projects.some(function (project) { return project.id === activeProjectId; }) ? activeProjectId : projects[0].id;
         projectContextLabel.hidden = !projects.length;
         if (!projects.some(function (project) { return project.id === activeProjectId; })) activeProjectId = projects.length ? projects[0].id : "";
         if (activeProjectId) {
