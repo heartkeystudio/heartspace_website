@@ -411,6 +411,19 @@ Deno.serve(async (request) => {
     return response({ events: data || [] }, 200, origin);
   }
 
+  if (payload.action === "get_account_usage") {
+    const { data: memberships, error: membershipError } = await admin.from("studio_members").select("studio_id").eq("user_id", authData.user.id);
+    if (membershipError) return response({ error: "Não foi possível calcular o uso da conta." }, 500, origin);
+    const studioIds = Array.from(new Set((memberships || []).map((row: any) => row.studio_id).filter(Boolean)));
+    if (!studioIds.length) return response({ usage: { studios: 0, projects: 0, members: 0, publications: 0 } }, 200, origin);
+    const [{ count: projects }, { count: members }, { count: publications }] = await Promise.all([
+      admin.from("projects").select("id", { count: "exact", head: true }).in("studio_id", studioIds),
+      admin.from("studio_members").select("user_id", { count: "exact", head: true }).in("studio_id", studioIds),
+      admin.from("project_publications").select("id", { count: "exact", head: true }).in("studio_id", studioIds),
+    ]);
+    return response({ usage: { studios: studioIds.length, projects: projects || 0, members: members || 0, publications: publications || 0 } }, 200, origin);
+  }
+
   if (payload.action === "create_project") {
     const studioId = typeof payload.studio_id === "string" ? payload.studio_id : "";
     const name = typeof payload.name === "string" ? payload.name.trim().replace(/\s+/g, " ") : "";

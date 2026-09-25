@@ -128,6 +128,12 @@
     const refreshAuditLog = document.getElementById("refreshAuditLog");
     const auditLogNotice = document.getElementById("auditLogNotice");
     const auditLogList = document.getElementById("auditLogList");
+    const refreshUsage = document.getElementById("refreshUsage");
+    const usageStudios = document.getElementById("usageStudios");
+    const usageProjects = document.getElementById("usageProjects");
+    const usageMembers = document.getElementById("usageMembers");
+    const usagePublications = document.getElementById("usagePublications");
+    const usageStatus = document.getElementById("usageStatus");
     const projectSettingsStatus = document.getElementById("projectSettingsStatus");
     const projectRoleCatalogPanel = document.getElementById("projectRoleCatalogPanel");
     const roleCatalogEditor = document.getElementById("roleCatalogEditor");
@@ -337,6 +343,7 @@
             if (button.dataset.workspaceView === "publications") loadPublications();
             if (button.dataset.workspaceView === "apps") loadProjectApps();
             if (button.dataset.workspaceView === "security") loadAuditLog();
+            if (button.dataset.workspaceView === "billing") loadAccountUsage();
         });
     });
 
@@ -439,6 +446,17 @@
         } catch (error) { auditLogNotice.textContent = error.message || "Não foi possível carregar a auditoria."; }
     }
     refreshAuditLog.addEventListener("click", loadAuditLog);
+
+    async function loadAccountUsage() {
+        usageStatus.textContent = "Calculando uso da conta…";
+        try {
+            const token = await getValidAccessToken(); if (!token) throw new Error("Sessão expirada.");
+            const data = await studioRequest("get_account_usage", token);
+            const usage = data.usage || {}; usageStudios.textContent = String(usage.studios || 0); usageProjects.textContent = String(usage.projects || 0); usageMembers.textContent = String(usage.members || 0); usagePublications.textContent = String(usage.publications || 0);
+            usageStatus.textContent = "Uso atual da infraestrutura administrada pelo HeartSpace.";
+        } catch (error) { usageStatus.textContent = error.message || "Não foi possível calcular o uso agora."; }
+    }
+    refreshUsage.addEventListener("click", loadAccountUsage);
 
     Array.from(document.querySelectorAll("[data-go-to]")).forEach(function (button) {
         button.addEventListener("click", function () {
