@@ -7,6 +7,8 @@
     const status = document.getElementById("authStatus");
     const configured = Boolean(config.supabaseUrl && config.supabaseAnonKey);
     const key = (name) => "heartspace-account-" + name;
+    const savedTheme = localStorage.getItem("heartspace-theme") || localStorage.getItem("heartspace-account-theme") || "dark";
+    document.body.classList.toggle("is-light", savedTheme === "light");
     const setStatus = (message, state) => { status.textContent = message; status.className = "auth-status" + (state ? " is-" + state : ""); };
     const redirect = () => {
         const query = new URLSearchParams(window.location.search);

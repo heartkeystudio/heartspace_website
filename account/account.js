@@ -240,10 +240,10 @@
         document.body.classList.toggle("is-light", isLight);
         themeToggle.setAttribute("aria-pressed", String(isLight));
         themeToggle.textContent = isLight ? "Modo escuro" : "Modo claro";
-        localStorage.setItem("heartspace-account-theme", isLight ? "light" : "dark");
+        localStorage.setItem("heartspace-theme", isLight ? "light" : "dark");
     }
 
-    applyTheme(localStorage.getItem("heartspace-account-theme") || "dark");
+    applyTheme(localStorage.getItem("heartspace-theme") || localStorage.getItem("heartspace-account-theme") || "dark");
     themeToggle.addEventListener("click", function () {
         applyTheme(document.body.classList.contains("is-light") ? "dark" : "light");
     });

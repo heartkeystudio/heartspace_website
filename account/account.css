@@ -222,7 +222,12 @@ textarea { width: 100%; min-height: 94px; padding: 11px 13px; border: 1px solid 
 .role-catalog { max-width: 760px; margin-top: 16px; padding: 24px; border: 1px solid #302f35; border-radius: 8px; background: #1a1a1d; }.role-catalog h2 { margin-bottom: 18px; color: #f2f0f3; font-size: 1.05rem; }.role-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }.role-grid article { min-height: 128px; padding: 15px; border: 1px solid #36343b; border-radius: 7px; background: #202024; }.role-grid strong { color: #f2eff4; font-size: .82rem; }.role-grid p { margin: 8px 0 0; color: #9c98a2; font-size: .72rem; line-height: 1.48; }
 
 body.is-light { --bg: #f7f7f9; --panel: #fff; --panel-deep: #f3f2f6; --text: #25222a; --muted: #65616b; --border: rgba(36, 33, 42, .14); color: #25222a; background: #f7f7f9; }
-body.is-light::before { opacity: .1; }
+body.is-light::before { display: none; }
+body.is-light .account-card { border-color: #dfdde3; background: #fff; box-shadow: 0 22px 55px rgba(33, 29, 40, .12); }
+body.is-light .account-loading, body.is-light .account-intro { background: #f5f4f7; }
+body.is-light .auth-panel { background: #fff; }
+body.is-light .preview-line, body.is-light label { color: #3c3742; }
+body.is-light .back-home { color: #65616b; }
 body.is-light .workspace-topbar, body.is-light .workspace-nav { border-color: #e2e0e6; background: #fff; }
 body.is-light .workspace-layout, body.is-light .workspace-content { background: #f9f9fb; }
 body.is-light .workspace-nav { border-right-color: #e2e0e6; }
