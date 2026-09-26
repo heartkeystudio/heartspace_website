@@ -200,7 +200,95 @@ function labelsForTemplate(template: { permissions: Record<string, Record<string
   return Object.fromEntries(Object.keys(template.permissions).map((key) => [key, defaultRoleLabel(key)]));
 }
 
+function base64Bytes(value: string) {
+  const binary = atob(value);
+  return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+}
+
+function base64Value(bytes: Uint8Array) {
+  return btoa(String.fromCharCode(...bytes));
+}
+
+async function cloudTokenKey() {
+  const value = Deno.env.get("HEARTSPACE_CLOUD_TOKEN_KEY") || "";
+  const bytes = value ? base64Bytes(value) : new Uint8Array();
+  if (bytes.byteLength !== 32) throw new Error("A chave HEARTSPACE_CLOUD_TOKEN_KEY deve ter 32 bytes em Base64.");
+  return crypto.subtle.importKey("raw", bytes, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
+}
+
+async function encryptCloudToken(value: unknown) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const key = await cloudTokenKey();
+  const payload = new TextEncoder().encode(JSON.stringify(value));
+  const encrypted = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, payload);
+  return { token_ciphertext: base64Value(new Uint8Array(encrypted)), token_iv: base64Value(iv) };
+}
+
+async function decryptCloudToken(connection: any) {
+  const key = await cloudTokenKey();
+  const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv: base64Bytes(connection.token_iv) }, key, base64Bytes(connection.token_ciphertext));
+  return JSON.parse(new TextDecoder().decode(decrypted));
+}
+
+async function googleAccessToken(connection: any) {
+  const saved = await decryptCloudToken(connection);
+  if (!saved.refresh_token) throw new Error("A conexão do Google Drive não possui token de renovação. Conecte novamente.");
+  const clientId = Deno.env.get("GOOGLE_DRIVE_CLIENT_ID") || "";
+  const clientSecret = Deno.env.get("GOOGLE_DRIVE_CLIENT_SECRET") || "";
+  const refresh = await fetch("https://oauth2.googleapis.com/token", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ client_id: clientId, client_secret: clientSecret, grant_type: "refresh_token", refresh_token: saved.refresh_token }) });
+  const data = await refresh.json().catch(() => ({}));
+  if (!refresh.ok || !data.access_token) throw new Error("Não foi possível renovar a conexão do Google Drive.");
+  return String(data.access_token);
+}
+
+async function createGoogleFolder(accessToken: string, name: string, parentId?: string | null) {
+  const body: Record<string, unknown> = { name, mimeType: "application/vnd.google-apps.folder" };
+  if (parentId) body.parents = [parentId];
+  const result = await fetch("https://www.googleapis.com/drive/v3/files?fields=id,name", { method: "POST", headers: { Authorization: "Bearer " + accessToken, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const data = await result.json().catch(() => ({}));
+  if (!result.ok || !data.id) throw new Error("O Google Drive não permitiu criar a pasta.");
+  return { id: String(data.id), name: String(data.name || name) };
+}
+
+function cloudCallbackPage(message: string, success: boolean) {
+  const accountUrl = (Deno.env.get("HEARTSPACE_ACCOUNT_URL") || "https://www.heartspace.tools/account/").replace(/\/$/, "");
+  const target = accountUrl + "?cloud=" + (success ? "connected" : "error");
+  const safeMessage = message.replace(/[<&>]/g, "");
+  return new Response(`<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta http-equiv="refresh" content="3;url=${target}"><title>HeartSpace</title><body style="font-family:system-ui;background:#141416;color:#f5f2f6;padding:48px"><h1>${success ? "Google Drive conectado" : "Não foi possível conectar"}</h1><p>${safeMessage}</p><p><a style="color:#db91f5" href="${target}">Voltar ao HeartSpace</a></p></body></html>`, { status: success ? 200 : 400, headers: { "Content-Type": "text/html; charset=utf-8" } });
+}
+
 Deno.serve(async (request) => {
+  const callbackUrl = new URL(request.url);
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!supabaseUrl || !serviceRoleKey) return response({ error: "Serviço indisponível." }, 503);
+  const admin = createClient(supabaseUrl, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } });
+  if (request.method === "GET" && callbackUrl.searchParams.get("cloud_callback") === "google") {
+    const state = callbackUrl.searchParams.get("state") || "";
+    const code = callbackUrl.searchParams.get("code") || "";
+    const denied = callbackUrl.searchParams.get("error");
+    if (!state || !code || denied) return cloudCallbackPage("A autorização foi cancelada ou expirou. Tente novamente no painel.", false);
+    const { data: oauthState } = await admin.from("cloud_oauth_states").select("state, studio_id, created_by, expires_at, consumed_at").eq("state", state).eq("provider", "google_drive").maybeSingle();
+    if (!oauthState || oauthState.consumed_at || new Date(oauthState.expires_at).getTime() < Date.now()) return cloudCallbackPage("Este link de autorização expirou. Inicie a conexão novamente.", false);
+    const clientId = Deno.env.get("GOOGLE_DRIVE_CLIENT_ID") || "";
+    const clientSecret = Deno.env.get("GOOGLE_DRIVE_CLIENT_SECRET") || "";
+    const redirectUri = (Deno.env.get("GOOGLE_DRIVE_REDIRECT_URI") || callbackUrl.origin + callbackUrl.pathname + "?cloud_callback=google");
+    if (!clientId || !clientSecret) return cloudCallbackPage("A conexão Google Drive ainda não foi configurada no servidor.", false);
+    try {
+      const exchange = await fetch("https://oauth2.googleapis.com/token", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ code, client_id: clientId, client_secret: clientSecret, redirect_uri: redirectUri, grant_type: "authorization_code" }) });
+      const tokenData = await exchange.json().catch(() => ({}));
+      if (!exchange.ok || !tokenData.refresh_token) throw new Error("O Google não retornou autorização offline. Tente conectar novamente.");
+      const account = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", { headers: { Authorization: "Bearer " + tokenData.access_token } }).then((result) => result.ok ? result.json() : {});
+      const { data: studio } = await admin.from("studios").select("name").eq("id", oauthState.studio_id).maybeSingle();
+      const root = await createGoogleFolder(String(tokenData.access_token), "HeartSpace — " + String(studio?.name || "Estúdio"));
+      const encrypted = await encryptCloudToken({ refresh_token: tokenData.refresh_token });
+      const { error } = await admin.from("studio_cloud_connections").upsert({ studio_id: oauthState.studio_id, provider: "google_drive", provider_account_id: typeof account.id === "string" ? account.id : null, provider_account_email: typeof account.email === "string" ? account.email : null, root_folder_id: root.id, root_folder_name: root.name, ...encrypted, scopes: typeof tokenData.scope === "string" ? tokenData.scope.split(" ") : [], connected_by: oauthState.created_by, connected_at: new Date().toISOString(), revoked_at: null }, { onConflict: "studio_id,provider" });
+      if (error) throw error;
+      await admin.from("cloud_oauth_states").update({ consumed_at: new Date().toISOString() }).eq("state", state);
+      await admin.from("studio_audit_log").insert({ studio_id: oauthState.studio_id, actor_id: oauthState.created_by, action: "cloud.google_drive_connected", target_type: "cloud_connection", target_id: root.id });
+      return cloudCallbackPage("A conta compartilhada e a pasta raiz foram configuradas. Você já pode preparar os projetos.", true);
+    } catch (error) { console.error("google callback failed", error); return cloudCallbackPage(error instanceof Error ? error.message : "Não foi possível concluir a conexão.", false); }
+  }
   const requestOrigin = request.headers.get("origin");
   const origin = allowedOrigin(requestOrigin);
   const nativeHubRequest = !requestOrigin && (request.headers.get("authorization") || "").startsWith("Bearer ");
@@ -208,11 +296,6 @@ Deno.serve(async (request) => {
   if (!origin && !nativeHubRequest) return response({ error: "Origem não autorizada." }, 403);
   if (request.method !== "POST") return response({ error: "Método não permitido." }, 405, origin);
 
-  const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!supabaseUrl || !serviceRoleKey) return response({ error: "Serviço indisponível." }, 503, origin);
-
-  const admin = createClient(supabaseUrl, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } });
   let payload: Record<string, unknown>;
   try { payload = await request.json(); } catch { return response({ error: "Corpo da requisição inválido." }, 400, origin); }
 
@@ -376,6 +459,96 @@ Deno.serve(async (request) => {
     }
     const { data } = admin.storage.from("studio-icons").getPublicUrl(path);
     return response({ logo_url: `${data.publicUrl}?v=${Date.now()}` }, 201, origin);
+  }
+
+  if (payload.action === "get_cloud_sync") {
+    const studioId = typeof payload.studio_id === "string" ? payload.studio_id : "";
+    if (!studioId) return response({ error: "Selecione um estúdio." }, 400, origin);
+    const { membership, error: membershipError } = await getMembership(admin, studioId, authData.user.id);
+    if (membershipError || !membership) return response({ error: "Você não possui acesso a este estúdio." }, 403, origin);
+    const [{ data: connection, error: connectionError }, { data: projects, error: projectsError }] = await Promise.all([
+      admin.from("studio_cloud_connections").select("id, provider, provider_account_email, root_folder_id, root_folder_name, connected_at, last_validated_at").eq("studio_id", studioId).eq("provider", "google_drive").is("revoked_at", null).maybeSingle(),
+      admin.from("projects").select("id, name, status").eq("studio_id", studioId).order("created_at", { ascending: true }),
+    ]);
+    if (connectionError || projectsError) return response({ error: "A sincronização em nuvem ainda precisa da migration SUPABASE_CLOUD_SYNC.sql." }, 500, origin);
+    const projectIds = (projects || []).map((project: any) => project.id);
+    const { data: syncs, error: syncsError } = projectIds.length ? await admin.from("project_cloud_sync_configs").select("project_id, folder_id, folder_name, sync_enabled, last_sync_at, last_sync_status, updated_at").in("project_id", projectIds) : { data: [], error: null };
+    if (syncsError) return response({ error: "Não foi possível carregar as pastas dos projetos." }, 500, origin);
+    return response({ connection: connection || null, projects: projects || [], project_syncs: syncs || [], can_manage: ["owner", "admin"].includes(membership.role) }, 200, origin);
+  }
+
+  if (payload.action === "start_google_drive_connection") {
+    const studioId = typeof payload.studio_id === "string" ? payload.studio_id : "";
+    const { membership, error: membershipError } = await getMembership(admin, studioId, authData.user.id);
+    if (!studioId || membershipError || !membership || !["owner", "admin"].includes(membership.role)) return response({ error: "Apenas Owner ou Admin pode conectar o Drive do estúdio." }, 403, origin);
+    const clientId = Deno.env.get("GOOGLE_DRIVE_CLIENT_ID") || "";
+    const clientSecret = Deno.env.get("GOOGLE_DRIVE_CLIENT_SECRET") || "";
+    if (!clientId || !clientSecret) return response({ error: "A conexão Google Drive ainda não foi configurada no servidor." }, 503, origin);
+    const state = randomToken();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    await admin.from("cloud_oauth_states").delete().eq("studio_id", studioId).eq("provider", "google_drive");
+    const { error } = await admin.from("cloud_oauth_states").insert({ state, studio_id: studioId, provider: "google_drive", created_by: authData.user.id, expires_at: expiresAt });
+    if (error) return response({ error: "A conexão em nuvem ainda precisa da migration SUPABASE_CLOUD_SYNC.sql." }, 500, origin);
+    const functionUrl = new URL(request.url);
+    const redirectUri = Deno.env.get("GOOGLE_DRIVE_REDIRECT_URI") || functionUrl.origin + functionUrl.pathname + "?cloud_callback=google";
+    const authorizationUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+    authorizationUrl.search = new URLSearchParams({ client_id: clientId, redirect_uri: redirectUri, response_type: "code", access_type: "offline", prompt: "consent", include_granted_scopes: "true", state, scope: "openid email https://www.googleapis.com/auth/drive.file" }).toString();
+    return response({ authorization_url: authorizationUrl.toString() }, 200, origin);
+  }
+
+  if (payload.action === "configure_project_cloud_sync") {
+    const studioId = typeof payload.studio_id === "string" ? payload.studio_id : "";
+    const projectId = typeof payload.project_id === "string" ? payload.project_id : "";
+    const syncEnabled = payload.sync_enabled !== false;
+    const { membership, error: membershipError } = await getMembership(admin, studioId, authData.user.id);
+    if (!studioId || !projectId || membershipError || !membership || !["owner", "admin"].includes(membership.role)) return response({ error: "Apenas Owner ou Admin pode configurar a sincronização." }, 403, origin);
+    const [{ data: project }, { data: connection, error: connectionError }] = await Promise.all([
+      admin.from("projects").select("id, name").eq("id", projectId).eq("studio_id", studioId).maybeSingle(),
+      admin.from("studio_cloud_connections").select("id, root_folder_id, token_ciphertext, token_iv").eq("studio_id", studioId).eq("provider", "google_drive").is("revoked_at", null).maybeSingle(),
+    ]);
+    if (connectionError || !connection) return response({ error: "Conecte o Google Drive compartilhado antes de preparar um projeto." }, 409, origin);
+    if (!project) return response({ error: "Projeto não encontrado." }, 404, origin);
+    const { data: existing } = await admin.from("project_cloud_sync_configs").select("project_id, folder_id, folder_name").eq("project_id", projectId).maybeSingle();
+    let folder = existing;
+    if (!folder) {
+      const accessToken = await googleAccessToken(connection);
+      folder = await createGoogleFolder(accessToken, project.name, connection.root_folder_id);
+    }
+    const { data: sync, error } = await admin.from("project_cloud_sync_configs").upsert({ project_id: projectId, connection_id: connection.id, folder_id: folder.folder_id || folder.id, folder_name: folder.folder_name || folder.name, sync_enabled: syncEnabled, updated_by: authData.user.id, updated_at: new Date().toISOString() }, { onConflict: "project_id" }).select("project_id, folder_id, folder_name, sync_enabled, updated_at").single();
+    if (error) return response({ error: "Não foi possível salvar a pasta de sincronização." }, 500, origin);
+    await admin.from("studio_audit_log").insert({ studio_id: studioId, actor_id: authData.user.id, action: existing ? "cloud.project_sync_updated" : "cloud.project_folder_created", target_type: "project", target_id: projectId });
+    return response({ sync }, existing ? 200 : 201, origin);
+  }
+
+  if (payload.action === "disconnect_google_drive") {
+    const studioId = typeof payload.studio_id === "string" ? payload.studio_id : "";
+    const { membership, error: membershipError } = await getMembership(admin, studioId, authData.user.id);
+    if (!studioId || membershipError || !membership || !["owner", "admin"].includes(membership.role)) return response({ error: "Apenas Owner ou Admin pode desconectar o Drive do estúdio." }, 403, origin);
+    const { error } = await admin.from("studio_cloud_connections").update({ revoked_at: new Date().toISOString() }).eq("studio_id", studioId).eq("provider", "google_drive").is("revoked_at", null);
+    if (error) return response({ error: "Não foi possível desconectar o Google Drive." }, 500, origin);
+    await admin.from("studio_audit_log").insert({ studio_id: studioId, actor_id: authData.user.id, action: "cloud.google_drive_disconnected", target_type: "cloud_connection", target_id: studioId });
+    return response({ ok: true }, 200, origin);
+  }
+
+  if (payload.action === "get_hub_project_cloud_sync" || payload.action === "issue_hub_cloud_access") {
+    const projectId = typeof payload.project_id === "string" ? payload.project_id : "";
+    if (!projectId) return response({ error: "Projeto inválido." }, 400, origin);
+    const { data: project } = await admin.from("projects").select("id, studio_id, name, status").eq("id", projectId).maybeSingle();
+    if (!project) return response({ error: "Projeto não encontrado." }, 404, origin);
+    const { membership, error: membershipError } = await getMembership(admin, project.studio_id, authData.user.id);
+    if (membershipError || !membership) return response({ error: "Você não possui acesso a este projeto." }, 403, origin);
+    const { data: sync } = await admin.from("project_cloud_sync_configs").select("project_id, folder_id, folder_name, sync_enabled, last_sync_at, last_sync_status, connection_id").eq("project_id", projectId).maybeSingle();
+    if (!sync || !sync.sync_enabled || project.status === "archived") return response({ sync: null }, 200, origin);
+    const { data: connection } = await admin.from("studio_cloud_connections").select(payload.action === "issue_hub_cloud_access" ? "id, provider, token_ciphertext, token_iv" : "id, provider").eq("id", sync.connection_id).is("revoked_at", null).maybeSingle();
+    if (!connection) return response({ sync: null }, 200, origin);
+    if (payload.action === "issue_hub_cloud_access") {
+      if (connection.provider !== "google_drive") return response({ error: "Este provedor ainda não é suportado pelo Hub." }, 409, origin);
+      try {
+        const accessToken = await googleAccessToken(connection);
+        return response({ provider: "google_drive", access_token: accessToken, expires_in: 3600, folder_id: sync.folder_id }, 200, origin);
+      } catch (error) { return response({ error: error instanceof Error ? error.message : "Não foi possível autorizar a sincronização." }, 502, origin); }
+    }
+    return response({ sync: { provider: connection.provider, folder_id: sync.folder_id, folder_name: sync.folder_name, last_sync_at: sync.last_sync_at, last_sync_status: sync.last_sync_status } }, 200, origin);
   }
 
   if (payload.action === "list_publications") {

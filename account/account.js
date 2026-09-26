@@ -126,6 +126,17 @@
     const appsProjectSelect = document.getElementById("appsProjectSelect");
     const appsEmptyState = document.getElementById("appsEmptyState");
     const projectAppsList = document.getElementById("projectAppsList");
+    const cloudConnectionState = document.getElementById("cloudConnectionState");
+    const cloudConnectionCopy = document.getElementById("cloudConnectionCopy");
+    const connectGoogleDrive = document.getElementById("connectGoogleDrive");
+    const disconnectGoogleDrive = document.getElementById("disconnectGoogleDrive");
+    const cloudConnectionStatus = document.getElementById("cloudConnectionStatus");
+    const projectCloudSyncForm = document.getElementById("projectCloudSyncForm");
+    const cloudProjectSelect = document.getElementById("cloudProjectSelect");
+    const cloudProjectNote = document.getElementById("cloudProjectNote");
+    const cloudSyncEnabled = document.getElementById("cloudSyncEnabled");
+    const createProjectCloudFolder = document.getElementById("createProjectCloudFolder");
+    const projectCloudSyncStatus = document.getElementById("projectCloudSyncStatus");
     const refreshAuditLog = document.getElementById("refreshAuditLog");
     const auditLogNotice = document.getElementById("auditLogNotice");
     const auditLogList = document.getElementById("auditLogList");
@@ -357,6 +368,7 @@
             selectWorkspaceView(button.dataset.workspaceView);
             if (button.dataset.workspaceView === "publications") loadPublications();
             if (button.dataset.workspaceView === "apps") loadProjectApps();
+            if (button.dataset.workspaceView === "cloud") loadCloudSync();
             if (button.dataset.workspaceView === "security") loadAuditLog();
             if (button.dataset.workspaceView === "billing") loadAccountUsage();
         });
@@ -448,6 +460,79 @@
         } catch (error) { appsEmptyState.textContent = error.message || "Não foi possível carregar os apps."; }
     }
     appsProjectSelect.addEventListener("change", loadProjectApps);
+
+    function setCloudStatus(element, message, state) {
+        element.textContent = message;
+        element.className = "form-status" + (state ? " is-" + state : "");
+    }
+
+    function setCloudProjects(projects, configs) {
+        const previous = cloudProjectSelect.value;
+        cloudProjectSelect.replaceChildren();
+        projects.forEach(function (project) { cloudProjectSelect.add(new Option(project.name || "Projeto sem título", project.id)); });
+        cloudProjectSelect.disabled = !projects.length;
+        if (projects.length) cloudProjectSelect.value = projects.some(function (project) { return project.id === previous; }) ? previous : (activeProjectId && projects.some(function (project) { return project.id === activeProjectId; }) ? activeProjectId : projects[0].id);
+        const config = (configs || []).find(function (item) { return item.project_id === cloudProjectSelect.value; });
+        cloudSyncEnabled.checked = !config || config.sync_enabled !== false;
+        cloudProjectNote.textContent = config
+            ? "Pasta conectada: " + (config.folder_name || "Projeto") + ". " + (config.sync_enabled === false ? "A sincronização está pausada." : "O Hub poderá sincronizar este projeto.")
+            : "Nenhuma pasta foi criada para este projeto ainda.";
+        createProjectCloudFolder.textContent = config ? "Atualizar sincronização" : "Criar pasta do projeto";
+    }
+
+    async function loadCloudSync() {
+        setCloudStatus(cloudConnectionStatus, "", "");
+        cloudConnectionState.textContent = "Verificando…";
+        cloudConnectionCopy.textContent = "Carregando a conexão compartilhada do estúdio.";
+        try {
+            const token = await getValidAccessToken(); if (!token) throw new Error("Sessão expirada.");
+            const data = await studioRequest("get_cloud_sync", token, { studio_id: activeStudioId });
+            const connection = data.connection || null;
+            const canManage = Boolean(data.can_manage);
+            const projects = Array.isArray(data.projects) ? data.projects : [];
+            const configs = Array.isArray(data.project_syncs) ? data.project_syncs : [];
+            setCloudProjects(projects, configs);
+            connectGoogleDrive.hidden = Boolean(connection);
+            disconnectGoogleDrive.hidden = !connection;
+            connectGoogleDrive.disabled = !canManage;
+            disconnectGoogleDrive.disabled = !canManage;
+            cloudProjectSelect.disabled = !connection || !projects.length || !canManage;
+            cloudSyncEnabled.disabled = !connection || !projects.length || !canManage;
+            createProjectCloudFolder.disabled = !connection || !projects.length || !canManage;
+            if (connection) {
+                cloudConnectionState.textContent = "Conectado";
+                cloudConnectionCopy.textContent = "Conta compartilhada" + (connection.provider_account_email ? ": " + connection.provider_account_email : "") + ". A pasta raiz do HeartSpace está pronta para os projetos deste estúdio.";
+            } else {
+                cloudConnectionState.textContent = "Não conectado";
+                cloudConnectionCopy.textContent = canManage ? "Conecte a conta Google compartilhada do estúdio. Membros não precisam conectar seus Drives pessoais." : "Apenas Owner ou Admin pode conectar a conta compartilhada do estúdio.";
+            }
+        } catch (error) { cloudConnectionState.textContent = "Indisponível"; cloudConnectionCopy.textContent = error.message || "Não foi possível carregar a sincronização."; }
+    }
+
+    cloudProjectSelect.addEventListener("change", function () { loadCloudSync(); });
+    connectGoogleDrive.addEventListener("click", async function () {
+        connectGoogleDrive.disabled = true; setCloudStatus(cloudConnectionStatus, "Abrindo autorização do Google…", "");
+        try {
+            const token = await getValidAccessToken(); if (!token) throw new Error("Sessão expirada.");
+            const data = await studioRequest("start_google_drive_connection", token, { studio_id: activeStudioId });
+            if (!data.authorization_url) throw new Error("A autorização do Google não foi iniciada.");
+            window.location.assign(data.authorization_url);
+        } catch (error) { setCloudStatus(cloudConnectionStatus, error.message || "Não foi possível iniciar a conexão.", "error"); connectGoogleDrive.disabled = false; }
+    });
+    disconnectGoogleDrive.addEventListener("click", async function () {
+        if (!window.confirm("Desconectar o Google Drive do estúdio? As pastas e arquivos não serão apagados.")) return;
+        disconnectGoogleDrive.disabled = true; setCloudStatus(cloudConnectionStatus, "Desconectando…", "");
+        try { const token = await getValidAccessToken(); if (!token) throw new Error("Sessão expirada."); await studioRequest("disconnect_google_drive", token, { studio_id: activeStudioId }); await loadCloudSync(); setCloudStatus(cloudConnectionStatus, "Drive desconectado. Nenhum arquivo foi apagado.", "success"); }
+        catch (error) { setCloudStatus(cloudConnectionStatus, error.message || "Não foi possível desconectar.", "error"); }
+        finally { disconnectGoogleDrive.disabled = false; }
+    });
+    projectCloudSyncForm.addEventListener("submit", async function (event) {
+        event.preventDefault(); if (!activeStudioId || !cloudProjectSelect.value) return;
+        createProjectCloudFolder.disabled = true; setCloudStatus(projectCloudSyncStatus, "Preparando a pasta do projeto…", "");
+        try { const token = await getValidAccessToken(); if (!token) throw new Error("Sessão expirada."); const data = await studioRequest("configure_project_cloud_sync", token, { studio_id: activeStudioId, project_id: cloudProjectSelect.value, sync_enabled: cloudSyncEnabled.checked }); await loadCloudSync(); setCloudStatus(projectCloudSyncStatus, "Pasta pronta: " + (data.sync && data.sync.folder_name || "projeto") + ".", "success"); }
+        catch (error) { setCloudStatus(projectCloudSyncStatus, error.message || "Não foi possível preparar a pasta.", "error"); }
+        finally { createProjectCloudFolder.disabled = false; }
+    });
 
     async function loadAuditLog() {
         auditLogList.replaceChildren();

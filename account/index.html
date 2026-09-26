@@ -35,6 +35,7 @@
                     <button class="workspace-nav-item" type="button" data-workspace-view="studios" data-studio-required><span>◇</span>Estúdios</button>
                     <button class="workspace-nav-item" type="button" data-workspace-view="projects" data-studio-required><span>▣</span>Projetos</button>
                     <button class="workspace-nav-item" type="button" data-workspace-view="apps" data-studio-required><span>▦</span>Apps</button>
+                    <button class="workspace-nav-item" type="button" data-workspace-view="cloud" data-studio-required><span>☁</span>Nuvem</button>
                     <button class="workspace-nav-item" type="button" data-workspace-view="members" data-studio-required><span>◎</span>Membros</button>
                     <button class="workspace-nav-item" type="button" data-workspace-view="publications" data-studio-required><span>↗</span>Publicações</button>
                     <p class="workspace-nav-label workspace-nav-label-lower">CONTA</p>
@@ -91,6 +92,13 @@
                         <p class="eyebrow">APPS</p><h1>Ferramentas no contexto certo.</h1>
                         <p class="workspace-lead">Escolha quais apps aparecem e podem trabalhar com cada projeto. Os arquivos e a produção continuam locais no Hub.</p>
                         <article class="empty-panel"><h2>Apps do projeto</h2><label class="project-context" for="appsProjectSelect">Projeto em edição<select id="appsProjectSelect" aria-label="Escolher projeto para configurar apps"></select></label><p class="field-note" id="appsEmptyState">Selecione um projeto para configurar seus apps.</p><div class="role-grid" id="projectAppsList" hidden></div></article>
+                    </section>
+
+                    <section class="workspace-view" data-workspace-panel="cloud" hidden>
+                        <p class="eyebrow">SINCRONIZAÇÃO EM NUVEM</p><h1>Uma origem online do estúdio.</h1>
+                        <p class="workspace-lead">A conta compartilhada pertence ao estúdio. Cada projeto recebe sua própria pasta; o Hub continua responsável pelos arquivos locais e pela sincronização.</p>
+                        <article class="admin-detail-panel cloud-panel"><div class="admin-detail-heading"><div><p class="panel-kicker">CONEXÃO DO ESTÚDIO</p><h2>Google Drive</h2></div><span class="role-chip" id="cloudConnectionState">Verificando…</span></div><p class="field-note" id="cloudConnectionCopy">Carregando a conexão compartilhada do estúdio.</p><div class="cloud-connection-actions"><button class="portal-button" id="connectGoogleDrive" type="button">Conectar Google Drive</button><button class="row-button row-button-danger" id="disconnectGoogleDrive" type="button" hidden>Desconectar</button></div><p class="form-status" id="cloudConnectionStatus" aria-live="polite"></p></article>
+                        <article class="admin-detail-panel cloud-panel"><div class="admin-detail-heading"><div><p class="panel-kicker">PASTA DO PROJETO</p><h2>Preparar sincronização</h2></div></div><form class="studio-form" id="projectCloudSyncForm"><label for="cloudProjectSelect">Projeto</label><select id="cloudProjectSelect" required></select><p class="field-note" id="cloudProjectNote">Conecte o Drive do estúdio para criar a pasta segura deste projeto.</p><label class="cloud-switch"><input id="cloudSyncEnabled" type="checkbox" checked><span>Permitir sincronização pelo Hub</span></label><button class="portal-button" id="createProjectCloudFolder" type="submit">Criar pasta do projeto</button><p class="form-status" id="projectCloudSyncStatus" aria-live="polite"></p></form></article>
                     </section>
 
                     <section class="workspace-view" data-workspace-panel="publications" hidden>
