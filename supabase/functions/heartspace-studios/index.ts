@@ -219,7 +219,9 @@ async function cloudTokenKey() {
 async function encryptCloudToken(value: unknown) {
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const key = await cloudTokenKey();
-  const payload = new TextEncoder().encode(JSON.stringify(value));
+  // A Function exchange_drive_token cifra o refresh token como texto puro.
+  // Não serializar strings com JSON: as aspas fariam o Google rejeitar o token.
+  const payload = new TextEncoder().encode(typeof value === "string" ? value : JSON.stringify(value));
   const encrypted = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, payload);
   return { refresh_token_encrypted: base64Value(iv) + "." + base64Value(new Uint8Array(encrypted)) };
 }
@@ -239,7 +241,12 @@ async function googleAccessToken(connection: any) {
   const clientSecret = Deno.env.get("GOOGLE_CLIENT_SECRET") || "";
   const refresh = await fetch("https://oauth2.googleapis.com/token", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ client_id: clientId, client_secret: clientSecret, grant_type: "refresh_token", refresh_token: saved }) });
   const data = await refresh.json().catch(() => ({}));
-  if (!refresh.ok || !data.access_token) throw new Error("Não foi possível renovar a conexão do Google Drive.");
+  if (!refresh.ok || !data.access_token) {
+    const nestedError = data.error && typeof data.error === "object" ? data.error as Record<string, unknown> : {};
+    const reason = typeof data.error_description === "string" ? data.error_description : typeof data.error === "string" ? data.error : typeof nestedError.message === "string" ? nestedError.message : typeof data.message === "string" ? data.message : "resposta inválida";
+    console.error("google drive refresh failed", { status: refresh.status, reason, google_error: JSON.stringify(data).slice(0, 600) });
+    throw new Error("O Google recusou a renovação da conexão: " + reason);
+  }
   return String(data.access_token);
 }
 
@@ -257,6 +264,17 @@ function cloudCallbackPage(message: string, success: boolean) {
   const target = accountUrl + "?cloud=" + (success ? "connected" : "error");
   const safeMessage = message.replace(/[<&>]/g, "");
   return new Response(`<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta http-equiv="refresh" content="3;url=${target}"><title>HeartSpace</title><body style="font-family:system-ui;background:#141416;color:#f5f2f6;padding:48px"><h1>${success ? "Google Drive conectado" : "Não foi possível conectar"}</h1><p>${safeMessage}</p><p><a style="color:#db91f5" href="${target}">Voltar ao HeartSpace</a></p></body></html>`, { status: success ? 200 : 400, headers: { "Content-Type": "text/html; charset=utf-8" } });
+}
+
+function readableCloudError(error: unknown) {
+  if (error instanceof Error && error.message) return error.message;
+  if (error && typeof error === "object") {
+    const value = error as Record<string, unknown>;
+    for (const key of ["message", "error_description", "details", "code"]) {
+      if (typeof value[key] === "string" && value[key]) return value[key] as string;
+    }
+  }
+  return "Não foi possível concluir a conexão.";
 }
 
 Deno.serve(async (request) => {
@@ -291,7 +309,7 @@ Deno.serve(async (request) => {
       await admin.from("cloud_oauth_states").update({ consumed_at: new Date().toISOString() }).eq("state", state);
       await admin.from("studio_audit_log").insert({ studio_id: oauthState.studio_id, actor_id: oauthState.created_by, action: "cloud.google_drive_connected", target_type: "cloud_connection", target_id: root.id });
       return cloudCallbackPage("A conta compartilhada e a pasta raiz foram configuradas. Você já pode preparar os projetos.", true);
-    } catch (error) { console.error("google callback failed", error); return cloudCallbackPage(error instanceof Error ? error.message : "Não foi possível concluir a conexão.", false); }
+    } catch (error) { console.error("google callback failed", error); return cloudCallbackPage(readableCloudError(error), false); }
   }
   const requestOrigin = request.headers.get("origin");
   const origin = allowedOrigin(requestOrigin);
@@ -515,8 +533,12 @@ Deno.serve(async (request) => {
     const { data: existing } = await admin.from("project_cloud_sync_configs").select("project_id, folder_id, folder_name").eq("project_id", projectId).maybeSingle();
     let folder = existing;
     if (!folder) {
-      const accessToken = await googleAccessToken(connection);
-      folder = await createGoogleFolder(accessToken, project.name, connection.root_folder_id);
+      try {
+        const accessToken = await googleAccessToken(connection);
+        folder = await createGoogleFolder(accessToken, project.name, connection.root_folder_id);
+      } catch (error) {
+        return response({ error: readableCloudError(error) }, 502, origin);
+      }
     }
     const folderId = folder.folder_id || folder.id;
     const folderName = folder.folder_name || folder.name;

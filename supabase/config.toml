@@ -4,3 +4,4 @@ project_id = "yhjetfilhsjtjfvgqfod"
 # CORS cheguem ao handler, sem liberar qualquer ação administrativa sem sessão.
 [functions.heartspace-studio]
 verify_jwt = false
+entrypoint = './functions/heartspace-studios/index.ts'

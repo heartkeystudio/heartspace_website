@@ -78,3 +78,7 @@ Web do Google e habilite a Google Drive API no projeto Google Cloud. O segredo
 Function `exchange_drive_token`; ele não pode ser adicionado ao site ou ao Hub.
 O contrato completo do
 aplicativo está em `account/INTEGRACAO_HUB_SINCRONIZACAO_NUVEM.md`.
+
+Se a primeira versão de `SUPABASE_CLOUD_SYNC.sql` já foi aplicada antes desta
+integração passar a reutilizar `DRIVE_TOKEN_SECRET`, execute uma vez também
+`account/SUPABASE_CLOUD_SYNC_REPAIR.sql`.
