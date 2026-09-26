@@ -65,15 +65,16 @@ Antes de habilitar a seção **Nuvem** no painel, aplique
 `account/SUPABASE_CLOUD_SYNC.sql` e configure estes segredos na Edge Function:
 
 ```text
-GOOGLE_DRIVE_CLIENT_ID=<cliente OAuth Web>
-GOOGLE_DRIVE_CLIENT_SECRET=<segredo OAuth>
-GOOGLE_DRIVE_REDIRECT_URI=https://yhjetfilhsjtjfvgqfod.supabase.co/functions/v1/heartspace-studio?cloud_callback=google
-HEARTSPACE_CLOUD_TOKEN_KEY=<32 bytes em Base64>
+GOOGLE_CLIENT_ID=<já usado pelo exchange_drive_token>
+GOOGLE_CLIENT_SECRET=<já usado pelo exchange_drive_token>
+DRIVE_TOKEN_SECRET=<já usado pelo exchange_drive_token>
+HEARTSPACE_GOOGLE_REDIRECT_URI=https://yhjetfilhsjtjfvgqfod.supabase.co/functions/v1/heartspace-studio
 HEARTSPACE_ACCOUNT_URL=https://www.heartspace.tools/account/
 ```
 
-Cadastre exatamente o mesmo `GOOGLE_DRIVE_REDIRECT_URI` nas credenciais OAuth
-Web do Google e habilite a Google Drive API no projeto Google Cloud. A chave
-`HEARTSPACE_CLOUD_TOKEN_KEY` cifra os refresh tokens antes de salvá-los no
-banco; ela não pode ser adicionada ao site ou ao Hub. O contrato completo do
+Cadastre exatamente o mesmo `HEARTSPACE_GOOGLE_REDIRECT_URI` nas credenciais OAuth
+Web do Google e habilite a Google Drive API no projeto Google Cloud. O segredo
+`DRIVE_TOKEN_SECRET` já cifra os refresh tokens no mesmo formato usado pela
+Function `exchange_drive_token`; ele não pode ser adicionado ao site ou ao Hub.
+O contrato completo do
 aplicativo está em `account/INTEGRACAO_HUB_SINCRONIZACAO_NUVEM.md`.

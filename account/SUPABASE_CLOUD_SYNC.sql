@@ -10,8 +10,9 @@ create table if not exists public.studio_cloud_connections (
   provider_account_email text,
   root_folder_id text,
   root_folder_name text,
-  token_ciphertext text not null,
-  token_iv text not null,
+  -- Mesmo formato cifrado usado pela Function exchange_drive_token do Hub.
+  -- Assim a conexão compartilhada pode emitir access tokens sem duplicar segredo.
+  refresh_token_encrypted text not null,
   scopes text[] not null default '{}',
   connected_by uuid not null references auth.users(id),
   connected_at timestamptz not null default timezone('utc', now()),

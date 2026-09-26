@@ -2,5 +2,5 @@ project_id = "yhjetfilhsjtjfvgqfod"
 
 # O JWT é validado dentro da Function. Isso permite que requisições OPTIONS de
 # CORS cheguem ao handler, sem liberar qualquer ação administrativa sem sessão.
-[functions.heartspace-studios]
+[functions.heartspace-studio]
 verify_jwt = false

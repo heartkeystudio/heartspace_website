@@ -17,40 +17,18 @@ Esses dados ficam no backend do site, cifrados na tabela `studio_cloud_connectio
 
 ## Contrato da Edge Function
 
-Endpoint configurado no site e no Hub:
+O Hub usa a Function já existente:
 
 ```text
-POST /functions/v1/heartspace-studio
+POST /functions/v1/exchange_drive_token
 Authorization: Bearer <sessão Supabase do usuário>
 apikey: <publishable key>
 ```
 
-### 1. Consultar a origem de sincronização
+### Pedir autorização temporária no momento da sincronização
 
 ```json
-{ "action": "get_hub_project_cloud_sync", "project_id": "uuid-do-projeto" }
-```
-
-Resposta quando configurada:
-
-```json
-{
-  "sync": {
-    "provider": "google_drive",
-    "folder_id": "id-da-pasta-do-projeto",
-    "folder_name": "Aurora Vale",
-    "last_sync_at": null,
-    "last_sync_status": "idle"
-  }
-}
-```
-
-Se não houver conexão, estiver pausada ou o projeto estiver arquivado, a resposta é `{ "sync": null }`. Nesse caso o Hub mostra “Sincronização online não configurada” e oferece um link para a área Nuvem no site; não abre uma tela própria para conectar Drive.
-
-### 2. Pedir autorização temporária no momento da sincronização
-
-```json
-{ "action": "issue_hub_cloud_access", "project_id": "uuid-do-projeto" }
+{ "action": "refresh", "project_id": "uuid-do-projeto" }
 ```
 
 Resposta atual para Google Drive:
@@ -70,7 +48,7 @@ O Hub mantém esse token apenas em memória e o descarta ao encerrar a sincroniz
 
 1. O Hub autentica o usuário no HeartSpace.
 2. Consulta `get_hub_project_cloud_sync`.
-3. Se houver configuração ativa, pede `issue_hub_cloud_access` imediatamente antes de acessar o provedor.
+3. Pede `refresh` imediatamente antes de acessar o provedor. A Function procura primeiro a conexão compartilhada do estúdio; se não houver, mantém o fallback compatível para a conexão legada por projeto.
 4. Lê e atualiza um manifesto interno em `.heartspace-sync/manifest.json` dentro da pasta remota do projeto.
 5. Compara caminhos relativos, hash SHA-256, tamanho, data e versão local/remota.
 6. Envia ou baixa apenas mudanças necessárias.
@@ -117,4 +95,4 @@ Google Drive é o primeiro adaptador. Dropbox e OneDrive reutilizam a mesma conf
 
 ## Limite atual
 
-O backend emite token temporário para Google Drive. O Hub ainda precisa implementar o adaptador Google Drive, o manifesto, os hashes, a fila de transferências, tratamento de conflito e o reporte de estado. Não é necessário manter nenhuma tela de OAuth no aplicativo.
+O backend emite token temporário para Google Drive por meio da Function `exchange_drive_token`. O Hub mantém seu adaptador, manifesto, hashes, fila de transferências e tratamento de conflito; não é necessário manter uma tela de OAuth no aplicativo.
