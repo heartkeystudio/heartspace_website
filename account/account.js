@@ -169,6 +169,13 @@
     const githubRepositoryNote = document.getElementById("githubRepositoryNote");
     const saveGithubRepository = document.getElementById("saveGithubRepository");
     const githubRepositoryStatus = document.getElementById("githubRepositoryStatus");
+    const githubStatusTitle = document.getElementById("githubStatusTitle");
+    const refreshGithubStatus = document.getElementById("refreshGithubStatus");
+    const githubStatusMetrics = document.getElementById("githubStatusMetrics");
+    const githubPullCount = document.getElementById("githubPullCount");
+    const githubIssueCount = document.getElementById("githubIssueCount");
+    const githubMilestoneCount = document.getElementById("githubMilestoneCount");
+    const githubStatusCopy = document.getElementById("githubStatusCopy");
     const refreshAuditLog = document.getElementById("refreshAuditLog");
     const auditLogNotice = document.getElementById("auditLogNotice");
     const auditLogList = document.getElementById("auditLogList");
@@ -573,6 +580,12 @@
             githubProjectSelect.disabled = !currentStudioProjects.length || !canManage;
             githubRepositoryUrl.disabled = !currentStudioProjects.length || !canManage;
             saveGithubRepository.disabled = !currentStudioProjects.length || !canManage;
+            if (repository && installation) await loadGithubProjectStatus();
+            else {
+                githubStatusMetrics.hidden = true;
+                githubStatusTitle.textContent = repository ? "Instale o GitHub App" : "Selecione um repositório";
+                githubStatusCopy.textContent = repository ? "A instalação do GitHub App é necessária para consultar o estado técnico." : "Vincule um repositório a este projeto para consultar o GitHub.";
+            }
         } catch (error) {
             githubInstallationState.textContent = "Indisponível";
             githubInstallationCopy.textContent = error.message || "A integração GitHub ainda precisa da migration.";
@@ -580,6 +593,29 @@
     }
 
     githubProjectSelect.addEventListener("change", loadGithubIntegration);
+    async function loadGithubProjectStatus() {
+        if (!activeStudioId || !githubProjectSelect.value) return;
+        refreshGithubStatus.disabled = true;
+        githubStatusTitle.textContent = "Consultando GitHub…";
+        try {
+            const token = await getValidAccessToken(); if (!token) throw new Error("Sessão expirada.");
+            const data = await githubOauthRequest("github-project-status", token, { studio_id: activeStudioId, project_id: githubProjectSelect.value });
+            const summary = data.summary || {};
+            githubPullCount.textContent = String(summary.open_pull_requests || 0);
+            githubIssueCount.textContent = String(summary.open_issues || 0);
+            githubMilestoneCount.textContent = String(summary.open_milestones || 0);
+            githubStatusMetrics.hidden = false;
+            githubStatusTitle.textContent = summary.repository_full_name || "Repositório conectado";
+            const release = summary.latest_release_name ? "Última release: " + summary.latest_release_name + ". " : "Sem release publicada. ";
+            const checks = summary.checks_state === "passing" ? "Checks passando." : summary.checks_state === "attention" ? "Checks exigem atenção." : "Checks ainda não disponíveis.";
+            githubStatusCopy.textContent = release + checks;
+        } catch (error) {
+            githubStatusMetrics.hidden = true;
+            githubStatusTitle.textContent = "Não foi possível consultar o GitHub";
+            githubStatusCopy.textContent = error.message || "Tente atualizar novamente.";
+        } finally { refreshGithubStatus.disabled = false; }
+    }
+    refreshGithubStatus.addEventListener("click", loadGithubProjectStatus);
     installGithubApp.addEventListener("click", async function () {
         installGithubApp.disabled = true; setGithubInstallationStatus("Abrindo o GitHub para instalar o App…", "");
         try {

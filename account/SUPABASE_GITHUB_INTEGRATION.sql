@@ -54,6 +54,22 @@ create table if not exists public.github_webhook_deliveries (
     received_at timestamptz not null default now()
 );
 
+create table if not exists public.project_github_status_snapshots (
+    project_id uuid primary key references public.projects(id) on delete cascade,
+    studio_id uuid not null references public.studios(id) on delete cascade,
+    github_repository_id bigint,
+    repository_full_name text not null,
+    default_branch text,
+    open_pull_requests integer not null default 0,
+    open_issues integer not null default 0,
+    open_milestones integer not null default 0,
+    checks_state text,
+    latest_release_name text,
+    latest_release_url text,
+    fetched_at timestamptz not null default now(),
+    payload jsonb not null default '{}'::jsonb
+);
+
 create unique index if not exists project_github_repositories_full_name_key on public.project_github_repositories(lower(full_name));
 create index if not exists project_github_repositories_studio_id_idx on public.project_github_repositories(studio_id);
 

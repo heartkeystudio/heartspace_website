@@ -630,6 +630,18 @@ Deno.serve(async (request) => {
     return response({ repository: repositoryRow }, 200, origin);
   }
 
+  if (payload.action === "get_hub_project_github_status") {
+    const projectId = typeof payload.project_id === "string" ? payload.project_id : "";
+    if (!projectId) return response({ error: "Projeto inválido." }, 400, origin);
+    const { data: project } = await admin.from("projects").select("id, studio_id").eq("id", projectId).maybeSingle();
+    if (!project) return response({ error: "Projeto não encontrado." }, 404, origin);
+    const { membership, error: membershipError } = await getMembership(admin, project.studio_id, authData.user.id);
+    if (membershipError || !membership) return response({ error: "Você não possui acesso a este projeto." }, 403, origin);
+    const { data: snapshot, error } = await admin.from("project_github_status_snapshots").select("repository_full_name, default_branch, open_pull_requests, open_issues, open_milestones, checks_state, latest_release_name, latest_release_url, fetched_at, payload").eq("project_id", projectId).maybeSingle();
+    if (error) return response({ error: "A integração GitHub ainda precisa da migration SUPABASE_GITHUB_INTEGRATION.sql." }, 500, origin);
+    return response({ snapshot: snapshot || null }, 200, origin);
+  }
+
   if (payload.action === "get_hub_project_cloud_sync" || payload.action === "issue_hub_cloud_access") {
     const projectId = typeof payload.project_id === "string" ? payload.project_id : "";
     if (!projectId) return response({ error: "Projeto inválido." }, 400, origin);

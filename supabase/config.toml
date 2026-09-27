@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.github-webhook]
 verify_jwt = false
+
+[functions.github-project-status]
+verify_jwt = false

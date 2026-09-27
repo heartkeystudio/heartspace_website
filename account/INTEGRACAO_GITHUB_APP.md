@@ -60,6 +60,12 @@ Guarde a chave privada PEM apenas como secret `GITHUB_APP_PRIVATE_KEY`; nunca no
 3. O painel lista os repositórios autorizados pela instalação, substituindo a URL manual por um seletor validado.
 4. A página do projeto mostra PRs abertos, issues, checks, releases e marcos vinculados.
 
+## Snapshot para o Hub
+
+A Function `github-project-status` cria no servidor um token de instalação que expira rapidamente, consulta o GitHub e grava um snapshot em `project_github_status_snapshots`. O Hub deve chamar a ação `get_hub_project_github_status` da Function `heartspace-studio` e usar somente o campo `snapshot` devolvido.
+
+O snapshot contém o repositório, branch padrão, contagem de PRs/issues/milestones abertos, estado dos checks, release mais recente e pequenas listas de PRs/issues. A chave PEM e qualquer token de instalação permanecem exclusivamente no servidor.
+
 Tokens de instalação devem ser gerados apenas no servidor e usados por pouco tempo. O Hub recebe somente os dados que precisar exibir; ele não recebe a chave privada do App.
 
 > Segurança: a Setup URL recebe `installation_id`, mas esse parâmetro isolado não prova quem realizou a instalação. A próxima etapa inclui OAuth do usuário GitHub para confirmar que a instalação pertence à conta que a pessoa pode administrar antes de vinculá-la ao estúdio.
