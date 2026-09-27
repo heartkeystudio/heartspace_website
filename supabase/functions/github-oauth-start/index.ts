@@ -8,7 +8,7 @@ Deno.serve(async (request) => {
   if (request.method !== "POST") return new Response(JSON.stringify({ error: "method_not_allowed" }), { status: 405, headers });
   const auth = request.headers.get("Authorization") || "";
   const url = Deno.env.get("SUPABASE_URL") || ""; const anon = Deno.env.get("SUPABASE_ANON_KEY") || ""; const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-  const clientId = Deno.env.get("GITHUB_CLIENT_ID") || ""; const redirectUri = Deno.env.get("GITHUB_OAUTH_REDIRECT_URI") || "";
+  const clientId = (Deno.env.get("GITHUB_CLIENT_ID") || "").trim(); const redirectUri = (Deno.env.get("GITHUB_OAUTH_REDIRECT_URI") || "").trim();
   if (!auth.startsWith("Bearer ") || !url || !anon || !service || !clientId || !redirectUri) return new Response(JSON.stringify({ error: "github_not_configured" }), { status: 503, headers });
   const userResponse = await fetch(`${url}/auth/v1/user`, { headers: { Authorization: auth, apikey: anon } });
   if (!userResponse.ok) return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers });

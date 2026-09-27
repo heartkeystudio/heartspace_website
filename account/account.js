@@ -512,10 +512,10 @@
         const previousProjectId = githubProjectSelect.value;
         githubProjectSelect.replaceChildren();
         currentStudioProjects.forEach(function (project) { githubProjectSelect.add(new Option(project.name || "Projeto sem título", project.id)); });
-        const canManage = canManageActiveStudio();
-        githubProjectSelect.disabled = !currentStudioProjects.length || !canManage;
-        githubRepositoryUrl.disabled = !currentStudioProjects.length || !canManage;
-        saveGithubRepository.disabled = !currentStudioProjects.length || !canManage;
+        const canManageLocally = Boolean(activeStudioId);
+        githubProjectSelect.disabled = !currentStudioProjects.length || !canManageLocally;
+        githubRepositoryUrl.disabled = !currentStudioProjects.length || !canManageLocally;
+        saveGithubRepository.disabled = !currentStudioProjects.length || !canManageLocally;
         if (currentStudioProjects.length) githubProjectSelect.value = currentStudioProjects.some(function (project) { return project.id === previousProjectId; }) ? previousProjectId : (currentStudioProjects.some(function (project) { return project.id === activeProjectId; }) ? activeProjectId : currentStudioProjects[0].id);
         githubInstallationState.textContent = "Preparando…";
         githubInstallationCopy.textContent = "Carregando os vínculos do estúdio.";
@@ -523,6 +523,7 @@
             const token = await getValidAccessToken(); if (!token) throw new Error("Sessão expirada.");
             const data = await studioRequest("get_github_integration", token, { studio_id: activeStudioId });
             const installation = data.installation || null;
+            const canManage = data.can_manage === true;
             const repository = githubRepositoryForProject(data.repositories);
             githubInstallationState.textContent = installation ? "Instalado" : "Preparado";
             githubInstallationCopy.textContent = installation
@@ -541,6 +542,9 @@
             githubRepositoryNote.textContent = repository
                 ? "Repositório atual: " + repository.full_name + ". A integração ativa sincronizará apenas metadados técnicos, nunca seus arquivos locais."
                 : "Use a URL canônica do repositório. Apenas Owner ou Admin pode alterar este vínculo.";
+            githubProjectSelect.disabled = !currentStudioProjects.length || !canManage;
+            githubRepositoryUrl.disabled = !currentStudioProjects.length || !canManage;
+            saveGithubRepository.disabled = !currentStudioProjects.length || !canManage;
         } catch (error) {
             githubInstallationState.textContent = "Indisponível";
             githubInstallationCopy.textContent = error.message || "A integração GitHub ainda precisa da migration.";

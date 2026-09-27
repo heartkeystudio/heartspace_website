@@ -9,7 +9,7 @@ function redirect(result: string) {
 Deno.serve(async (request) => {
   const params = new URL(request.url).searchParams; const code = params.get("code") || ""; const state = params.get("state") || "";
   if (!code || !state) return redirect("install-return");
-  const url = Deno.env.get("SUPABASE_URL") || ""; const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || ""; const clientId = Deno.env.get("GITHUB_CLIENT_ID") || ""; const clientSecret = Deno.env.get("GITHUB_CLIENT_SECRET") || ""; const redirectUri = Deno.env.get("GITHUB_OAUTH_REDIRECT_URI") || ""; const appId = Number(Deno.env.get("GITHUB_APP_ID") || 0);
+  const url = Deno.env.get("SUPABASE_URL") || ""; const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || ""; const clientId = (Deno.env.get("GITHUB_CLIENT_ID") || "").trim(); const clientSecret = (Deno.env.get("GITHUB_CLIENT_SECRET") || "").trim(); const redirectUri = (Deno.env.get("GITHUB_OAUTH_REDIRECT_URI") || "").trim(); const appId = Number((Deno.env.get("GITHUB_APP_ID") || "").trim());
   if (!url || !service || !clientId || !clientSecret || !redirectUri || !appId) return redirect("error");
   const admin = createClient(url, service); const { data: savedState } = await admin.from("github_oauth_states").select("state, studio_id, user_id, expires_at").eq("state", state).maybeSingle();
   await admin.from("github_oauth_states").delete().eq("state", state);
