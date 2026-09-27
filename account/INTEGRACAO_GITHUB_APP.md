@@ -21,9 +21,17 @@ Não haverá sincronização bidirecional automática no primeiro lançamento. C
 Crie um **GitHub App**, não um PAT pessoal. Configure:
 
 - **Homepage URL:** `https://www.heartspace.tools/`
-- **Setup URL:** `https://yhjetfilhsjtjfvgqfod.supabase.co/functions/v1/github-app-setup`
 - **Webhook URL:** `https://yhjetfilhsjtjfvgqfod.supabase.co/functions/v1/github-webhook`
 - **Webhook secret:** gere um valor aleatório e armazene-o como `GITHUB_WEBHOOK_SECRET` no Supabase.
+
+Em **Redirect URI**, use `https://yhjetfilhsjtjfvgqfod.supabase.co/functions/v1/github-oauth-callback`. O painel abre a instalação em uma nova aba e, quando você retorna, pede uma confirmação OAuth explícita. Isso permite verificar que a pessoa também administra a instalação escolhida.
+
+## Fluxo de vínculo no painel
+
+1. Owner/Admin clica em **Instalar GitHub App** e conclui a instalação no GitHub.
+2. De volta à aba do HeartSpace, clica em **Confirmar instalação**.
+3. O GitHub autoriza a conta da pessoa e o servidor lista apenas as instalações desse App às quais ela tem acesso.
+4. Havendo uma instalação, ela é vinculada automaticamente; havendo várias, Owner/Admin escolhe uma no painel.
 
 Permissões iniciais mínimas:
 
@@ -43,11 +51,11 @@ Eventos iniciais:
 - `release`
 - `check_suite`
 
-Guarde a chave privada PEM apenas como secret `GITHUB_APP_PRIVATE_KEY`; nunca no site ou no Hub. Também serão necessários `GITHUB_APP_ID` e `GITHUB_APP_SLUG`.
+Guarde a chave privada PEM apenas como secret `GITHUB_APP_PRIVATE_KEY`; nunca no site ou no Hub. Também serão necessários `GITHUB_APP_ID`, `GITHUB_APP_SLUG`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_OAUTH_REDIRECT_URI` e `GITHUB_WEBHOOK_SECRET`.
 
 ## Próxima entrega técnica
 
-1. `github-app-setup` registra a instalação e a conta GitHub em `studio_github_installations`.
+1. `github-oauth-start` e `github-oauth-callback` confirmam uma instalação acessível pela conta GitHub da pessoa e a registram em `studio_github_installations`.
 2. `github-webhook` valida `X-Hub-Signature-256`, atualiza o estado técnico e registra eventos idempotentes.
 3. O painel lista os repositórios autorizados pela instalação, substituindo a URL manual por um seletor validado.
 4. A página do projeto mostra PRs abertos, issues, checks, releases e marcos vinculados.

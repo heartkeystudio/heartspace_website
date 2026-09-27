@@ -114,7 +114,7 @@
                     <section class="workspace-view" data-workspace-panel="github" hidden>
                         <p class="eyebrow">GITHUB</p><h1>Código ligado ao projeto.</h1>
                         <p class="workspace-lead">O GitHub será a fonte técnica de código, pull requests e releases. O HeartSpace manterá o contexto de produção, equipe e planejamento.</p>
-                        <article class="admin-detail-panel cloud-panel"><div class="admin-detail-heading"><div><p class="panel-kicker">GITHUB APP</p><h2>Instalação do estúdio</h2></div><span class="role-chip" id="githubInstallationState">Não configurado</span></div><p class="field-note" id="githubInstallationCopy">A base está pronta. Quando o GitHub App HeartSpace for criado, a instalação será vinculada aqui uma única vez por estúdio.</p><a class="hub-link" href="../support/">Ver o guia de configuração do GitHub App</a></article>
+                        <article class="admin-detail-panel cloud-panel"><div class="admin-detail-heading"><div><p class="panel-kicker">GITHUB APP</p><h2>Instalação do estúdio</h2></div><span class="role-chip" id="githubInstallationState">Não configurado</span></div><p class="field-note" id="githubInstallationCopy">Instale o GitHub App na conta ou organização do estúdio. Depois confirme a instalação com a conta GitHub que a administra.</p><div class="cloud-connection-actions"><button class="portal-button" id="installGithubApp" type="button">Instalar GitHub App</button><button class="row-button" id="confirmGithubInstallation" type="button">Confirmar instalação</button></div><div class="cloud-connection-actions" id="githubInstallationChoice" hidden><select id="githubInstallationCandidate" aria-label="Escolher instalação GitHub"></select><button class="portal-button" id="selectGithubInstallation" type="button">Vincular instalação</button></div><p class="form-status" id="githubInstallationStatus" aria-live="polite"></p><a class="hub-link" href="../support/">Ver o guia de configuração do GitHub App</a></article>
                         <article class="admin-detail-panel cloud-panel"><div class="admin-detail-heading"><div><p class="panel-kicker">REPOSITÓRIO DO PROJETO</p><h2>Vínculo inicial</h2></div></div><form class="studio-form" id="githubRepositoryForm"><label for="githubProjectSelect">Projeto</label><select id="githubProjectSelect" required disabled></select><label for="githubRepositoryUrl">URL do repositório</label><input id="githubRepositoryUrl" type="url" inputmode="url" maxlength="2048" placeholder="https://github.com/organizacao/repositorio" required disabled><p class="field-note" id="githubRepositoryNote">O vínculo é salvo agora; a leitura de issues, pull requests, marcos e releases será habilitada quando o GitHub App estiver instalado.</p><button class="portal-button" id="saveGithubRepository" type="submit" disabled>Salvar repositório</button><p class="form-status" id="githubRepositoryStatus" aria-live="polite"></p></form></article>
                     </section>
 
@@ -143,6 +143,6 @@
 
     </main>
     <script src="config.js?v=20260924-12"></script>
-    <script src="account.js?v=20260926-02"></script>
+    <script src="account.js?v=20260927-01"></script>
 </body>
 </html>

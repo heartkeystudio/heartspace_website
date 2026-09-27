@@ -5,3 +5,12 @@ project_id = "yhjetfilhsjtjfvgqfod"
 [functions.heartspace-studio]
 verify_jwt = false
 entrypoint = './functions/heartspace-studios/index.ts'
+
+[functions.github-oauth-start]
+verify_jwt = false
+
+[functions.github-oauth-callback]
+verify_jwt = false
+
+[functions.github-webhook]
+verify_jwt = false

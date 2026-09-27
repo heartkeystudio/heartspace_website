@@ -581,12 +581,35 @@ Deno.serve(async (request) => {
     if (!studioId) return response({ error: "Selecione um estúdio." }, 400, origin);
     const { membership, error: membershipError } = await getMembership(admin, studioId, authData.user.id);
     if (membershipError || !membership) return response({ error: "Você não possui acesso a este estúdio." }, 403, origin);
-    const [{ data: installation, error: installationError }, { data: repositories, error: repositoriesError }] = await Promise.all([
+    const [{ data: installation, error: installationError }, { data: repositories, error: repositoriesError }, { data: candidates, error: candidatesError }] = await Promise.all([
       admin.from("studio_github_installations").select("github_installation_id, account_login, account_type, installed_at, updated_at").eq("studio_id", studioId).maybeSingle(),
       admin.from("project_github_repositories").select("project_id, full_name, html_url, default_branch, github_repository_id, updated_at").eq("studio_id", studioId).order("updated_at", { ascending: false }),
+      admin.from("github_installation_candidates").select("github_installation_id, account_login, account_type").eq("studio_id", studioId).eq("authorized_user_id", authData.user.id).gt("expires_at", new Date().toISOString()),
     ]);
-    if (installationError || repositoriesError) return response({ error: "A integração GitHub ainda precisa da migration SUPABASE_GITHUB_INTEGRATION.sql." }, 500, origin);
-    return response({ installation: installation || null, repositories: repositories || [], can_manage: ["owner", "admin"].includes(membership.role) }, 200, origin);
+    if (installationError || repositoriesError || candidatesError) return response({ error: "A integração GitHub ainda precisa da migration SUPABASE_GITHUB_INTEGRATION.sql." }, 500, origin);
+    return response({ installation: installation || null, repositories: repositories || [], candidates: candidates || [], can_manage: ["owner", "admin"].includes(membership.role) }, 200, origin);
+  }
+
+  if (payload.action === "start_github_installation") {
+    const studioId = typeof payload.studio_id === "string" ? payload.studio_id : "";
+    const { membership, error: membershipError } = await getMembership(admin, studioId, authData.user.id);
+    if (!studioId || membershipError || !membership || !["owner", "admin"].includes(membership.role)) return response({ error: "Apenas Owner ou Admin pode instalar o GitHub App." }, 403, origin);
+    const slug = Deno.env.get("GITHUB_APP_SLUG") || "";
+    if (!/^[a-z0-9-]+$/i.test(slug)) return response({ error: "GITHUB_APP_SLUG ainda não foi configurado no servidor." }, 503, origin);
+    return response({ installation_url: `https://github.com/apps/${encodeURIComponent(slug)}/installations/new` }, 200, origin);
+  }
+
+  if (payload.action === "select_github_installation") {
+    const studioId = typeof payload.studio_id === "string" ? payload.studio_id : ""; const installationId = Number(payload.github_installation_id || 0);
+    const { membership, error: membershipError } = await getMembership(admin, studioId, authData.user.id);
+    if (!studioId || !installationId || membershipError || !membership || !["owner", "admin"].includes(membership.role)) return response({ error: "Você não pode vincular esta instalação." }, 403, origin);
+    const { data: candidate } = await admin.from("github_installation_candidates").select("github_installation_id, account_login, account_type").eq("studio_id", studioId).eq("authorized_user_id", authData.user.id).eq("github_installation_id", installationId).gt("expires_at", new Date().toISOString()).maybeSingle();
+    if (!candidate) return response({ error: "A confirmação expirou. Confirme a instalação no GitHub novamente." }, 409, origin);
+    const { error } = await admin.from("studio_github_installations").upsert({ studio_id: studioId, github_installation_id: candidate.github_installation_id, account_login: candidate.account_login, account_type: candidate.account_type, installed_by: authData.user.id, installed_at: new Date().toISOString(), updated_at: new Date().toISOString() }, { onConflict: "studio_id" });
+    if (error) return response({ error: "Não foi possível vincular a instalação." }, 500, origin);
+    await admin.from("github_installation_candidates").delete().eq("studio_id", studioId).eq("authorized_user_id", authData.user.id);
+    await admin.from("studio_audit_log").insert({ studio_id: studioId, actor_id: authData.user.id, action: "github.app_installed", target_type: "github_installation", target_id: String(candidate.github_installation_id) });
+    return response({ ok: true }, 200, origin);
   }
 
   if (payload.action === "save_github_repository") {

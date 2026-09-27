@@ -155,6 +155,12 @@
     const discordProjectChannelStatus = document.getElementById("discordProjectChannelStatus");
     const githubInstallationState = document.getElementById("githubInstallationState");
     const githubInstallationCopy = document.getElementById("githubInstallationCopy");
+    const installGithubApp = document.getElementById("installGithubApp");
+    const confirmGithubInstallation = document.getElementById("confirmGithubInstallation");
+    const githubInstallationChoice = document.getElementById("githubInstallationChoice");
+    const githubInstallationCandidate = document.getElementById("githubInstallationCandidate");
+    const selectGithubInstallation = document.getElementById("selectGithubInstallation");
+    const githubInstallationStatus = document.getElementById("githubInstallationStatus");
     const githubRepositoryForm = document.getElementById("githubRepositoryForm");
     const githubProjectSelect = document.getElementById("githubProjectSelect");
     const githubRepositoryUrl = document.getElementById("githubRepositoryUrl");
@@ -492,6 +498,11 @@
         githubRepositoryStatus.className = "form-status" + (state ? " is-" + state : "");
     }
 
+    function setGithubInstallationStatus(message, state) {
+        githubInstallationStatus.textContent = message;
+        githubInstallationStatus.className = "form-status" + (state ? " is-" + state : "");
+    }
+
     function githubRepositoryForProject(repositories) {
         return (repositories || []).find(function (item) { return item.project_id === githubProjectSelect.value; }) || null;
     }
@@ -517,6 +528,15 @@
             githubInstallationCopy.textContent = installation
                 ? "GitHub App instalado em " + (installation.account_login || "uma conta") + ". Os repositórios vinculados poderão receber eventos por webhook."
                 : "Nenhum GitHub App foi instalado ainda. Você já pode registrar o repositório de cada projeto e concluir a instalação depois.";
+            installGithubApp.hidden = Boolean(installation);
+            confirmGithubInstallation.hidden = Boolean(installation);
+            const candidates = Array.isArray(data.candidates) ? data.candidates : [];
+            githubInstallationChoice.hidden = Boolean(installation) || !candidates.length;
+            githubInstallationCandidate.replaceChildren();
+            candidates.forEach(function (candidate) { githubInstallationCandidate.add(new Option((candidate.account_login || "Conta GitHub") + " · instalação " + candidate.github_installation_id, candidate.github_installation_id)); });
+            selectGithubInstallation.disabled = !canManage || !candidates.length;
+            installGithubApp.disabled = !canManage;
+            confirmGithubInstallation.disabled = !canManage;
             githubRepositoryUrl.value = repository ? repository.html_url : "";
             githubRepositoryNote.textContent = repository
                 ? "Repositório atual: " + repository.full_name + ". A integração ativa sincronizará apenas metadados técnicos, nunca seus arquivos locais."
@@ -528,6 +548,35 @@
     }
 
     githubProjectSelect.addEventListener("change", loadGithubIntegration);
+    installGithubApp.addEventListener("click", async function () {
+        installGithubApp.disabled = true; setGithubInstallationStatus("Abrindo o GitHub para instalar o App…", "");
+        try {
+            const token = await getValidAccessToken(); if (!token) throw new Error("Sessão expirada.");
+            const data = await studioRequest("start_github_installation", token, { studio_id: activeStudioId });
+            if (!data.installation_url) throw new Error("O GitHub App ainda não foi configurado no servidor.");
+            window.open(data.installation_url, "_blank", "noopener");
+            setGithubInstallationStatus("Conclua a instalação na nova aba e depois use “Confirmar instalação”.", "success");
+        } catch (error) { setGithubInstallationStatus(error.message || "Não foi possível abrir o GitHub.", "error"); }
+        finally { installGithubApp.disabled = !canManageActiveStudio(); }
+    });
+    confirmGithubInstallation.addEventListener("click", async function () {
+        confirmGithubInstallation.disabled = true; setGithubInstallationStatus("Abrindo confirmação segura com o GitHub…", "");
+        try {
+            const token = await getValidAccessToken(); if (!token) throw new Error("Sessão expirada.");
+            const data = await githubOauthRequest("github-oauth-start", token, { studio_id: activeStudioId });
+            if (!data.authorization_url) throw new Error("A autorização do GitHub não foi iniciada.");
+            window.location.assign(data.authorization_url);
+        } catch (error) { setGithubInstallationStatus(error.message || "Não foi possível confirmar a instalação.", "error"); confirmGithubInstallation.disabled = false; }
+    });
+    selectGithubInstallation.addEventListener("click", async function () {
+        if (!githubInstallationCandidate.value) return;
+        selectGithubInstallation.disabled = true; setGithubInstallationStatus("Vinculando instalação…", "");
+        try {
+            const token = await getValidAccessToken(); if (!token) throw new Error("Sessão expirada.");
+            await studioRequest("select_github_installation", token, { studio_id: activeStudioId, github_installation_id: githubInstallationCandidate.value });
+            await loadGithubIntegration(); setGithubInstallationStatus("GitHub App vinculado ao estúdio.", "success");
+        } catch (error) { setGithubInstallationStatus(error.message || "Não foi possível vincular a instalação.", "error"); }
+    });
     githubRepositoryForm.addEventListener("submit", async function (event) {
         event.preventDefault();
         if (!activeStudioId || !githubProjectSelect.value || !githubRepositoryUrl.checkValidity()) return githubRepositoryUrl.reportValidity();
@@ -801,6 +850,19 @@
         return data;
     }
 
+    async function githubOauthRequest(functionName, token, payload) {
+        const baseUrl = (config.supabaseUrl || "").replace(/\/$/, "");
+        if (!baseUrl) throw new Error("A conexão com o GitHub ainda não foi configurada.");
+        const response = await fetch(baseUrl + "/functions/v1/" + functionName, {
+            method: "POST",
+            headers: { "Authorization": "Bearer " + token, "apikey": config.supabaseAnonKey, "Content-Type": "application/json" },
+            body: JSON.stringify(payload || {})
+        });
+        const data = await response.json().catch(function () { return {}; });
+        if (!response.ok) throw new Error(data.error || "Não foi possível concluir a autorização do GitHub.");
+        return data;
+    }
+
     async function listStudiosWithRls(token) {
         const restBase = config.supabaseUrl.replace(/\/$/, "") + "/rest/v1/";
         const headers = { "apikey": config.supabaseAnonKey, "Authorization": "Bearer " + token };
@@ -979,6 +1041,14 @@
                 selectWorkspaceView("discord");
                 await loadDiscord();
                 setDiscordStatus(discordConnectionStatus, "Não foi possível concluir a conexão. Tente novamente.", "error");
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+            if (query.get("github") && activeStudioId) {
+                selectWorkspaceView("github");
+                await loadGithubIntegration();
+                const githubResult = query.get("github");
+                const message = githubResult === "linked" ? "GitHub App vinculado ao estúdio." : githubResult === "no-installation" ? "Nenhuma instalação acessível foi encontrada. Instale o App e tente confirmar novamente." : githubResult === "choose-installation" ? "Há mais de uma instalação acessível; a seleção será adicionada a seguir." : githubResult === "install-return" ? "Volte ao painel e clique em “Confirmar instalação” para concluir o vínculo." : "Não foi possível confirmar a instalação do GitHub.";
+                setGithubInstallationStatus(message, githubResult === "linked" ? "success" : githubResult === "error" ? "error" : "");
                 window.history.replaceState({}, document.title, window.location.pathname);
             }
         }

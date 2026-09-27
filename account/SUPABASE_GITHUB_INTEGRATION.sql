@@ -24,6 +24,36 @@ create table if not exists public.project_github_repositories (
     updated_at timestamptz not null default now()
 );
 
+create table if not exists public.github_oauth_states (
+    state text primary key,
+    studio_id uuid not null references public.studios(id) on delete cascade,
+    user_id uuid not null references auth.users(id) on delete cascade,
+    expires_at timestamptz not null,
+    created_at timestamptz not null default now()
+);
+
+create table if not exists public.github_installation_candidates (
+    studio_id uuid not null references public.studios(id) on delete cascade,
+    github_installation_id bigint not null,
+    account_login text not null,
+    account_type text,
+    authorized_user_id uuid not null references auth.users(id) on delete cascade,
+    expires_at timestamptz not null,
+    created_at timestamptz not null default now(),
+    primary key (studio_id, github_installation_id, authorized_user_id)
+);
+
+create table if not exists public.github_webhook_deliveries (
+    delivery_id text primary key,
+    github_event text not null,
+    action text,
+    github_installation_id bigint,
+    github_repository_id bigint,
+    repository_full_name text,
+    payload jsonb not null default '{}'::jsonb,
+    received_at timestamptz not null default now()
+);
+
 create unique index if not exists project_github_repositories_full_name_key on public.project_github_repositories(lower(full_name));
 create index if not exists project_github_repositories_studio_id_idx on public.project_github_repositories(studio_id);
 
