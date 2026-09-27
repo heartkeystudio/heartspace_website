@@ -153,6 +153,14 @@
     const discordProjectChannelNote = document.getElementById("discordProjectChannelNote");
     const saveDiscordProjectChannel = document.getElementById("saveDiscordProjectChannel");
     const discordProjectChannelStatus = document.getElementById("discordProjectChannelStatus");
+    const githubInstallationState = document.getElementById("githubInstallationState");
+    const githubInstallationCopy = document.getElementById("githubInstallationCopy");
+    const githubRepositoryForm = document.getElementById("githubRepositoryForm");
+    const githubProjectSelect = document.getElementById("githubProjectSelect");
+    const githubRepositoryUrl = document.getElementById("githubRepositoryUrl");
+    const githubRepositoryNote = document.getElementById("githubRepositoryNote");
+    const saveGithubRepository = document.getElementById("saveGithubRepository");
+    const githubRepositoryStatus = document.getElementById("githubRepositoryStatus");
     const refreshAuditLog = document.getElementById("refreshAuditLog");
     const auditLogNotice = document.getElementById("auditLogNotice");
     const auditLogList = document.getElementById("auditLogList");
@@ -386,6 +394,7 @@
             if (button.dataset.workspaceView === "apps") loadProjectApps();
             if (button.dataset.workspaceView === "cloud") loadCloudSync();
             if (button.dataset.workspaceView === "discord") loadDiscord();
+            if (button.dataset.workspaceView === "github") loadGithubIntegration();
             if (button.dataset.workspaceView === "security") loadAuditLog();
             if (button.dataset.workspaceView === "billing") loadAccountUsage();
         });
@@ -477,6 +486,61 @@
         } catch (error) { appsEmptyState.textContent = error.message || "Não foi possível carregar os apps."; }
     }
     appsProjectSelect.addEventListener("change", loadProjectApps);
+
+    function setGithubStatus(message, state) {
+        githubRepositoryStatus.textContent = message;
+        githubRepositoryStatus.className = "form-status" + (state ? " is-" + state : "");
+    }
+
+    function githubRepositoryForProject(repositories) {
+        return (repositories || []).find(function (item) { return item.project_id === githubProjectSelect.value; }) || null;
+    }
+
+    async function loadGithubIntegration() {
+        setGithubStatus("", "");
+        const previousProjectId = githubProjectSelect.value;
+        githubProjectSelect.replaceChildren();
+        currentStudioProjects.forEach(function (project) { githubProjectSelect.add(new Option(project.name || "Projeto sem título", project.id)); });
+        const canManage = canManageActiveStudio();
+        githubProjectSelect.disabled = !currentStudioProjects.length || !canManage;
+        githubRepositoryUrl.disabled = !currentStudioProjects.length || !canManage;
+        saveGithubRepository.disabled = !currentStudioProjects.length || !canManage;
+        if (currentStudioProjects.length) githubProjectSelect.value = currentStudioProjects.some(function (project) { return project.id === previousProjectId; }) ? previousProjectId : (currentStudioProjects.some(function (project) { return project.id === activeProjectId; }) ? activeProjectId : currentStudioProjects[0].id);
+        githubInstallationState.textContent = "Preparando…";
+        githubInstallationCopy.textContent = "Carregando os vínculos do estúdio.";
+        try {
+            const token = await getValidAccessToken(); if (!token) throw new Error("Sessão expirada.");
+            const data = await studioRequest("get_github_integration", token, { studio_id: activeStudioId });
+            const installation = data.installation || null;
+            const repository = githubRepositoryForProject(data.repositories);
+            githubInstallationState.textContent = installation ? "Instalado" : "Preparado";
+            githubInstallationCopy.textContent = installation
+                ? "GitHub App instalado em " + (installation.account_login || "uma conta") + ". Os repositórios vinculados poderão receber eventos por webhook."
+                : "Nenhum GitHub App foi instalado ainda. Você já pode registrar o repositório de cada projeto e concluir a instalação depois.";
+            githubRepositoryUrl.value = repository ? repository.html_url : "";
+            githubRepositoryNote.textContent = repository
+                ? "Repositório atual: " + repository.full_name + ". A integração ativa sincronizará apenas metadados técnicos, nunca seus arquivos locais."
+                : "Use a URL canônica do repositório. Apenas Owner ou Admin pode alterar este vínculo.";
+        } catch (error) {
+            githubInstallationState.textContent = "Indisponível";
+            githubInstallationCopy.textContent = error.message || "A integração GitHub ainda precisa da migration.";
+        }
+    }
+
+    githubProjectSelect.addEventListener("change", loadGithubIntegration);
+    githubRepositoryForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
+        if (!activeStudioId || !githubProjectSelect.value || !githubRepositoryUrl.checkValidity()) return githubRepositoryUrl.reportValidity();
+        saveGithubRepository.disabled = true; setGithubStatus("Salvando repositório…", "");
+        try {
+            const token = await getValidAccessToken(); if (!token) throw new Error("Sessão expirada.");
+            const data = await studioRequest("save_github_repository", token, { studio_id: activeStudioId, project_id: githubProjectSelect.value, repository_url: githubRepositoryUrl.value.trim() });
+            githubRepositoryUrl.value = data.repository.html_url;
+            githubRepositoryNote.textContent = "Repositório vinculado: " + data.repository.full_name + ".";
+            setGithubStatus("Repositório salvo. A sincronização será ativada junto do GitHub App.", "success");
+        } catch (error) { setGithubStatus(error.message || "Não foi possível salvar o repositório.", "error"); }
+        finally { saveGithubRepository.disabled = !canManageActiveStudio(); }
+    });
 
     function setDiscordStatus(element, message, state) {
         element.textContent = message;

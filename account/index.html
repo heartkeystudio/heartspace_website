@@ -37,6 +37,7 @@
                     <button class="workspace-nav-item" type="button" data-workspace-view="apps" data-studio-required><span>▦</span>Apps</button>
                     <button class="workspace-nav-item" type="button" data-workspace-view="cloud" data-studio-required><span>☁</span>Nuvem</button>
                     <button class="workspace-nav-item" type="button" data-workspace-view="discord" data-studio-required><span>◌</span>Discord</button>
+                    <button class="workspace-nav-item" type="button" data-workspace-view="github" data-studio-required><span>◆</span>GitHub</button>
                     <button class="workspace-nav-item" type="button" data-workspace-view="members" data-studio-required><span>◎</span>Membros</button>
                     <button class="workspace-nav-item" type="button" data-workspace-view="publications" data-studio-required><span>↗</span>Publicações</button>
                     <p class="workspace-nav-label workspace-nav-label-lower">CONTA</p>
@@ -110,6 +111,13 @@
                         <article class="admin-detail-panel cloud-panel"><div class="admin-detail-heading"><div><p class="panel-kicker">CANAL DO PROJETO</p><h2>Uma referência por projeto</h2></div></div><form class="studio-form" id="discordProjectChannelForm"><label for="discordProjectSelect">Projeto</label><select id="discordProjectSelect" required disabled></select><label for="discordChannelSelect">Canal do Discord</label><select id="discordChannelSelect" required disabled><option value="">Escolha um servidor</option></select><p class="field-note" id="discordProjectChannelNote">Selecione um canal existente. O Hub poderá criar o canal padrão do projeto automaticamente quando for necessário.</p><button class="portal-button" id="saveDiscordProjectChannel" type="submit">Vincular canal ao projeto</button><p class="form-status" id="discordProjectChannelStatus" aria-live="polite"></p></form></article>
                     </section>
 
+                    <section class="workspace-view" data-workspace-panel="github" hidden>
+                        <p class="eyebrow">GITHUB</p><h1>Código ligado ao projeto.</h1>
+                        <p class="workspace-lead">O GitHub será a fonte técnica de código, pull requests e releases. O HeartSpace manterá o contexto de produção, equipe e planejamento.</p>
+                        <article class="admin-detail-panel cloud-panel"><div class="admin-detail-heading"><div><p class="panel-kicker">GITHUB APP</p><h2>Instalação do estúdio</h2></div><span class="role-chip" id="githubInstallationState">Não configurado</span></div><p class="field-note" id="githubInstallationCopy">A base está pronta. Quando o GitHub App HeartSpace for criado, a instalação será vinculada aqui uma única vez por estúdio.</p><a class="hub-link" href="../support/">Ver o guia de configuração do GitHub App</a></article>
+                        <article class="admin-detail-panel cloud-panel"><div class="admin-detail-heading"><div><p class="panel-kicker">REPOSITÓRIO DO PROJETO</p><h2>Vínculo inicial</h2></div></div><form class="studio-form" id="githubRepositoryForm"><label for="githubProjectSelect">Projeto</label><select id="githubProjectSelect" required disabled></select><label for="githubRepositoryUrl">URL do repositório</label><input id="githubRepositoryUrl" type="url" inputmode="url" maxlength="2048" placeholder="https://github.com/organizacao/repositorio" required disabled><p class="field-note" id="githubRepositoryNote">O vínculo é salvo agora; a leitura de issues, pull requests, marcos e releases será habilitada quando o GitHub App estiver instalado.</p><button class="portal-button" id="saveGithubRepository" type="submit" disabled>Salvar repositório</button><p class="form-status" id="githubRepositoryStatus" aria-live="polite"></p></form></article>
+                    </section>
+
                     <section class="workspace-view" data-workspace-panel="publications" hidden>
                         <p class="eyebrow">PUBLICAÇÕES</p><h1>Mostre só o que escolheu.</h1>
                         <p class="workspace-lead">Crie rascunhos, publique uma versão escolhida ou retire uma página do ar sem apagar sua referência no projeto.</p>
@@ -135,6 +143,6 @@
 
     </main>
     <script src="config.js?v=20260924-12"></script>
-    <script src="account.js?v=20260926-01"></script>
+    <script src="account.js?v=20260926-02"></script>
 </body>
 </html>

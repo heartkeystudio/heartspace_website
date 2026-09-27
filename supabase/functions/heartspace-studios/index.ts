@@ -23,6 +23,18 @@ function slugFrom(value: string) {
     .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
 }
 
+function githubRepositoryFromUrl(value: unknown) {
+  if (typeof value !== "string" || value.length > 2048) return null;
+  try {
+    const url = new URL(value.trim());
+    if (url.protocol !== "https:" || url.hostname.toLowerCase() !== "github.com") return null;
+    const parts = url.pathname.replace(/^\/+|\/+$/g, "").replace(/\.git$/i, "").split("/");
+    if (parts.length !== 2 || !parts.every((part) => /^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$/.test(part))) return null;
+    const fullName = `${parts[0]}/${parts[1]}`;
+    return { fullName, htmlUrl: `https://github.com/${fullName}` };
+  } catch { return null; }
+}
+
 async function tokenHash(token: string) {
   const bytes = new TextEncoder().encode(token);
   const digest = await crypto.subtle.digest("SHA-256", bytes);
@@ -562,6 +574,36 @@ Deno.serve(async (request) => {
     if (error) return response({ error: "Não foi possível desconectar o Google Drive." }, 500, origin);
     await admin.from("studio_audit_log").insert({ studio_id: studioId, actor_id: authData.user.id, action: "cloud.google_drive_disconnected", target_type: "cloud_connection", target_id: studioId });
     return response({ ok: true }, 200, origin);
+  }
+
+  if (payload.action === "get_github_integration") {
+    const studioId = typeof payload.studio_id === "string" ? payload.studio_id : "";
+    if (!studioId) return response({ error: "Selecione um estúdio." }, 400, origin);
+    const { membership, error: membershipError } = await getMembership(admin, studioId, authData.user.id);
+    if (membershipError || !membership) return response({ error: "Você não possui acesso a este estúdio." }, 403, origin);
+    const [{ data: installation, error: installationError }, { data: repositories, error: repositoriesError }] = await Promise.all([
+      admin.from("studio_github_installations").select("github_installation_id, account_login, account_type, installed_at, updated_at").eq("studio_id", studioId).maybeSingle(),
+      admin.from("project_github_repositories").select("project_id, full_name, html_url, default_branch, github_repository_id, updated_at").eq("studio_id", studioId).order("updated_at", { ascending: false }),
+    ]);
+    if (installationError || repositoriesError) return response({ error: "A integração GitHub ainda precisa da migration SUPABASE_GITHUB_INTEGRATION.sql." }, 500, origin);
+    return response({ installation: installation || null, repositories: repositories || [], can_manage: ["owner", "admin"].includes(membership.role) }, 200, origin);
+  }
+
+  if (payload.action === "save_github_repository") {
+    const studioId = typeof payload.studio_id === "string" ? payload.studio_id : "";
+    const projectId = typeof payload.project_id === "string" ? payload.project_id : "";
+    const repository = githubRepositoryFromUrl(payload.repository_url);
+    if (!studioId || !projectId || !repository) return response({ error: "Informe uma URL válida de repositório em github.com." }, 400, origin);
+    const { membership, error: membershipError } = await getMembership(admin, studioId, authData.user.id);
+    if (membershipError || !membership || !["owner", "admin"].includes(membership.role)) return response({ error: "Apenas Owner ou Admin pode vincular um repositório." }, 403, origin);
+    const { data: project } = await admin.from("projects").select("id").eq("id", projectId).eq("studio_id", studioId).maybeSingle();
+    if (!project) return response({ error: "Projeto não encontrado." }, 404, origin);
+    const { data: repositoryRow, error } = await admin.from("project_github_repositories")
+      .upsert({ project_id: projectId, studio_id: studioId, full_name: repository.fullName, html_url: repository.htmlUrl, updated_by: authData.user.id, updated_at: new Date().toISOString() }, { onConflict: "project_id" })
+      .select("project_id, full_name, html_url, default_branch, github_repository_id, updated_at").single();
+    if (error || !repositoryRow) return response({ error: "A integração GitHub ainda precisa da migration SUPABASE_GITHUB_INTEGRATION.sql." }, 500, origin);
+    await admin.from("studio_audit_log").insert({ studio_id: studioId, actor_id: authData.user.id, action: "github.repository_linked", target_type: "project", target_id: projectId });
+    return response({ repository: repositoryRow }, 200, origin);
   }
 
   if (payload.action === "get_hub_project_cloud_sync" || payload.action === "issue_hub_cloud_access") {
