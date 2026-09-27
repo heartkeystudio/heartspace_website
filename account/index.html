@@ -6,7 +6,7 @@
     <meta name="description" content="Entre no HeartSpace para gerenciar seu estúdio, seus projetos e sua assinatura.">
     <meta name="theme-color" content="#9501d8">
     <title>Conta | HeartSpace</title>
-    <link rel="stylesheet" href="account.css?v=20260924-12">
+    <link rel="stylesheet" href="account.css?v=20260927-05">
 </head>
 <body>
     <main class="account-shell">
@@ -35,9 +35,7 @@
                     <button class="workspace-nav-item" type="button" data-workspace-view="studios" data-studio-required><span>◇</span>Estúdios</button>
                     <button class="workspace-nav-item" type="button" data-workspace-view="projects" data-studio-required><span>▣</span>Projetos</button>
                     <button class="workspace-nav-item" type="button" data-workspace-view="apps" data-studio-required><span>▦</span>Apps</button>
-                    <button class="workspace-nav-item" type="button" data-workspace-view="cloud" data-studio-required><span>☁</span>Nuvem</button>
-                    <button class="workspace-nav-item" type="button" data-workspace-view="discord" data-studio-required><span>◌</span>Discord</button>
-                    <button class="workspace-nav-item" type="button" data-workspace-view="github" data-studio-required><span>◆</span>GitHub</button>
+                    <button class="workspace-nav-item" type="button" data-workspace-view="integrations" data-studio-required><span>⌘</span>API e integrações</button>
                     <button class="workspace-nav-item" type="button" data-workspace-view="members" data-studio-required><span>◎</span>Membros</button>
                     <button class="workspace-nav-item" type="button" data-workspace-view="publications" data-studio-required><span>↗</span>Publicações</button>
                     <p class="workspace-nav-label workspace-nav-label-lower">CONTA</p>
@@ -57,7 +55,7 @@
                             <article class="overview-card overview-card-accent"><p class="panel-kicker">ESTÚDIO</p><h2 id="overviewStudioTitle">Crie seu primeiro estúdio</h2><p id="overviewStudioCopy">Seu estúdio organiza pessoas, acessos e projetos compartilhados. O trabalho continua local no Hub.</p><button class="card-action" type="button" data-go-to="studios">Gerenciar estúdios</button></article>
                             <article class="overview-card"><p class="panel-kicker">PROJETOS</p><h2>O Hub é a fonte do trabalho</h2><p>Projetos nascem e continuam locais. Aqui aparecerão apenas a organização, os acessos e as publicações vinculadas.</p><a class="hub-link" href="../#download">Abrir o Hub →</a></article>
                             <article class="overview-card"><p class="panel-kicker">PUBLICAÇÕES</p><h2>Documentos públicos, no seu controle</h2><p>Press kits, wikis e links não listados ficarão associados a um projeto e poderão ser revogados a qualquer momento.</p><button class="card-action" type="button" data-go-to="publications">Explorar publicações</button></article>
-                            <article class="overview-card" id="overviewGithubCard"><p class="panel-kicker">GITHUB</p><h2 id="overviewGithubTitle">Código ainda não conectado</h2><p id="overviewGithubCopy">Vincule o GitHub App e os repositórios do estúdio para acompanhar sinais técnicos aqui.</p><button class="card-action" type="button" data-go-to="github">Abrir integração GitHub</button></article>
+                            <article class="overview-card" id="overviewGithubCard"><p class="panel-kicker">GITHUB</p><h2 id="overviewGithubTitle">Código ainda não conectado</h2><p id="overviewGithubCopy">Vincule o GitHub App e os repositórios do estúdio para acompanhar sinais técnicos aqui.</p><button class="card-action" type="button" data-open-integration="github" aria-haspopup="dialog">Abrir integração GitHub</button></article>
                         </div>
                     </section>
 
@@ -95,6 +93,17 @@
                         <p class="eyebrow">APPS</p><h1>Ferramentas no contexto certo.</h1>
                         <p class="workspace-lead">Escolha quais apps aparecem e podem trabalhar com cada projeto. Os arquivos e a produção continuam locais no Hub.</p>
                         <article class="empty-panel"><h2>Apps do projeto</h2><label class="project-context" for="appsProjectSelect">Projeto em edição<select id="appsProjectSelect" aria-label="Escolher projeto para configurar apps"></select></label><p class="field-note" id="appsEmptyState">Selecione um projeto para configurar seus apps.</p><div class="role-grid" id="projectAppsList" hidden></div></article>
+                    </section>
+
+                    <section class="workspace-view" data-workspace-panel="integrations" hidden>
+                        <p class="eyebrow">API E INTEGRAÇÕES</p>
+                        <h1>Conexões do estúdio.</h1>
+                        <p class="workspace-lead">Centralize os serviços externos que dão suporte ao seu trabalho. Cada conexão é configurada separadamente e fica associada ao estúdio ativo.</p>
+                        <div class="overview-grid integration-grid">
+                            <article class="overview-card"><p class="panel-kicker">ARQUIVOS E SINCRONIZAÇÃO</p><h2>Google Drive</h2><p>Conta compartilhada, pasta raiz e pastas seguras para os projetos do estúdio.</p><button class="card-action" type="button" data-open-integration="cloud" aria-haspopup="dialog">Configurar Google Drive</button></article>
+                            <article class="overview-card"><p class="panel-kicker">COMUNICAÇÃO</p><h2>Discord</h2><p>Conecte a conta, o servidor do estúdio e os canais de cada projeto.</p><button class="card-action" type="button" data-open-integration="discord" aria-haspopup="dialog">Configurar Discord</button></article>
+                            <article class="overview-card"><p class="panel-kicker">CÓDIGO E ENTREGA</p><h2>GitHub</h2><p>Vincule o GitHub App e os repositórios para acompanhar o estado técnico.</p><button class="card-action" type="button" data-open-integration="github" aria-haspopup="dialog">Configurar GitHub</button></article>
+                        </div>
                     </section>
 
                     <section class="workspace-view" data-workspace-panel="cloud" hidden>
@@ -144,7 +153,14 @@
         </section>
 
     </main>
+    <div class="integration-modal" id="integrationModal" hidden>
+        <div class="integration-modal-backdrop" data-close-integration aria-hidden="true"></div>
+        <section class="integration-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="integrationModalTitle">
+            <header class="integration-modal-header"><div><p class="panel-kicker">API E INTEGRAÇÕES</p><h2 id="integrationModalTitle">Integração</h2></div><button class="integration-modal-close" id="closeIntegrationModal" type="button" aria-label="Fechar integração">×</button></header>
+            <div class="integration-modal-body" id="integrationModalBody"></div>
+        </section>
+    </div>
     <script src="config.js?v=20260924-12"></script>
-    <script src="account.js?v=20260927-04"></script>
+    <script src="account.js?v=20260927-05"></script>
 </body>
 </html>

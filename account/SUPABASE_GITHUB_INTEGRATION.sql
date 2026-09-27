@@ -3,13 +3,18 @@
 
 create table if not exists public.studio_github_installations (
     studio_id uuid primary key references public.studios(id) on delete cascade,
-    github_installation_id bigint unique,
+    github_installation_id bigint,
     account_login text,
     account_type text check (account_type in ('User', 'Organization')),
     installed_by uuid references auth.users(id) on delete set null,
     installed_at timestamptz,
     updated_at timestamptz not null default now()
 );
+
+-- Uma organização GitHub pode atender mais de um estúdio HeartSpace. A chave
+-- exclusiva criada por versões anteriores impedia esse cenário.
+alter table public.studio_github_installations drop constraint if exists studio_github_installations_github_installation_id_key;
+create index if not exists studio_github_installations_github_installation_id_idx on public.studio_github_installations(github_installation_id);
 
 create table if not exists public.project_github_repositories (
     project_id uuid primary key references public.projects(id) on delete cascade,

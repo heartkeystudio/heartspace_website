@@ -39,6 +39,12 @@
     const workspaceButtons = Array.from(document.querySelectorAll("[data-workspace-view]"));
     const studioRequiredButtons = Array.from(document.querySelectorAll("[data-studio-required]"));
     const workspacePanels = Array.from(document.querySelectorAll("[data-workspace-panel]"));
+    const workspaceContent = document.querySelector(".workspace-content");
+    const integrationModal = document.getElementById("integrationModal");
+    const integrationModalBody = document.getElementById("integrationModalBody");
+    const integrationModalTitle = document.getElementById("integrationModalTitle");
+    const closeIntegrationModal = document.getElementById("closeIntegrationModal");
+    let activeIntegrationPanel = null;
     const studiosTitle = document.getElementById("studiosTitle");
     const studiosCopy = document.getElementById("studiosCopy");
     const studioList = document.getElementById("studioList");
@@ -397,6 +403,47 @@
         });
     }
 
+    const integrationTitles = { cloud: "Google Drive", discord: "Discord", github: "GitHub" };
+    async function openIntegrationModal(integration) {
+        const panel = workspacePanels.find(function (candidate) { return candidate.dataset.workspacePanel === integration; });
+        if (!panel || !integrationModal) return;
+        if (!hasManagedStudio) {
+            selectWorkspaceView("create-studio");
+            studioName.focus();
+            return;
+        }
+        selectWorkspaceView("integrations");
+        if (activeIntegrationPanel && activeIntegrationPanel !== panel) {
+            activeIntegrationPanel.hidden = true;
+            activeIntegrationPanel.classList.remove("is-active");
+            workspaceContent.append(activeIntegrationPanel);
+        }
+        activeIntegrationPanel = panel;
+        integrationModalTitle.textContent = integrationTitles[integration] || "Integração";
+        integrationModalBody.append(panel);
+        panel.hidden = false;
+        panel.classList.add("is-active");
+        integrationModal.hidden = false;
+        document.body.classList.add("has-integration-modal");
+        if (integration === "cloud") await loadCloudSync();
+        if (integration === "discord") await loadDiscord();
+        if (integration === "github") await loadGithubIntegration();
+    }
+
+    function closeIntegrationDialog() {
+        if (!integrationModal || !activeIntegrationPanel) return;
+        activeIntegrationPanel.hidden = true;
+        activeIntegrationPanel.classList.remove("is-active");
+        workspaceContent.append(activeIntegrationPanel);
+        activeIntegrationPanel = null;
+        integrationModal.hidden = true;
+        document.body.classList.remove("has-integration-modal");
+    }
+
+    closeIntegrationModal.addEventListener("click", closeIntegrationDialog);
+    Array.from(document.querySelectorAll("[data-close-integration]")).forEach(function (button) { button.addEventListener("click", closeIntegrationDialog); });
+    document.addEventListener("keydown", function (event) { if (event.key === "Escape" && !integrationModal.hidden) closeIntegrationDialog(); });
+
     workspaceButtons.forEach(function (button) {
         button.addEventListener("click", function () {
             if (button.hasAttribute("data-studio-required") && !hasManagedStudio) {
@@ -407,9 +454,6 @@
             selectWorkspaceView(button.dataset.workspaceView);
             if (button.dataset.workspaceView === "publications") loadPublications();
             if (button.dataset.workspaceView === "apps") loadProjectApps();
-            if (button.dataset.workspaceView === "cloud") loadCloudSync();
-            if (button.dataset.workspaceView === "discord") loadDiscord();
-            if (button.dataset.workspaceView === "github") loadGithubIntegration();
             if (button.dataset.workspaceView === "security") loadAuditLog();
             if (button.dataset.workspaceView === "billing") loadAccountUsage();
         });
@@ -891,6 +935,10 @@
         });
     });
 
+    Array.from(document.querySelectorAll("[data-open-integration]")).forEach(function (button) {
+        button.addEventListener("click", function () { openIntegrationModal(button.dataset.openIntegration); });
+    });
+
     function setStudioStatus(message, state) {
         studioStatus.textContent = message;
         studioStatus.className = "form-status" + (state ? " is-" + state : "");
@@ -1094,26 +1142,22 @@
             renderStudios(Array.isArray(data.studios) ? data.studios : []);
             if (activeStudioId) await loadActiveStudio(token);
             if (query.get("cloud") === "connected" && activeStudioId) {
-                selectWorkspaceView("cloud");
-                await loadCloudSync();
+                await openIntegrationModal("cloud");
                 setCloudStatus(cloudConnectionStatus, "Google Drive conectado ao estúdio.", "success");
                 window.history.replaceState({}, document.title, window.location.pathname);
             }
             if (query.get("discord") === "connected" && activeStudioId) {
-                selectWorkspaceView("discord");
-                await loadDiscord();
+                await openIntegrationModal("discord");
                 setDiscordStatus(discordConnectionStatus, "Discord conectado à sua conta.", "success");
                 window.history.replaceState({}, document.title, window.location.pathname);
             }
             if (query.get("discord") === "error" && activeStudioId) {
-                selectWorkspaceView("discord");
-                await loadDiscord();
+                await openIntegrationModal("discord");
                 setDiscordStatus(discordConnectionStatus, "Não foi possível concluir a conexão. Tente novamente.", "error");
                 window.history.replaceState({}, document.title, window.location.pathname);
             }
             if (query.get("github") && activeStudioId) {
-                selectWorkspaceView("github");
-                await loadGithubIntegration();
+                await openIntegrationModal("github");
                 const githubResult = query.get("github");
                 const message = githubResult === "linked" ? "GitHub App vinculado ao estúdio." : githubResult === "no-installation" ? "Nenhuma instalação acessível foi encontrada. Instale o App e tente confirmar novamente." : githubResult === "choose-installation" ? "Há mais de uma instalação acessível; a seleção será adicionada a seguir." : githubResult === "install-return" ? "Volte ao painel e clique em “Confirmar instalação” para concluir o vínculo." : "Não foi possível confirmar a instalação do GitHub.";
                 setGithubInstallationStatus(message, githubResult === "linked" ? "success" : githubResult === "error" ? "error" : "");

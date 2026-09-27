@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { SignJWT, importPKCS8 } from "npm:jose@5";
+import { createPrivateKey } from "node:crypto";
 
 const headers = { "Access-Control-Allow-Origin": "https://www.heartspace.tools", "Access-Control-Allow-Headers": "authorization, apikey, content-type", "Access-Control-Allow-Methods": "POST, OPTIONS", "Content-Type": "application/json", "Cache-Control": "no-store" };
 
@@ -11,7 +12,9 @@ async function authenticatedUser(request: Request, url: string, anon: string) {
 }
 
 async function appJwt(appId: string, privateKey: string) {
-  const key = await importPKCS8(privateKey.replace(/\\n/g, "\n"), "RS256");
+  const source = privateKey.replace(/\\n/g, "\n");
+  const normalized = createPrivateKey(source).export({ format: "pem", type: "pkcs8" }).toString();
+  const key = await importPKCS8(normalized, "RS256");
   const now = Math.floor(Date.now() / 1000);
   return new SignJWT({}).setProtectedHeader({ alg: "RS256", typ: "JWT" }).setIssuer(appId).setIssuedAt(now - 60).setExpirationTime(now + 540).sign(key);
 }

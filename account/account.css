@@ -271,3 +271,14 @@ body.is-light .role-editor-card { border-color: #dfdde3; background: #fff; } bod
 @media (max-width: 700px) { .role-editor-fields { grid-template-columns: 1fr; } .role-editor-fields input[type=color] { width: 66px; } }
 @media (max-width: 720px) { .role-grid { grid-template-columns: 1fr; }.role-grid article { min-height: auto; } }
 @media (max-width: 820px) { .workspace-topbar { gap: 9px; }.workspace-breadcrumb { margin-right: 0; }.account-actions { margin-left: auto; }.member-name { display: none; } }
+
+/* Integrações ficam agrupadas no painel e são configuradas sem trocar de contexto. */
+.integration-modal { position: fixed; z-index: 50; inset: 0; display: grid; place-items: center; padding: 18px; }
+.integration-modal[hidden] { display: none; }
+.integration-modal-backdrop { position: absolute; inset: 0; background: rgba(5, 4, 8, .72); backdrop-filter: blur(5px); }
+.integration-modal-dialog { position: relative; width: min(920px, 100%); max-height: min(860px, calc(100vh - 36px)); overflow: auto; border: 1px solid #3a3740; border-radius: 10px; background: #141416; box-shadow: 0 28px 90px rgba(0, 0, 0, .58); }
+.integration-modal-header { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 18px 22px; border-bottom: 1px solid #302f35; background: #1a1a1d; }.integration-modal-header .panel-kicker { margin-bottom: 5px; }.integration-modal-header h2 { margin: 0; color: #f4f2f5; font-size: 1.05rem; }.integration-modal-close { display: grid; place-items: center; width: 32px; height: 32px; border: 1px solid #48454e; border-radius: 5px; color: #ebe8ee; background: #29282d; font-size: 1.35rem; line-height: 1; }.integration-modal-close:hover { border-color: #77717d; background: #343238; }
+.integration-modal-body { padding: 26px; }.integration-modal-body .workspace-view { padding: 0; }.integration-modal-body .workspace-view h1 { max-width: none; font-size: clamp(1.7rem, 4vw, 2.35rem); }.integration-modal-body .workspace-lead { max-width: 720px; }.integration-modal-body .cloud-panel { max-width: none; }.integration-modal-body .admin-detail-panel:first-of-type { margin-top: 25px; }
+body.has-integration-modal { overflow: hidden; }
+body.is-light .integration-modal-backdrop { background: rgba(34, 29, 40, .32); }.is-light .integration-modal-dialog { border-color: #d8d4dd; background: #f9f9fb; box-shadow: 0 28px 75px rgba(33, 29, 40, .22); }.is-light .integration-modal-header { border-color: #dfdde3; background: #fff; }.is-light .integration-modal-header h2 { color: #292530; }.is-light .integration-modal-close { border-color: #d2ced7; color: #403b46; background: #f1eff4; }
+@media (max-width: 620px) { .integration-modal { padding: 10px; }.integration-modal-dialog { max-height: calc(100vh - 20px); }.integration-modal-header { padding: 15px 16px; }.integration-modal-body { padding: 22px 16px; } }

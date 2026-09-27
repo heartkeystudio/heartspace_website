@@ -18,8 +18,8 @@ Deno.serve(async (request) => {
   if (deliveryError?.code === "23505") return new Response("ok", { status: 200 });
   if (deliveryError) return new Response("storage_error", { status: 500 });
   if (installationId && repositoryId && fullName) {
-    const { data: installation } = await admin.from("studio_github_installations").select("studio_id").eq("github_installation_id", installationId).maybeSingle();
-    if (installation) await admin.from("project_github_repositories").update({ github_repository_id: repositoryId, default_branch: typeof payload?.repository?.default_branch === "string" ? payload.repository.default_branch : null, last_event_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("studio_id", installation.studio_id).eq("full_name", fullName);
+    const { data: installations } = await admin.from("studio_github_installations").select("studio_id").eq("github_installation_id", installationId);
+    await Promise.all((installations || []).map((installation: { studio_id: string }) => admin.from("project_github_repositories").update({ github_repository_id: repositoryId, default_branch: typeof payload?.repository?.default_branch === "string" ? payload.repository.default_branch : null, last_event_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("studio_id", installation.studio_id).eq("full_name", fullName)));
   }
   return new Response("ok", { status: 202 });
 });
