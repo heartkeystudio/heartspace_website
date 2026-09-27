@@ -137,6 +137,22 @@
     const cloudSyncEnabled = document.getElementById("cloudSyncEnabled");
     const createProjectCloudFolder = document.getElementById("createProjectCloudFolder");
     const projectCloudSyncStatus = document.getElementById("projectCloudSyncStatus");
+    const discordConnectionState = document.getElementById("discordConnectionState");
+    const discordConnectionCopy = document.getElementById("discordConnectionCopy");
+    const connectDiscord = document.getElementById("connectDiscord");
+    const discordConnectionStatus = document.getElementById("discordConnectionStatus");
+    const discordGuildState = document.getElementById("discordGuildState");
+    const discordGuildForm = document.getElementById("discordGuildForm");
+    const discordGuildSelect = document.getElementById("discordGuildSelect");
+    const discordGuildNote = document.getElementById("discordGuildNote");
+    const saveDiscordGuild = document.getElementById("saveDiscordGuild");
+    const discordGuildStatus = document.getElementById("discordGuildStatus");
+    const discordProjectChannelForm = document.getElementById("discordProjectChannelForm");
+    const discordProjectSelect = document.getElementById("discordProjectSelect");
+    const discordChannelSelect = document.getElementById("discordChannelSelect");
+    const discordProjectChannelNote = document.getElementById("discordProjectChannelNote");
+    const saveDiscordProjectChannel = document.getElementById("saveDiscordProjectChannel");
+    const discordProjectChannelStatus = document.getElementById("discordProjectChannelStatus");
     const refreshAuditLog = document.getElementById("refreshAuditLog");
     const auditLogNotice = document.getElementById("auditLogNotice");
     const auditLogList = document.getElementById("auditLogList");
@@ -369,6 +385,7 @@
             if (button.dataset.workspaceView === "publications") loadPublications();
             if (button.dataset.workspaceView === "apps") loadProjectApps();
             if (button.dataset.workspaceView === "cloud") loadCloudSync();
+            if (button.dataset.workspaceView === "discord") loadDiscord();
             if (button.dataset.workspaceView === "security") loadAuditLog();
             if (button.dataset.workspaceView === "billing") loadAccountUsage();
         });
@@ -460,6 +477,134 @@
         } catch (error) { appsEmptyState.textContent = error.message || "Não foi possível carregar os apps."; }
     }
     appsProjectSelect.addEventListener("change", loadProjectApps);
+
+    function setDiscordStatus(element, message, state) {
+        element.textContent = message;
+        element.className = "form-status" + (state ? " is-" + state : "");
+    }
+
+    function canManageActiveStudio() {
+        const role = activeStudioAdmin && activeStudioAdmin.membership && activeStudioAdmin.membership.role;
+        return role === "owner" || role === "admin";
+    }
+
+    function setDiscordProjects(projectChannels) {
+        const previous = discordProjectSelect.value;
+        discordProjectSelect.replaceChildren();
+        currentStudioProjects.forEach(function (project) { discordProjectSelect.add(new Option(project.name || "Projeto sem título", project.id)); });
+        const hasProjects = currentStudioProjects.length > 0;
+        if (hasProjects) discordProjectSelect.value = currentStudioProjects.some(function (project) { return project.id === previous; }) ? previous : (activeProjectId || currentStudioProjects[0].id);
+        const linked = (projectChannels || []).find(function (item) { return item.project_id === discordProjectSelect.value; });
+        discordProjectChannelNote.textContent = linked
+            ? "Canal atual: #" + (linked.channel_name || "canal").replace(/^#/, "") + ". Você pode trocar essa referência quando precisar."
+            : "Selecione o canal onde as atualizações deste projeto devem aparecer.";
+    }
+
+    function setDiscordChannels(channels, selectedChannelId) {
+        discordChannelSelect.replaceChildren();
+        if (!channels.length) {
+            discordChannelSelect.add(new Option("Nenhum canal disponível", ""));
+            return;
+        }
+        discordChannelSelect.add(new Option("Escolha um canal", ""));
+        channels.forEach(function (channel) { discordChannelSelect.add(new Option("# " + (channel.name || "canal"), channel.id)); });
+        if (selectedChannelId && channels.some(function (channel) { return channel.id === selectedChannelId; })) discordChannelSelect.value = selectedChannelId;
+    }
+
+    async function loadDiscord() {
+        setDiscordStatus(discordConnectionStatus, "", "");
+        setDiscordStatus(discordGuildStatus, "", "");
+        setDiscordStatus(discordProjectChannelStatus, "", "");
+        discordConnectionState.textContent = "Verificando…";
+        discordConnectionCopy.textContent = "Verificando sua conexão com o Discord.";
+        discordGuildState.textContent = "—";
+        try {
+            const token = await getValidAccessToken(); if (!token) throw new Error("Sessão expirada.");
+            const statusData = await discordRequest("discord-status", token);
+            const connected = Boolean(statusData.connected);
+            const canManage = canManageActiveStudio();
+            connectDiscord.hidden = connected;
+            connectDiscord.disabled = false;
+            discordConnectionState.textContent = connected ? "Conectado" : "Não conectado";
+            discordConnectionCopy.textContent = connected
+                ? "Conta conectada" + (statusData.account && statusData.account.username ? ": " + statusData.account.username : ".")
+                : "Conecte sua conta para listar os servidores onde você participa.";
+            discordGuildSelect.disabled = true;
+            discordProjectSelect.disabled = true;
+            discordChannelSelect.disabled = true;
+            saveDiscordGuild.disabled = true;
+            saveDiscordProjectChannel.disabled = true;
+            if (!connected) {
+                discordGuildSelect.replaceChildren();
+                discordGuildSelect.add(new Option("Conecte sua conta primeiro", ""));
+                setDiscordChannels([], "");
+                return;
+            }
+            const current = await discordRequest("discord-studio", token, { action: "current", studio_id: activeStudioId });
+            const link = current.link || null;
+            const mappingsData = await discordRequest("discord-studio", token, { action: "project_channels", studio_id: activeStudioId });
+            const mappings = Array.isArray(mappingsData.channels) ? mappingsData.channels : [];
+            setDiscordProjects(mappings);
+            discordProjectSelect.disabled = !currentStudioProjects.length || !canManage || !link;
+            discordGuildState.textContent = link ? "Vinculado" : "Não vinculado";
+            if (!canManage) discordGuildNote.textContent = "Somente Owner ou Admin pode alterar o servidor e os canais do projeto.";
+            const guildsData = await discordRequest("discord-studio", token, { action: "guilds" });
+            const guilds = Array.isArray(guildsData.guilds) ? guildsData.guilds : [];
+            discordGuildSelect.replaceChildren();
+            if (!guilds.length) discordGuildSelect.add(new Option("Nenhum servidor encontrado", ""));
+            guilds.forEach(function (guild) { discordGuildSelect.add(new Option(guild.name || "Servidor sem nome", guild.id)); });
+            if (link && guilds.some(function (guild) { return guild.id === link.guild_id; })) discordGuildSelect.value = link.guild_id;
+            discordGuildSelect.disabled = !canManage || !guilds.length;
+            saveDiscordGuild.disabled = !canManage || !discordGuildSelect.value;
+            if (!link) {
+                setDiscordChannels([], "");
+                discordProjectChannelNote.textContent = "Vincule primeiro o servidor compartilhado deste estúdio.";
+                return;
+            }
+            const channelsData = await discordRequest("discord-studio", token, { action: "channels", guild_id: link.guild_id });
+            const selected = mappings.find(function (item) { return item.project_id === discordProjectSelect.value; });
+            setDiscordChannels(Array.isArray(channelsData.channels) ? channelsData.channels : [], selected && selected.channel_id);
+            discordChannelSelect.disabled = !canManage || !currentStudioProjects.length;
+            saveDiscordProjectChannel.disabled = !canManage || !currentStudioProjects.length || !discordChannelSelect.value;
+        } catch (error) {
+            discordConnectionState.textContent = "Indisponível";
+            discordConnectionCopy.textContent = error.message || "Não foi possível carregar o Discord.";
+        }
+    }
+
+    connectDiscord.addEventListener("click", async function () {
+        connectDiscord.disabled = true; setDiscordStatus(discordConnectionStatus, "Abrindo autorização do Discord…", "");
+        try {
+            const token = await getValidAccessToken(); if (!token) throw new Error("Sessão expirada.");
+            const data = await discordRequest("discord-connect", token);
+            if (!data.authorization_url) throw new Error("A autorização do Discord não foi iniciada.");
+            window.location.assign(data.authorization_url);
+        } catch (error) { setDiscordStatus(discordConnectionStatus, error.message || "Não foi possível iniciar a conexão.", "error"); connectDiscord.disabled = false; }
+    });
+
+    discordGuildForm.addEventListener("submit", async function (event) {
+        event.preventDefault(); if (!activeStudioId || !discordGuildSelect.value) return;
+        saveDiscordGuild.disabled = true; setDiscordStatus(discordGuildStatus, "Salvando servidor…", "");
+        try {
+            const token = await getValidAccessToken(); if (!token) throw new Error("Sessão expirada.");
+            const selected = discordGuildSelect.options[discordGuildSelect.selectedIndex];
+            await discordRequest("discord-studio", token, { action: "link", studio_id: activeStudioId, guild_id: discordGuildSelect.value, guild_name: selected ? selected.textContent : "" });
+            await loadDiscord(); setDiscordStatus(discordGuildStatus, "Servidor vinculado ao estúdio.", "success");
+        } catch (error) { setDiscordStatus(discordGuildStatus, error.message || "Não foi possível salvar o servidor.", "error"); }
+    });
+
+    discordProjectSelect.addEventListener("change", loadDiscord);
+    discordChannelSelect.addEventListener("change", function () { saveDiscordProjectChannel.disabled = !canManageActiveStudio() || !discordChannelSelect.value; });
+    discordProjectChannelForm.addEventListener("submit", async function (event) {
+        event.preventDefault(); if (!activeStudioId || !discordProjectSelect.value || !discordChannelSelect.value) return;
+        saveDiscordProjectChannel.disabled = true; setDiscordStatus(discordProjectChannelStatus, "Vinculando canal…", "");
+        try {
+            const token = await getValidAccessToken(); if (!token) throw new Error("Sessão expirada.");
+            const selected = discordChannelSelect.options[discordChannelSelect.selectedIndex];
+            await discordRequest("discord-studio", token, { action: "set_project_channel", studio_id: activeStudioId, project_id: discordProjectSelect.value, channel_id: discordChannelSelect.value, channel_name: selected ? selected.textContent.replace(/^#\s*/, "") : "" });
+            await loadDiscord(); setDiscordStatus(discordProjectChannelStatus, "Canal vinculado ao projeto.", "success");
+        } catch (error) { setDiscordStatus(discordProjectChannelStatus, error.message || "Não foi possível vincular o canal.", "error"); }
+    });
 
     function setCloudStatus(element, message, state) {
         element.textContent = message;
@@ -576,6 +721,19 @@
         const response = await fetch(endpoint, { method: "POST", headers: { "Authorization": "Bearer " + token, "apikey": config.supabaseAnonKey, "Content-Type": "application/json" }, body: JSON.stringify(Object.assign({ action: action }, payload || {})) });
         const data = await response.json().catch(function () { return {}; });
         if (!response.ok) throw new Error(data.error || "Não foi possível concluir esta ação agora.");
+        return data;
+    }
+
+    async function discordRequest(functionName, token, payload) {
+        const baseUrl = (config.supabaseUrl || "").replace(/\/$/, "");
+        if (!baseUrl) throw new Error("A conexão com o Discord ainda não foi configurada.");
+        const response = await fetch(baseUrl + "/functions/v1/" + functionName, {
+            method: "POST",
+            headers: { "Authorization": "Bearer " + token, "apikey": config.supabaseAnonKey, "Content-Type": "application/json" },
+            body: JSON.stringify(payload || {})
+        });
+        const data = await response.json().catch(function () { return {}; });
+        if (!response.ok) throw new Error(data.error || "Não foi possível concluir a ação no Discord.");
         return data;
     }
 
@@ -741,6 +899,24 @@
             const data = await studioRequest("list_studios", token);
             renderStudios(Array.isArray(data.studios) ? data.studios : []);
             if (activeStudioId) await loadActiveStudio(token);
+            if (query.get("cloud") === "connected" && activeStudioId) {
+                selectWorkspaceView("cloud");
+                await loadCloudSync();
+                setCloudStatus(cloudConnectionStatus, "Google Drive conectado ao estúdio.", "success");
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+            if (query.get("discord") === "connected" && activeStudioId) {
+                selectWorkspaceView("discord");
+                await loadDiscord();
+                setDiscordStatus(discordConnectionStatus, "Discord conectado à sua conta.", "success");
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+            if (query.get("discord") === "error" && activeStudioId) {
+                selectWorkspaceView("discord");
+                await loadDiscord();
+                setDiscordStatus(discordConnectionStatus, "Não foi possível concluir a conexão. Tente novamente.", "error");
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
         }
         catch (error) {
             try {

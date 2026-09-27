@@ -262,8 +262,9 @@ async function createGoogleFolder(accessToken: string, name: string, parentId?: 
 function cloudCallbackPage(message: string, success: boolean) {
   const accountUrl = (Deno.env.get("HEARTSPACE_ACCOUNT_URL") || "https://www.heartspace.tools/account/").replace(/\/$/, "");
   const target = accountUrl + "?cloud=" + (success ? "connected" : "error");
-  const safeMessage = message.replace(/[<&>]/g, "");
-  return new Response(`<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta http-equiv="refresh" content="3;url=${target}"><title>HeartSpace</title><body style="font-family:system-ui;background:#141416;color:#f5f2f6;padding:48px"><h1>${success ? "Google Drive conectado" : "Não foi possível conectar"}</h1><p>${safeMessage}</p><p><a style="color:#db91f5" href="${target}">Voltar ao HeartSpace</a></p></body></html>`, { status: success ? 200 : 400, headers: { "Content-Type": "text/html; charset=utf-8" } });
+  // O callback não tem uma página própria. Redirecionar para o painel evita
+  // exibir uma resposta crua da Edge Function e preserva o design do produto.
+  return new Response(null, { status: 302, headers: { Location: target, "Cache-Control": "no-store" } });
 }
 
 function readableCloudError(error: unknown) {

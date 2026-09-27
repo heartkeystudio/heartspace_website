@@ -36,6 +36,7 @@
                     <button class="workspace-nav-item" type="button" data-workspace-view="projects" data-studio-required><span>▣</span>Projetos</button>
                     <button class="workspace-nav-item" type="button" data-workspace-view="apps" data-studio-required><span>▦</span>Apps</button>
                     <button class="workspace-nav-item" type="button" data-workspace-view="cloud" data-studio-required><span>☁</span>Nuvem</button>
+                    <button class="workspace-nav-item" type="button" data-workspace-view="discord" data-studio-required><span>◌</span>Discord</button>
                     <button class="workspace-nav-item" type="button" data-workspace-view="members" data-studio-required><span>◎</span>Membros</button>
                     <button class="workspace-nav-item" type="button" data-workspace-view="publications" data-studio-required><span>↗</span>Publicações</button>
                     <p class="workspace-nav-label workspace-nav-label-lower">CONTA</p>
@@ -101,6 +102,14 @@
                         <article class="admin-detail-panel cloud-panel"><div class="admin-detail-heading"><div><p class="panel-kicker">PASTA DO PROJETO</p><h2>Preparar sincronização</h2></div></div><form class="studio-form" id="projectCloudSyncForm"><label for="cloudProjectSelect">Projeto</label><select id="cloudProjectSelect" required></select><p class="field-note" id="cloudProjectNote">Conecte o Drive do estúdio para criar a pasta segura deste projeto.</p><label class="cloud-switch"><input id="cloudSyncEnabled" type="checkbox" checked><span>Permitir sincronização pelo Hub</span></label><button class="portal-button" id="createProjectCloudFolder" type="submit">Criar pasta do projeto</button><p class="form-status" id="projectCloudSyncStatus" aria-live="polite"></p></form></article>
                     </section>
 
+                    <section class="workspace-view" data-workspace-panel="discord" hidden>
+                        <p class="eyebrow">DISCORD</p><h1>Conversa no lugar do projeto.</h1>
+                        <p class="workspace-lead">Conecte sua conta, escolha o servidor compartilhado do estúdio e vincule cada projeto a um canal. O bot HeartSpace precisa estar no servidor escolhido.</p>
+                        <article class="admin-detail-panel cloud-panel"><div class="admin-detail-heading"><div><p class="panel-kicker">SUA CONTA</p><h2>Conexão pessoal</h2></div><span class="role-chip" id="discordConnectionState">Verificando…</span></div><p class="field-note" id="discordConnectionCopy">Verificando sua conexão com o Discord.</p><div class="cloud-connection-actions"><button class="portal-button" id="connectDiscord" type="button">Conectar Discord</button></div><p class="form-status" id="discordConnectionStatus" aria-live="polite"></p></article>
+                        <article class="admin-detail-panel cloud-panel"><div class="admin-detail-heading"><div><p class="panel-kicker">SERVIDOR DO ESTÚDIO</p><h2>Onde o bot trabalha</h2></div><span class="role-chip" id="discordGuildState">—</span></div><form class="studio-form" id="discordGuildForm"><label for="discordGuildSelect">Servidor</label><select id="discordGuildSelect" required disabled><option value="">Conecte sua conta primeiro</option></select><p class="field-note" id="discordGuildNote">Apenas Owner ou Admin pode vincular o servidor. O bot HeartSpace deve estar nele para criar e listar canais.</p><button class="portal-button" id="saveDiscordGuild" type="submit">Salvar servidor</button><p class="form-status" id="discordGuildStatus" aria-live="polite"></p></form></article>
+                        <article class="admin-detail-panel cloud-panel"><div class="admin-detail-heading"><div><p class="panel-kicker">CANAL DO PROJETO</p><h2>Uma referência por projeto</h2></div></div><form class="studio-form" id="discordProjectChannelForm"><label for="discordProjectSelect">Projeto</label><select id="discordProjectSelect" required disabled></select><label for="discordChannelSelect">Canal do Discord</label><select id="discordChannelSelect" required disabled><option value="">Escolha um servidor</option></select><p class="field-note" id="discordProjectChannelNote">Selecione um canal existente. O Hub poderá criar o canal padrão do projeto automaticamente quando for necessário.</p><button class="portal-button" id="saveDiscordProjectChannel" type="submit">Vincular canal ao projeto</button><p class="form-status" id="discordProjectChannelStatus" aria-live="polite"></p></form></article>
+                    </section>
+
                     <section class="workspace-view" data-workspace-panel="publications" hidden>
                         <p class="eyebrow">PUBLICAÇÕES</p><h1>Mostre só o que escolheu.</h1>
                         <p class="workspace-lead">Crie rascunhos, publique uma versão escolhida ou retire uma página do ar sem apagar sua referência no projeto.</p>
@@ -126,6 +135,6 @@
 
     </main>
     <script src="config.js?v=20260924-12"></script>
-    <script src="account.js?v=20260924-12"></script>
+    <script src="account.js?v=20260926-01"></script>
 </body>
 </html>
