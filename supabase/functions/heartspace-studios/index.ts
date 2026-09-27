@@ -587,7 +587,8 @@ Deno.serve(async (request) => {
       admin.from("github_installation_candidates").select("github_installation_id, account_login, account_type").eq("studio_id", studioId).eq("authorized_user_id", authData.user.id).gt("expires_at", new Date().toISOString()),
     ]);
     if (installationError || repositoriesError || candidatesError) return response({ error: "A integração GitHub ainda precisa da migration SUPABASE_GITHUB_INTEGRATION.sql." }, 500, origin);
-    return response({ installation: installation || null, repositories: repositories || [], candidates: candidates || [], can_manage: ["owner", "admin"].includes(membership.role) }, 200, origin);
+    const { data: lastEvent } = installation ? await admin.from("github_webhook_deliveries").select("github_event, action, repository_full_name, received_at").eq("github_installation_id", installation.github_installation_id).order("received_at", { ascending: false }).limit(1).maybeSingle() : { data: null };
+    return response({ installation: installation || null, repositories: repositories || [], candidates: candidates || [], last_event: lastEvent || null, can_manage: ["owner", "admin"].includes(membership.role) }, 200, origin);
   }
 
   if (payload.action === "start_github_installation") {

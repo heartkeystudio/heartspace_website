@@ -62,6 +62,8 @@
     const overviewProjectCount = document.getElementById("overviewProjectCount");
     const overviewStudioTitle = document.getElementById("overviewStudioTitle");
     const overviewStudioCopy = document.getElementById("overviewStudioCopy");
+    const overviewGithubTitle = document.getElementById("overviewGithubTitle");
+    const overviewGithubCopy = document.getElementById("overviewGithubCopy");
     const studioSettingsPanel = document.getElementById("studioSettingsPanel");
     const studioSettingsForm = document.getElementById("studioSettingsForm");
     const activeStudioHeading = document.getElementById("activeStudioHeading");
@@ -505,6 +507,32 @@
 
     function githubRepositoryForProject(repositories) {
         return (repositories || []).find(function (item) { return item.project_id === githubProjectSelect.value; }) || null;
+    }
+
+    async function loadGithubOverview() {
+        if (!activeStudioId) {
+            overviewGithubTitle.textContent = "Código ainda não conectado";
+            overviewGithubCopy.textContent = "Crie ou escolha um estúdio para conectar o GitHub App.";
+            return;
+        }
+        try {
+            const token = await getValidAccessToken(); if (!token) throw new Error("Sessão expirada.");
+            const data = await studioRequest("get_github_integration", token, { studio_id: activeStudioId });
+            const repositories = Array.isArray(data.repositories) ? data.repositories : [];
+            if (!data.installation) {
+                overviewGithubTitle.textContent = "GitHub App pendente";
+                overviewGithubCopy.textContent = "Vincule a instalação do GitHub App para receber sinais técnicos dos repositórios.";
+                return;
+            }
+            overviewGithubTitle.textContent = repositories.length === 1 ? "1 repositório vinculado" : repositories.length + " repositórios vinculados";
+            const event = data.last_event;
+            overviewGithubCopy.textContent = event
+                ? "Último evento: " + event.github_event.replace(/_/g, " ") + (event.repository_full_name ? " · " + event.repository_full_name : "") + " · " + formatDate(event.received_at) + "."
+                : "GitHub App conectado em " + (data.installation.account_login || "uma conta") + ". Aguardando o primeiro evento técnico.";
+        } catch (_) {
+            overviewGithubTitle.textContent = "GitHub indisponível agora";
+            overviewGithubCopy.textContent = "Abra a integração para conferir o vínculo quando a conexão voltar.";
+        }
     }
 
     async function loadGithubIntegration() {
@@ -1234,6 +1262,7 @@
         try {
             const data = await studioRequest("get_studio_admin", token, { studio_id: activeStudioId });
             renderActiveStudio(data);
+            await loadGithubOverview();
             if (activeProjectId) await loadActiveProject(token);
         } catch (error) {
             clearStudioAdministration();
