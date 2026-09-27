@@ -131,6 +131,9 @@
     const publicationVisibility = document.getElementById("publicationVisibility");
     const publicationStatus = document.getElementById("publicationStatus");
     const publicationStatusMessage = document.getElementById("publicationStatusMessage");
+    const publicationRevisionPanel = document.getElementById("publicationRevisionPanel");
+    const publicationRevisionNotice = document.getElementById("publicationRevisionNotice");
+    const publicationRevisionList = document.getElementById("publicationRevisionList");
     const appsProjectSelect = document.getElementById("appsProjectSelect");
     const appsEmptyState = document.getElementById("appsEmptyState");
     const projectAppsList = document.getElementById("projectAppsList");
@@ -474,7 +477,27 @@
         publicationStatus.value = "draft";
         publicationEditorTitle.textContent = "Nova publicação";
         publicationEditorPanel.hidden = !publicationProjectSelect.value;
+        publicationRevisionPanel.hidden = true;
+        publicationRevisionList.replaceChildren();
         setPublicationStatus("", "");
+    }
+
+    async function loadPublicationRevisions(id) {
+        publicationRevisionPanel.hidden = true;
+        publicationRevisionList.replaceChildren();
+        if (!id || !activeStudioId || !publicationProjectSelect.value) return;
+        publicationRevisionPanel.hidden = false;
+        publicationRevisionNotice.textContent = "Carregando versões publicadas…";
+        try {
+            const token = await getValidAccessToken(); if (!token) throw new Error("Sessão expirada.");
+            const data = await studioRequest("list_publication_revisions", token, { studio_id: activeStudioId, project_id: publicationProjectSelect.value, publication_id: id });
+            const revisions = Array.isArray(data.revisions) ? data.revisions : [];
+            revisions.forEach(function (revision) {
+                const current = revision.id === data.current_revision_id ? " · atual" : "";
+                appendListRow(publicationRevisionList, "Versão pública " + revision.revision_number + current, "Docs revisão " + revision.source_revision_number + " · publicada em " + formatDate(revision.published_at));
+            });
+            publicationRevisionNotice.textContent = revisions.length ? "Snapshots públicos imutáveis desta página." : "Esta publicação ainda não possui um snapshot público.";
+        } catch (error) { publicationRevisionNotice.textContent = error.message || "Não foi possível carregar o histórico público."; }
     }
 
     function editPublication(publication) {
@@ -487,6 +510,7 @@
         publicationStatus.value = publication.status || "draft";
         publicationEditorTitle.textContent = "Editar publicação";
         publicationEditorPanel.hidden = false;
+        loadPublicationRevisions(publication.id);
     }
 
     async function loadPublications() {

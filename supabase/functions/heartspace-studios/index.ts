@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { safePublicationSnapshot } from "../_shared/publication_snapshot.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -88,26 +89,6 @@ async function getMembership(admin: any, studioId: string, userId: string) {
   return { membership: data, error };
 }
 
-function safePublicationSnapshot(value: unknown) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  const snapshot = value as Record<string, unknown>;
-  if (snapshot.version !== 1 || snapshot.format !== "heartspace-docs-v1" || !Array.isArray(snapshot.blocks) || snapshot.blocks.length > 500) return null;
-  const allowedTypes = new Set([0, 1, 2, 3, 4, 6, 8, 13]);
-  const blocks: Array<Record<string, unknown>> = [];
-  for (const raw of snapshot.blocks) {
-    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
-    const block = raw as Record<string, unknown>;
-    const type = Number(block.type);
-    const text = typeof block.text === "string" ? block.text.trim() : "";
-    if (!Number.isInteger(type) || !allowedTypes.has(type) || text.length > 12000) return null;
-    // O contrato atual não transporta HTML, estilos, caminhos ou URLs locais.
-    if (/\b(?:res|user|file):\/\//i.test(text) || /<\s*script\b|on\w+\s*=/i.test(text)) return null;
-    blocks.push({ type, text });
-  }
-  const clean = { version: 1, format: "heartspace-docs-v1", blocks };
-  return JSON.stringify(clean).length <= 500000 ? clean : null;
-}
-
 async function canManageProjectPublications(admin: any, studioId: string, projectId: string, userId: string) {
   const [{ data: project, error: projectError }, { membership, error: membershipError }] = await Promise.all([
     admin.from("projects").select("id, studio_id, owner_id, role_permissions").eq("id", projectId).eq("studio_id", studioId).maybeSingle(),
@@ -120,6 +101,17 @@ async function canManageProjectPublications(admin: any, studioId: string, projec
   const permissions = project.role_permissions && typeof project.role_permissions === "object" ? project.role_permissions as Record<string, any> : {};
   const allowed = roles.some((role: unknown) => permissions[String(role)]?.manage_publications === true || permissions[String(role)]?.manage_workspace === true);
   return { allowed, project };
+}
+
+async function isProjectAppEnabled(admin: any, projectId: string, appKey: string) {
+  const { data, error } = await admin.from("project_apps").select("enabled").eq("project_id", projectId).eq("app_key", appKey).maybeSingle();
+  if (error) return { enabled: false, error: true };
+  return { enabled: data?.enabled !== false, error: false };
+}
+
+function publicPublicationUrl(publicationId: string) {
+  const origin = (Deno.env.get("HEARTSPACE_PUBLIC_SITE_URL") || "https://www.heartspace.tools").replace(/\/+$/, "");
+  return `${origin}/p/?id=${encodeURIComponent(publicationId)}`;
 }
 
 async function memberDetails(admin: any, rows: Array<any>) {
@@ -676,6 +668,22 @@ Deno.serve(async (request) => {
     return response({ publications: data || [] }, 200, origin);
   }
 
+  if (payload.action === "list_publication_revisions") {
+    const studioId = typeof payload.studio_id === "string" ? payload.studio_id : "";
+    const projectId = typeof payload.project_id === "string" ? payload.project_id : "";
+    const publicationId = typeof payload.publication_id === "string" ? payload.publication_id : "";
+    if (!studioId || !projectId || !publicationId) return response({ error: "Selecione uma publicação." }, 400, origin);
+    const access = await canManageProjectPublications(admin, studioId, projectId, authData.user.id);
+    if (!access.allowed) return response({ error: "Você não pode consultar o histórico desta publicação." }, 403, origin);
+    const { data: publication } = await admin.from("project_publications").select("id, current_revision_id").eq("id", publicationId).eq("studio_id", studioId).eq("project_id", projectId).maybeSingle();
+    if (!publication) return response({ error: "Publicação não encontrada neste projeto." }, 404, origin);
+    const { data, error } = await admin.from("project_publication_revisions")
+      .select("id, revision_number, source_revision_number, approved_at, published_at")
+      .eq("publication_id", publicationId).order("revision_number", { ascending: false });
+    if (error) return response({ error: "Não foi possível carregar o histórico da publicação." }, 500, origin);
+    return response({ current_revision_id: publication.current_revision_id, revisions: data || [] }, 200, origin);
+  }
+
   if (payload.action === "save_publication") {
     const studioId = typeof payload.studio_id === "string" ? payload.studio_id : "";
     const projectId = typeof payload.project_id === "string" ? payload.project_id : "";
@@ -689,6 +697,9 @@ Deno.serve(async (request) => {
     if (!studioId || !projectId || !title || !slug || !visibility || !status || title.length > 160 || summary.length > 500 || sourceUrl.length > 2048 || (sourceUrl && !/^https:\/\//i.test(sourceUrl))) return response({ error: "Dados de publicação inválidos." }, 400, origin);
     const access = await canManageProjectPublications(admin, studioId, projectId, authData.user.id);
     if (!access.allowed) return response({ error: "Você não pode administrar publicações deste projeto." }, 403, origin);
+    const docsApp = await isProjectAppEnabled(admin, projectId, "docs");
+    if (docsApp.error) return response({ error: "Não foi possível verificar o app Docs deste projeto." }, 500, origin);
+    if (!docsApp.enabled) return response({ error: "O app Docs está desabilitado neste projeto." }, 409, origin);
     const source = payload.source && typeof payload.source === "object" && !Array.isArray(payload.source) ? payload.source as Record<string, unknown> : null;
     const snapshot = safePublicationSnapshot(payload.snapshot);
     if ((source || payload.snapshot) && (!source || !snapshot || status !== "published")) return response({ error: "Snapshot público ou origem da revisão inválidos." }, 400, origin);
@@ -704,21 +715,27 @@ Deno.serve(async (request) => {
       if (!revision || !document || document.project_id !== projectId || !revision.approved_at || Number(source.revision_number) !== revision.revision_number) return response({ error: "A revisão indicada não está aprovada para este projeto." }, 409, origin);
       sourceRevision = revision;
     }
-    const publication: Record<string, unknown> = { studio_id: studioId, project_id: projectId, title, slug, summary: summary || null, source_url: sourceUrl || null, visibility, status, published_at: status === "published" ? new Date().toISOString() : null, updated_at: new Date().toISOString() };
-    if (source && snapshot && sourceRevision) Object.assign(publication, { source_document_id: sourceRevision.doc_id, source_revision_id: sourceRevision.id, source_revision_number: sourceRevision.revision_number, snapshot_json: snapshot, snapshot_version: 1, approved_by: sourceRevision.approved_by, approved_at: sourceRevision.approved_at });
-    const query = publicationId
-      ? admin.from("project_publications").update(publication).eq("id", publicationId).eq("studio_id", studioId).eq("project_id", projectId)
-      : admin.from("project_publications").insert(publication);
-    const { data, error } = await query.select("id, title, slug, summary, source_url, visibility, status, published_at, created_at, updated_at, snapshot_version").single();
-    if (error) return response({ error: error.code === "23505" ? "Já existe uma publicação com este endereço neste projeto." : "Não foi possível salvar a publicação." }, 500, origin);
-    if (source && snapshot && sourceRevision) {
-      const { data: lastRevision } = await admin.from("project_publication_revisions").select("revision_number").eq("publication_id", data.id).order("revision_number", { ascending: false }).limit(1).maybeSingle();
-      const { data: publishedRevision, error: revisionError } = await admin.from("project_publication_revisions").insert({ publication_id: data.id, revision_number: Number(lastRevision?.revision_number || 0) + 1, source_document_id: sourceRevision.doc_id, source_revision_id: sourceRevision.id, source_revision_number: sourceRevision.revision_number, snapshot_json: snapshot, snapshot_version: 1, approved_by: sourceRevision.approved_by, approved_at: sourceRevision.approved_at, published_by: authData.user.id }).select("id").single();
-      if (revisionError || !publishedRevision) return response({ error: "A publicação foi salva, mas o snapshot imutável não pôde ser registrado." }, 500, origin);
-      await admin.from("project_publications").update({ current_revision_id: publishedRevision.id }).eq("id", data.id);
+    const hasSnapshot = Boolean(source && snapshot && sourceRevision);
+    const { data: savedRows, error } = await admin.rpc("heartspace_save_project_publication", {
+      p_publication_id: publicationId || null, p_studio_id: studioId, p_project_id: projectId,
+      p_title: title, p_slug: slug, p_summary: summary, p_source_url: sourceUrl,
+      p_visibility: visibility, p_status: status, p_has_snapshot: hasSnapshot,
+      p_source_document_id: sourceRevision?.doc_id || null, p_source_revision_id: sourceRevision?.id || null,
+      p_source_revision_number: sourceRevision?.revision_number || null, p_snapshot_json: snapshot || null,
+      p_approved_by: sourceRevision?.approved_by || null, p_approved_at: sourceRevision?.approved_at || null,
+      p_published_by: authData.user.id,
+    });
+    if (error) {
+      const conflict = ["23505", "P0001"].includes(error.code || "");
+      const missing = error.code === "P0002";
+      return response({ error: conflict ? (error.message || "Esta revisão já foi publicada nesta página.") : missing ? "Publicação não encontrada neste projeto." : "Não foi possível salvar a publicação." }, conflict ? 409 : missing ? 404 : 500, origin);
     }
-    await admin.from("studio_audit_log").insert({ studio_id: studioId, actor_id: authData.user.id, action: `publication.${status}`, target_type: "publication", target_id: data.id });
-    return response({ publication: data }, publicationId ? 200 : 201, origin);
+    const data = Array.isArray(savedRows) ? savedRows[0] : savedRows;
+    if (!data || typeof data.publication_id !== "string") return response({ error: "Não foi possível salvar a publicação." }, 500, origin);
+    const action = status === "withdrawn" ? "publication.withdrawn" : hasSnapshot && publicationId ? "publication.updated" : hasSnapshot ? "publication.published" : "publication.metadata_updated";
+    await admin.from("studio_audit_log").insert({ studio_id: studioId, actor_id: authData.user.id, action, target_type: "publication", target_id: data.publication_id });
+    const publication = { id: data.publication_id, status: data.status, published_at: data.published_at, created_at: data.created_at, updated_at: data.updated_at, snapshot_version: data.snapshot_version };
+    return response({ publication, public_url: publicPublicationUrl(data.publication_id) }, publicationId ? 200 : 201, origin);
   }
 
   if (payload.action === "list_project_apps") {

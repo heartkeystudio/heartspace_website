@@ -1,5 +1,7 @@
 # Integração entre HeartSpace Docs e páginas públicas
 
+> Este é o guia histórico da primeira proposta. Para a implementação atual do Docs, incluindo o contrato já disponível no site, snapshots imutáveis, modelos de press kit e limitações de mídia, use [GUIA_IMPLEMENTACAO_DOCS_PUBLICACOES.md](GUIA_IMPLEMENTACAO_DOCS_PUBLICACOES.md).
+
 Este documento define como o HeartSpace Docs deve enviar documentos aprovados para as páginas públicas do HeartSpace. O painel administra a publicação; o Docs continua sendo a fonte do conteúdo e das revisões.
 
 ## Princípio

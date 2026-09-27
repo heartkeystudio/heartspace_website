@@ -18,6 +18,10 @@ create table if not exists public.doc_revisions (
 create index if not exists doc_revisions_doc_created_idx on public.doc_revisions(doc_id, revision_number desc);
 alter table public.doc_revisions enable row level security;
 
+-- Instalações anteriores do Docs já podem ter criado estas políticas sem
+-- registrar esta migration no histórico remoto.
+drop policy if exists doc_revisions_read on public.doc_revisions;
+drop policy if exists doc_revisions_insert on public.doc_revisions;
 create policy doc_revisions_read on public.doc_revisions for select to authenticated
   using (exists (select 1 from public.docs d where d.id = doc_id and public.heartspace_has_project_capability(d.project_id, 'docs_view')));
 create policy doc_revisions_insert on public.doc_revisions for insert to authenticated
