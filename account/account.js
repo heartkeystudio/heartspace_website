@@ -612,14 +612,13 @@
 
     async function loadGithubIntegration() {
         setGithubStatus("", "");
-        const previousProjectId = githubProjectSelect.value;
         githubProjectSelect.replaceChildren();
         currentStudioProjects.forEach(function (project) { githubProjectSelect.add(new Option(project.name || "Projeto sem título", project.id)); });
         const canManageLocally = Boolean(activeStudioId);
         githubProjectSelect.disabled = !currentStudioProjects.length || !canManageLocally;
         githubRepositoryUrl.disabled = !currentStudioProjects.length || !canManageLocally;
         saveGithubRepository.disabled = !currentStudioProjects.length || !canManageLocally;
-        if (currentStudioProjects.length) githubProjectSelect.value = currentStudioProjects.some(function (project) { return project.id === previousProjectId; }) ? previousProjectId : (currentStudioProjects.some(function (project) { return project.id === activeProjectId; }) ? activeProjectId : currentStudioProjects[0].id);
+        if (currentStudioProjects.length) githubProjectSelect.value = currentStudioProjects.some(function (project) { return project.id === activeProjectId; }) ? activeProjectId : currentStudioProjects[0].id;
         githubInstallationState.textContent = "Preparando…";
         githubInstallationCopy.textContent = "Carregando os vínculos do estúdio.";
         try {
@@ -738,11 +737,10 @@
     }
 
     function setDiscordProjects(projectChannels) {
-        const previous = discordProjectSelect.value;
         discordProjectSelect.replaceChildren();
         currentStudioProjects.forEach(function (project) { discordProjectSelect.add(new Option(project.name || "Projeto sem título", project.id)); });
         const hasProjects = currentStudioProjects.length > 0;
-        if (hasProjects) discordProjectSelect.value = currentStudioProjects.some(function (project) { return project.id === previous; }) ? previous : (activeProjectId || currentStudioProjects[0].id);
+        if (hasProjects) discordProjectSelect.value = currentStudioProjects.some(function (project) { return project.id === activeProjectId; }) ? activeProjectId : currentStudioProjects[0].id;
         const linked = (projectChannels || []).find(function (item) { return item.project_id === discordProjectSelect.value; });
         discordProjectChannelNote.textContent = linked
             ? "Canal atual: #" + (linked.channel_name || "canal").replace(/^#/, "") + ". Você pode trocar essa referência quando precisar."
@@ -861,11 +859,10 @@
     }
 
     function setCloudProjects(projects, configs) {
-        const previous = cloudProjectSelect.value;
         cloudProjectSelect.replaceChildren();
         projects.forEach(function (project) { cloudProjectSelect.add(new Option(project.name || "Projeto sem título", project.id)); });
         cloudProjectSelect.disabled = !projects.length;
-        if (projects.length) cloudProjectSelect.value = projects.some(function (project) { return project.id === previous; }) ? previous : (activeProjectId && projects.some(function (project) { return project.id === activeProjectId; }) ? activeProjectId : projects[0].id);
+        if (projects.length) cloudProjectSelect.value = projects.some(function (project) { return project.id === activeProjectId; }) ? activeProjectId : projects[0].id;
         const config = (configs || []).find(function (item) { return item.project_id === cloudProjectSelect.value; });
         cloudSyncEnabled.checked = !config || config.sync_enabled !== false;
         cloudProjectNote.textContent = config
@@ -1307,18 +1304,18 @@
         projects.forEach(function (project) { appendListRow(projectList, project.name || "Projeto sem título", (project.status === "archived" ? "Arquivado" : "Ativo") + " · " + (project.description || "Sem descrição") + " · criado em " + formatDate(project.created_at)); });
         projectList.hidden = !projects.length;
         createProjectForm.hidden = !canManage;
+        if (!projects.some(function (project) { return project.id === activeProjectId; })) activeProjectId = projects.length ? projects[0].id : "";
         projectContextSelect.replaceChildren();
         projects.forEach(function (project) { projectContextSelect.add(new Option(project.name || "Projeto sem título", project.id)); });
         publicationProjectSelect.replaceChildren();
         projects.forEach(function (project) { publicationProjectSelect.add(new Option(project.name || "Projeto sem título", project.id)); });
         publicationProjectSelect.disabled = !projects.length;
-        if (projects.length) publicationProjectSelect.value = activeProjectId && projects.some(function (project) { return project.id === activeProjectId; }) ? activeProjectId : projects[0].id;
+        if (projects.length) publicationProjectSelect.value = activeProjectId;
         appsProjectSelect.replaceChildren();
         projects.forEach(function (project) { appsProjectSelect.add(new Option(project.name || "Projeto sem título", project.id)); });
         appsProjectSelect.disabled = !projects.length;
-        if (projects.length) appsProjectSelect.value = activeProjectId && projects.some(function (project) { return project.id === activeProjectId; }) ? activeProjectId : projects[0].id;
+        if (projects.length) appsProjectSelect.value = activeProjectId;
         projectContextLabel.hidden = !projects.length;
-        if (!projects.some(function (project) { return project.id === activeProjectId; })) activeProjectId = projects.length ? projects[0].id : "";
         if (activeProjectId) {
             projectContextSelect.value = activeProjectId;
             sessionStorage.setItem(sessionKey("active-project"), activeProjectId);
@@ -1618,11 +1615,29 @@
         }
     }
 
+    function syncProjectContextSelects() {
+        [publicationProjectSelect, appsProjectSelect, githubProjectSelect, discordProjectSelect, cloudProjectSelect].forEach(function (select) {
+            if (Array.from(select.options).some(function (option) { return option.value === activeProjectId; })) select.value = activeProjectId;
+        });
+    }
+
+    async function refreshActiveProjectContext(token) {
+        const visiblePanel = activeIntegrationPanel || workspacePanels.find(function (panel) { return panel.classList.contains("is-active"); });
+        const viewName = visiblePanel && visiblePanel.dataset.workspacePanel;
+        if (viewName === "projects") await loadActiveProject(token);
+        if (viewName === "apps") await loadProjectApps();
+        if (viewName === "publications") await loadPublications();
+        if (viewName === "cloud") await loadCloudSync();
+        if (viewName === "discord") await loadDiscord();
+        if (viewName === "github") await loadGithubIntegration();
+    }
+
     projectContextSelect.addEventListener("change", async function () {
         activeProjectId = projectContextSelect.value;
         sessionStorage.setItem(sessionKey("active-project"), activeProjectId);
+        syncProjectContextSelects();
         const token = await getValidAccessToken().catch(function () { return null; });
-        if (token) await loadActiveProject(token);
+        if (token) await refreshActiveProjectContext(token);
     });
 
     addProjectRole.addEventListener("click", function () {
