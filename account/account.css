@@ -344,8 +344,8 @@ body.is-workspace .member-area { margin-top: 0; }
 .workspace-layout { grid-template-columns: 76px minmax(0, 1fr); min-height: 100vh; transition: grid-template-columns .22s ease; }
 .workspace-layout:has(.workspace-nav:hover), .workspace-layout:has(.workspace-nav:focus-within) { grid-template-columns: 268px minmax(0, 1fr); }
 .workspace-nav { overflow: hidden; padding: 14px 12px; transition: padding .22s ease; }
-.workspace-brand { min-height: 42px; padding: 2px 8px 17px; gap: 10px; white-space: nowrap; }
-.workspace-brand img { display: block; width: 30px; height: 30px; flex: 0 0 30px; }
+.workspace-brand { min-height: 54px; padding: 2px 5px 20px; gap: 12px; font-size: 1.13rem; white-space: nowrap; }
+.workspace-brand img { display: block; width: 44px; height: 44px; flex: 0 0 44px; border-radius: 12px; }
 .workspace-nav .nav-icon, .workspace-nav-item > .nav-icon { display: grid; place-items: center; width: 32px; min-width: 32px; height: 32px; color: #aaaeb2; font-size: .97rem; line-height: 1; text-align: center; }
 .workspace-nav-item { gap: 8px; min-height: 40px; padding: 4px 7px; white-space: nowrap; }
 .workspace-nav-item > .nav-icon { margin-left: 0; }
@@ -370,7 +370,7 @@ body.is-workspace .member-area { margin-top: 0; }
     .workspace-nav:not(:hover):not(:focus-within) .nav-copy,
     .workspace-nav:not(:hover):not(:focus-within) .studio-context > span:nth-child(2),
     .workspace-nav:not(:hover):not(:focus-within) .workspace-nav-label { width: 0; max-width: 0; min-width: 0; margin-left: 0; margin-right: 0; padding: 0; overflow: hidden; opacity: 0; pointer-events: none; }
-    .workspace-nav:not(:hover):not(:focus-within) .workspace-brand { padding-left: 8px; }
+    .workspace-nav:not(:hover):not(:focus-within) .workspace-brand { padding-left: 4px; }
     .workspace-nav:not(:hover):not(:focus-within) .studio-context, .workspace-nav:not(:hover):not(:focus-within) .project-context-sidebar { width: 48px; padding: 8px; }
     .workspace-nav:not(:hover):not(:focus-within) .studio-context-mark { width: 30px; height: 30px; }
     .workspace-nav:not(:hover):not(:focus-within) .workspace-hub-link { margin-left: 0; margin-right: 0; }
