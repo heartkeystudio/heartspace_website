@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="heartspace-gradient" x1="8" y1="7" x2="57" y2="58" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D84DFF"/>
+      <stop offset="1" stop-color="#7900B4"/>
+    </linearGradient>
+  </defs>
+  <rect x="3" y="3" width="58" height="58" rx="17" fill="url(#heartspace-gradient)"/>
+  <path d="M15 17h10v10H15zM39 37h10v10H39z" fill="#fff" fill-opacity=".94"/>
+  <path d="m32 22 10 10-10 10-10-10 10-10Z" fill="#fff"/>
+</svg>

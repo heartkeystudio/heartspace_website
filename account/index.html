@@ -19,30 +19,27 @@
         </section>
 
         <section class="member-area workspace" id="memberArea" hidden aria-labelledby="memberTitle">
-            <header class="member-header workspace-topbar">
-                <a class="workspace-topbar-brand" href="../"><span>HeartSpace</span></a>
-                <div class="workspace-contexts"><div class="workspace-breadcrumb"><span class="breadcrumb-divider">/</span><strong>Administração</strong></div><label class="workspace-project-context" id="projectContextLabel" for="projectContextSelect" hidden><span>PROJETO ATIVO</span><select id="projectContextSelect" aria-label="Escolher projeto ativo"></select></label></div>
-                <div class="account-actions"><button class="theme-toggle" id="themeToggle" type="button" aria-label="Alternar tema" title="Trocar tema" aria-pressed="false">☀️</button><span class="member-name" id="memberName"></span><span class="role-chip member-role" id="memberRole" hidden></span><button class="signout-button" id="signOut" type="button">Sair</button></div>
-            </header>
-
             <p class="checkout-notice" id="checkoutNotice" hidden aria-live="polite"></p>
 
             <div class="workspace-layout">
                 <nav class="workspace-nav" aria-label="Administração da conta">
+                    <a class="workspace-brand" href="../" aria-label="Página inicial do HeartSpace"><img src="../assets/icons/heartspace-logo.svg" alt=""><span class="nav-copy">HeartSpace</span></a>
                     <label class="studio-context" for="studioContextSelect"><span class="studio-context-mark"><img id="studioContextImage" alt="" hidden><span id="studioContextFallback" aria-hidden="true">✦</span></span><span><small>ESTÚDIO ATIVO</small><select id="studioContextSelect" disabled aria-label="Escolher estúdio"><option value="">Nenhum estúdio</option></select></span></label>
-                    <p class="workspace-nav-label">ADMINISTRAÇÃO</p>
-                    <button class="workspace-nav-item is-active" type="button" data-workspace-view="overview"><span>⌂</span>Visão geral</button>
-                    <button class="workspace-nav-item" type="button" data-workspace-view="studios" data-studio-required><span>◇</span>Estúdios</button>
-                    <button class="workspace-nav-item" type="button" data-workspace-view="projects" data-studio-required><span>▣</span>Projetos</button>
-                    <button class="workspace-nav-item" type="button" data-workspace-view="apps" data-studio-required><span>▦</span>Apps</button>
-                    <button class="workspace-nav-item" type="button" data-workspace-view="integrations" data-studio-required><span>⌘</span>API e integrações</button>
-                    <button class="workspace-nav-item" type="button" data-workspace-view="members" data-studio-required><span>◎</span>Membros</button>
-                    <button class="workspace-nav-item" type="button" data-workspace-view="publications" data-studio-required><span>↗</span>Publicações</button>
-                    <p class="workspace-nav-label workspace-nav-label-lower">CONTA</p>
-                    <button class="workspace-nav-item" id="profileWorkspaceButton" type="button"><span>◉</span>Perfil</button>
-                    <button class="workspace-nav-item" type="button" data-workspace-view="billing"><span>◈</span>Assinatura</button>
-                    <button class="workspace-nav-item" type="button" data-workspace-view="security"><span>⌘</span>Segurança</button>
-                    <a class="workspace-hub-link" href="../#download">↗ Baixar ou abrir o Hub</a>
+                    <label class="project-context-sidebar" id="projectContextLabel" for="projectContextSelect" hidden><span class="nav-icon" aria-hidden="true">▣</span><span class="nav-copy"><small>PROJETO ATIVO</small><select id="projectContextSelect" aria-label="Escolher projeto ativo"></select></span></label>
+                    <p class="workspace-nav-label"><span class="nav-copy">ADMINISTRAÇÃO</span></p>
+                    <button class="workspace-nav-item is-active" type="button" data-workspace-view="overview"><span class="nav-icon">⌂</span><span class="nav-copy">Visão geral</span></button>
+                    <button class="workspace-nav-item" type="button" data-workspace-view="studios" data-studio-required><span class="nav-icon">◇</span><span class="nav-copy">Estúdios</span></button>
+                    <button class="workspace-nav-item" type="button" data-workspace-view="projects" data-studio-required><span class="nav-icon">▣</span><span class="nav-copy">Projetos</span></button>
+                    <button class="workspace-nav-item" type="button" data-workspace-view="apps" data-studio-required><span class="nav-icon">▦</span><span class="nav-copy">Apps</span></button>
+                    <button class="workspace-nav-item" type="button" data-workspace-view="integrations" data-studio-required><span class="nav-icon">⌘</span><span class="nav-copy">API e integrações</span></button>
+                    <button class="workspace-nav-item" type="button" data-workspace-view="members" data-studio-required><span class="nav-icon">◎</span><span class="nav-copy">Membros</span></button>
+                    <button class="workspace-nav-item" type="button" data-workspace-view="publications" data-studio-required><span class="nav-icon">↗</span><span class="nav-copy">Publicações</span></button>
+                    <p class="workspace-nav-label workspace-nav-label-lower"><span class="nav-copy">CONTA</span></p>
+                    <button class="workspace-nav-item" id="profileWorkspaceButton" type="button"><span class="nav-icon">◉</span><span class="nav-copy">Perfil</span></button>
+                    <button class="workspace-nav-item" type="button" data-workspace-view="billing"><span class="nav-icon">◈</span><span class="nav-copy">Assinatura</span></button>
+                    <button class="workspace-nav-item" type="button" data-workspace-view="security"><span class="nav-icon">⌘</span><span class="nav-copy">Segurança</span></button>
+                    <a class="workspace-hub-link" href="../#download"><span class="nav-icon">↗</span><span class="nav-copy">Baixar ou abrir o Hub</span></a>
+                    <div class="sidebar-account-actions"><span class="member-name nav-copy" id="memberName"></span><span class="role-chip member-role nav-copy" id="memberRole" hidden></span><button class="theme-toggle" id="themeToggle" type="button" aria-label="Alternar tema" title="Trocar tema" aria-pressed="false"><span class="theme-icon" aria-hidden="true">☀️</span><span class="nav-copy theme-label">Modo claro</span></button><button class="signout-button" id="signOut" type="button"><span class="nav-icon" aria-hidden="true">↩</span><span class="nav-copy">Sair</span></button></div>
                 </nav>
 
                 <div class="workspace-content">

@@ -22,6 +22,8 @@
     const memberName = document.getElementById("memberName");
     const memberRole = document.getElementById("memberRole");
     const themeToggle = document.getElementById("themeToggle");
+    const themeIcon = themeToggle && themeToggle.querySelector(".theme-icon");
+    const themeLabel = themeToggle && themeToggle.querySelector(".theme-label");
     const planName = document.getElementById("planName");
     const planDescription = document.getElementById("planDescription");
     const billingPortal = document.getElementById("billingPortal");
@@ -320,6 +322,7 @@
         const metadata = user.user_metadata || {};
         memberName.textContent = (profile && profile.full_name) || metadata.full_name || metadata.name || user.email || "Conta HeartSpace";
         securityEmail.textContent = user.email || "Conta HeartSpace";
+        document.body.classList.add("is-workspace");
         accountLoading.hidden = true;
         profileOnboarding.hidden = true;
         memberArea.hidden = false;
@@ -338,7 +341,8 @@
         const isLight = theme === "light";
         document.body.classList.toggle("is-light", isLight);
         themeToggle.setAttribute("aria-pressed", String(isLight));
-        themeToggle.textContent = isLight ? "🌙" : "☀️";
+        if (themeIcon) themeIcon.textContent = isLight ? "🌙" : "☀️";
+        if (themeLabel) themeLabel.textContent = isLight ? "Modo escuro" : "Modo claro";
         localStorage.setItem("heartspace-theme", isLight ? "light" : "dark");
     }
 
@@ -385,6 +389,7 @@
         if (profile.avatar_url) profileAvatarPreview.src = profile.avatar_url;
         profileOnboardingTitle.textContent = editing ? "Edite seu perfil." : "Antes de entrar, conte um pouco sobre você.";
         accountLoading.hidden = true;
+        document.body.classList.remove("is-workspace");
         memberArea.hidden = true;
         profileOnboarding.hidden = false;
     }
@@ -2015,6 +2020,7 @@
     signOut.addEventListener("click", function () {
         const token = localStorage.getItem(sessionKey("access-token"));
         clearSession();
+        document.body.classList.remove("is-workspace");
         memberArea.hidden = true;
         window.location.replace("../login/");
         if (isConfigured && token) {
