@@ -66,8 +66,10 @@ Assim o Docs consegue informar se a página está atualizada, se há uma revisã
 1. A pessoa escolhe **Publicar no HeartSpace**.
 2. O Docs oferece a revisão aprovada mais recente, sem permitir publicar uma revisão não aprovada.
 3. A pessoa escolhe um formato, completa os metadados e confirma.
-4. O Docs gera um snapshot serializado, envia à Function e recebe `publication.id`.
-5. O Docs salva o vínculo e mostra o endereço público.
+4. O Docs gera um snapshot serializado e grava um pedido durável no projeto.
+5. O Hub valida o pedido, chama a Function com a sessão temporária da pessoa e
+   grava o recibo.
+6. O Docs consome o recibo, salva o vínculo e mostra o endereço público.
 
 ### Atualizar conteúdo publicado
 
@@ -90,9 +92,13 @@ Não reenvie a mesma `source_revision_id` como uma nova publicação. O históri
 - **Retirar do ar** salva `status: "withdrawn"`. O link deixa de responder publicamente, mas o documento e o histórico permanecem.
 - **Republicar** exige uma nova revisão aprovada com snapshot. Não reutilize silenciosamente a revisão que já originou uma versão pública.
 
-## Contrato da API
+## Contrato da API — Hub → site
 
-O Docs chama a mesma Supabase Edge Function do painel:
+O **Hub**, e não o Docs, chama a mesma Supabase Edge Function do painel. O
+Docs só cria pedidos em `.heartspace/docs_publication_requests/`; assim ele não
+precisa conhecer URL de Function, domínio público, token persistente ou detalhes
+de transporte. O Hub usa a sessão temporária da própria pessoa para encaminhar
+o pedido:
 
 ```text
 POST {HEARTSPACE_ACCOUNT_CONFIG.studioFunctionUrl}
@@ -106,9 +112,11 @@ apikey: <supabase_anon_key>
 Content-Type: application/json
 ```
 
-O Docs usa o token da sessão da pessoa. Nunca use `service_role`, chaves privadas ou tokens de outra pessoa. A Function confere associação ao estúdio, projeto, cargos e aprovação da revisão no servidor.
+O Hub usa o token temporário da sessão da pessoa. Nunca use `service_role`,
+chaves privadas ou tokens de outra pessoa. A Function confere associação ao
+estúdio, projeto, app habilitado, cargos e aprovação da revisão no servidor.
 
-### Publicar uma revisão aprovada
+### Corpo encaminhado pelo Hub para publicar uma revisão aprovada
 
 ```json
 {
@@ -340,7 +348,7 @@ Formato v1:
   "app_id": "docs",
   "project_id": "uuid-do-projeto",
   "relative_path": "Docs/gdd/combat.heartdoc",
-  "created_at_unix": 1790000000
+  "changed_at_unix": 1790000000
 }
 ```
 
@@ -393,15 +401,25 @@ Quando houver alteração relevante, o Docs deve gravar o arquivo final, atualiz
 
 Menções, comentários e revisão usam as permissões entregues pelo Hub e o Supabase como autoridade. O Docs pode criar notificações e comentários remotos usando a sessão do usuário, mas deve manter uma fila local idempotente se a rede cair. Cada operação precisa de um `client_operation_id` único para não duplicar comentário, menção ou notificação depois de uma tentativa incerta.
 
-### Publicação via Hub quando o Docs estiver offline ou sem sessão
+### Publicação via Hub
 
-Quando não houver sessão válida para chamar `save_publication`, o Docs pode criar um pedido de publicação para o Hub em vez de abandonar o trabalho:
+O Docs sempre cria um pedido de publicação para o Hub. Mesmo quando uma sessão
+está ativa, o Hub é o único componente nativo que chama `save_publication`; sem
+sessão ou com Hub fechado, o pedido apenas permanece durável até poder ser
+processado:
 
 ```text
 <ProjectRoot>/.heartspace/docs_publication_requests/<request_id>.json
 ```
 
-O pedido precisa conter `schema_version: 1`, `request_id`, `app_id: "docs"`, `studio_id`, `project_id` e um `payload` com `document_id`, `revision_id`, `revision_number`, título, slug, resumo, visibilidade e snapshot. O Hub valida projeto, permissão e revisão antes de chamar a Function `save_publication`.
+O pedido precisa conter `schema_version: 1`, `request_id`, `app_id: "docs"`, `studio_id`, `project_id`, uma `operation` explícita e um `payload`. Operações aceitas pelo Hub:
+
+- `publish`: cria uma publicação nova; não envie `publication_id`; exige `document_id`, `revision_id`, `revision_number`, título, slug, resumo, visibilidade e snapshot.
+- `republish`: atualiza uma publicação existente com nova revisão aprovada; exige os mesmos campos de `publish` mais `publication_id`.
+- `update_metadata`: altera título, slug, resumo, visibilidade ou estado sem enviar snapshot; exige `publication_id` e os metadados completos.
+- `withdraw`: retira uma publicação do ar; exige `publication_id` e os metadados completos para o contrato atual da Function.
+
+O Hub valida projeto, app habilitado, permissão e formato antes de chamar a Function `save_publication`. Não omita `operation` e não reutilize uma mesma `request_id`.
 
 O retorno é gravado pelo Hub em:
 

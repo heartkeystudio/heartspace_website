@@ -1037,6 +1037,11 @@
         }
     }
 
+    async function loadBetaAccess(token) {
+        const data = await studioRequest("get_beta_access", token);
+        return data.beta || { allowed: false };
+    }
+
     profileForm.addEventListener("submit", async function (event) {
         event.preventDefault();
         if (!profileForm.checkValidity()) return profileForm.reportValidity();
@@ -1889,6 +1894,12 @@
             });
             if (!response.ok) throw new Error("Sessão expirada");
             const user = await response.json();
+            const beta = await loadBetaAccess(token);
+            if (!beta.allowed) {
+                clearSession();
+                window.location.replace("../login/?beta=denied");
+                return;
+            }
             const profile = await loadProfile(token);
             currentProfile = profile;
             const profileComplete = profile && profile.profile_completed_at && profile.full_name && profile.nickname && Number(profile.age) > 0 && profile.profession;

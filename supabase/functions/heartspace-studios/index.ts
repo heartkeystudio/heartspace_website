@@ -19,6 +19,33 @@ function response(body: Record<string, unknown>, status = 200, origin: string | 
   return new Response(JSON.stringify(body), { status, headers });
 }
 
+function betaRedirectUrl(value: unknown) {
+  const fallback = (Deno.env.get("HEARTSPACE_ACCOUNT_URL") || "https://www.heartspace.tools/account/").replace(/\/+$/, "/");
+  if (typeof value !== "string") return fallback;
+  try {
+    const url = new URL(value);
+    const allowed = allowedOrigin(url.origin);
+    return allowed ? url.toString() : fallback;
+  } catch { return fallback; }
+}
+
+async function betaAccessForUser(admin: any, user: any) {
+  const email = typeof user?.email === "string" ? user.email.trim().toLowerCase() : "";
+  if (!email) return { allowed: false };
+  const { data, error } = await admin.from("beta_access")
+    .select("id, status").eq("email", email).maybeSingle();
+  if (error) {
+    console.error("beta access lookup failed", { code: error.code, message: error.message });
+    throw new Error("Não foi possível verificar o acesso ao beta.");
+  }
+  if (!data || data.status !== "approved") return { allowed: false };
+  const now = new Date().toISOString();
+  const { error: updateError } = await admin.from("beta_access")
+    .update({ user_id: user.id, last_access_at: now, updated_at: now }).eq("id", data.id);
+  if (updateError) console.error("beta access update failed", { code: updateError.code, message: updateError.message });
+  return { allowed: true };
+}
+
 function slugFrom(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
@@ -326,6 +353,34 @@ Deno.serve(async (request) => {
   let payload: Record<string, unknown>;
   try { payload = await request.json(); } catch { return response({ error: "Corpo da requisição inválido." }, 400, origin); }
 
+  // A entrada no beta passa pela Function para impedir a criação indiscriminada
+  // de contas diretamente no endpoint público de OTP do Supabase.
+  if (payload.action === "request_beta_magic_link") {
+    const email = typeof payload.email === "string" ? payload.email.trim().toLowerCase() : "";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
+      return response({ error: "Informe um e-mail válido." }, 400, origin);
+    }
+    const { data: access, error: accessError } = await admin.from("beta_access")
+      .select("status").eq("email", email).maybeSingle();
+    if (accessError) {
+      console.error("beta magic link lookup failed", { code: accessError.code, message: accessError.message });
+      return response({ error: "Não foi possível verificar o acesso ao beta agora." }, 500, origin);
+    }
+    if (access?.status === "approved") {
+      const { error } = await admin.auth.signInWithOtp({
+        email,
+        options: { shouldCreateUser: true, emailRedirectTo: betaRedirectUrl(payload.redirect_to) },
+      });
+      if (error) {
+        console.error("beta magic link failed", { message: error.message });
+        return response({ error: "Não foi possível enviar o link agora." }, 500, origin);
+      }
+    }
+    // A resposta é propositalmente igual para e-mails não cadastrados: ela não
+    // revela a lista de pessoas que participam do beta.
+    return response({ ok: true }, 200, origin);
+  }
+
   if (payload.action === "get_publication") {
     const publicationId = typeof payload.publication_id === "string" ? payload.publication_id : "";
     if (!publicationId) return response({ error: "Publicação inválida." }, 400, origin);
@@ -346,6 +401,11 @@ Deno.serve(async (request) => {
   const token = authorization.slice("Bearer ".length);
   const { data: authData, error: authError } = await admin.auth.getUser(token);
   if (authError || !authData.user) return response({ error: "Sessão inválida ou expirada." }, 401, origin);
+  let beta;
+  try { beta = await betaAccessForUser(admin, authData.user); }
+  catch (error) { return response({ error: error instanceof Error ? error.message : "Não foi possível verificar o acesso ao beta." }, 500, origin); }
+  if (payload.action === "get_beta_access") return response({ beta }, 200, origin);
+  if (!beta.allowed) return response({ error: "Seu acesso ao beta fechado ainda não foi liberado.", code: "BETA_ACCESS_REQUIRED" }, 403, origin);
   await syncProfileFromAuth(admin, authData.user);
 
   if (payload.action === "get_profile") {
