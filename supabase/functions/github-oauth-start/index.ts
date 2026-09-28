@@ -1,9 +1,16 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const headers = { "Access-Control-Allow-Origin": "https://www.heartspace.tools", "Access-Control-Allow-Headers": "authorization, apikey, content-type", "Access-Control-Allow-Methods": "POST, OPTIONS", "Content-Type": "application/json", "Cache-Control": "no-store" };
+const allowedOrigins = new Set(["https://heartspace.tools", "https://www.heartspace.tools", "https://heartspace.com.br", "https://www.heartspace.com.br"]);
+function headersFor(request: Request) {
+  const origin = request.headers.get("origin") || "";
+  if (!allowedOrigins.has(origin)) return null;
+  return { "Access-Control-Allow-Origin": origin, "Access-Control-Allow-Headers": "authorization, apikey, content-type", "Access-Control-Allow-Methods": "POST, OPTIONS", "Content-Type": "application/json", "Cache-Control": "no-store", Vary: "Origin" };
+}
 const randomState = () => btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(32)))).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
 
 Deno.serve(async (request) => {
+  const headers = headersFor(request);
+  if (!headers) return new Response(JSON.stringify({ error: "origin_not_allowed" }), { status: 403, headers: { "Content-Type": "application/json" } });
   if (request.method === "OPTIONS") return new Response("ok", { headers });
   if (request.method !== "POST") return new Response(JSON.stringify({ error: "method_not_allowed" }), { status: 405, headers });
   const auth = request.headers.get("Authorization") || "";

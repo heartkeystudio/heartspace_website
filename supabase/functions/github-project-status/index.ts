@@ -2,7 +2,12 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { SignJWT, importPKCS8 } from "npm:jose@5";
 import { createPrivateKey } from "node:crypto";
 
-const headers = { "Access-Control-Allow-Origin": "https://www.heartspace.tools", "Access-Control-Allow-Headers": "authorization, apikey, content-type", "Access-Control-Allow-Methods": "POST, OPTIONS", "Content-Type": "application/json", "Cache-Control": "no-store" };
+const allowedOrigins = new Set(["https://heartspace.tools", "https://www.heartspace.tools", "https://heartspace.com.br", "https://www.heartspace.com.br"]);
+function headersFor(request: Request) {
+  const origin = request.headers.get("origin") || "";
+  if (!allowedOrigins.has(origin)) return null;
+  return { "Access-Control-Allow-Origin": origin, "Access-Control-Allow-Headers": "authorization, apikey, content-type", "Access-Control-Allow-Methods": "POST, OPTIONS", "Content-Type": "application/json", "Cache-Control": "no-store", Vary: "Origin" };
+}
 
 async function authenticatedUser(request: Request, url: string, anon: string) {
   const authorization = request.headers.get("Authorization") || "";
@@ -27,6 +32,8 @@ async function githubJson(path: string, token: string) {
 }
 
 Deno.serve(async (request) => {
+  const headers = headersFor(request);
+  if (!headers) return new Response(JSON.stringify({ error: "origin_not_allowed" }), { status: 403, headers: { "Content-Type": "application/json" } });
   if (request.method === "OPTIONS") return new Response("ok", { headers });
   if (request.method !== "POST") return new Response(JSON.stringify({ error: "method_not_allowed" }), { status: 405, headers });
   const url = Deno.env.get("SUPABASE_URL") || ""; const anon = Deno.env.get("SUPABASE_ANON_KEY") || ""; const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";

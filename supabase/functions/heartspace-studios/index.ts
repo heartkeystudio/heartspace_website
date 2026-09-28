@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 function allowedOrigin(origin: string | null) {
-  const configured = (Deno.env.get("HEARTSPACE_ALLOWED_ORIGINS") || "https://heartspace.tools,https://www.heartspace.tools")
+  const configured = (Deno.env.get("HEARTSPACE_ALLOWED_ORIGINS") || "https://heartspace.tools,https://www.heartspace.tools,https://heartspace.com.br,https://www.heartspace.com.br")
     .split(",").map((value) => value.trim()).filter(Boolean);
   return origin && configured.includes(origin) ? origin : null;
 }
