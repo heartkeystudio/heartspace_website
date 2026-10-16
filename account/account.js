@@ -18,6 +18,7 @@
     const profileProfession = document.getElementById("profileProfession");
     const profilePhone = document.getElementById("profilePhone");
     const profileStatus = document.getElementById("profileStatus");
+    const cancelProfileEdit = document.getElementById("cancelProfileEdit");
     const memberArea = document.getElementById("memberArea");
     const memberName = document.getElementById("memberName");
     const memberRole = document.getElementById("memberRole");
@@ -214,6 +215,7 @@
     let activeProjectAdmin = null;
     let currentStudioProjects = [];
     let currentProfile = null;
+    let currentAccountUser = null;
     let hasManagedStudio = false;
     let currentUserId = "";
     let pendingStudioIconFile = null;
@@ -318,6 +320,7 @@
     }
 
     function showMemberArea(user, profile) {
+        currentAccountUser = user || currentAccountUser;
         currentUserId = user.id || currentUserId;
         const metadata = user.user_metadata || {};
         memberName.textContent = (profile && profile.full_name) || metadata.full_name || metadata.name || user.email || "Conta HeartSpace";
@@ -388,6 +391,9 @@
         profileAvatarPreview.hidden = !profile.avatar_url;
         if (profile.avatar_url) profileAvatarPreview.src = profile.avatar_url;
         profileOnboardingTitle.textContent = editing ? "Edite seu perfil." : "Antes de entrar, conte um pouco sobre você.";
+        cancelProfileEdit.hidden = !editing;
+        profileStatus.textContent = "";
+        profileStatus.className = "form-status";
         accountLoading.hidden = true;
         document.body.classList.remove("is-workspace");
         memberArea.hidden = true;
@@ -396,6 +402,12 @@
 
     profileWorkspaceButton.addEventListener("click", function () {
         showProfileOnboarding(currentProfile || {}, true);
+    });
+
+    cancelProfileEdit.addEventListener("click", function () {
+        if (!currentAccountUser) return;
+        pendingProfileAvatarFile = null;
+        showMemberArea(currentAccountUser, currentProfile);
     });
 
     function selectWorkspaceView(viewName) {
