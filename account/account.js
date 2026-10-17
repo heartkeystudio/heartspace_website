@@ -321,6 +321,29 @@
         return storedToken;
     }
 
+    const docsOrigin = new URL(docsUrl, window.location.href).origin;
+    window.addEventListener("message", function (event) {
+        if (event.origin !== docsOrigin || !event.source || !event.data || event.data.type !== "heartspace-docs-session-request") return;
+        const requester = event.source;
+        getValidAccessToken().then(function (accessToken) {
+            requester.postMessage({
+                type: "heartspace-docs-session",
+                accessToken: accessToken || "",
+                refreshToken: localStorage.getItem(sessionKey("refresh-token")) || "",
+                expiresAt: localStorage.getItem(sessionKey("expires-at")) || ""
+            }, docsOrigin);
+        }).catch(function () {
+            requester.postMessage({ type: "heartspace-docs-session", accessToken: "" }, docsOrigin);
+        });
+    });
+
+    if (openDocsLink) openDocsLink.addEventListener("click", function (event) {
+        if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        const docsWindow = window.open(openDocsLink.href, "_blank");
+        if (!docsWindow) window.location.assign(openDocsLink.href);
+    });
+
     function showMemberArea(user, profile) {
         currentAccountUser = user || currentAccountUser;
         currentUserId = user.id || currentUserId;
