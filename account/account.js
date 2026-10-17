@@ -345,8 +345,11 @@
     if (openDocsLink) openDocsLink.addEventListener("click", function (event) {
         if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
         event.preventDefault();
-        const docsWindow = window.open(openDocsLink.href, "_blank");
-        if (!docsWindow) window.location.assign(openDocsLink.href);
+        const selectedProjectId = projectContextSelect && projectContextSelect.value || activeProjectId;
+        const launchUrl = docsLaunchUrl(selectedProjectId);
+        openDocsLink.href = launchUrl;
+        const docsWindow = window.open(launchUrl, "_blank");
+        if (!docsWindow) window.location.assign(launchUrl);
     });
 
     function showMemberArea(user, profile) {
