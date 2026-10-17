@@ -3,6 +3,11 @@
 
     const config = window.HEARTSPACE_ACCOUNT_CONFIG || {};
     const docsUrl = config.docsUrl || "https://docs.heartspace.tools/";
+    function docsLaunchUrl(projectId) {
+        const params = new URLSearchParams({ source: "dashboard" });
+        if (projectId) params.set("project_id", projectId);
+        return docsUrl + "?" + params.toString();
+    }
     const googleButton = document.getElementById("googleSignIn");
     const magicLinkForm = document.getElementById("magicLinkForm");
     const emailInput = document.getElementById("email");
@@ -1358,7 +1363,7 @@
         appsProjectSelect.disabled = !projects.length;
         if (projects.length) appsProjectSelect.value = activeProjectId;
         projectContextLabel.hidden = !projects.length;
-        if (openDocsLink) openDocsLink.href = docsUrl + (activeProjectId ? "?project_id=" + encodeURIComponent(activeProjectId) + "&source=dashboard" : "");
+        if (openDocsLink) openDocsLink.href = docsLaunchUrl(activeProjectId);
         if (activeProjectId) {
             projectContextSelect.value = activeProjectId;
             sessionStorage.setItem(sessionKey("active-project"), activeProjectId);
@@ -1677,7 +1682,7 @@
 
     projectContextSelect.addEventListener("change", async function () {
         activeProjectId = projectContextSelect.value;
-        if (openDocsLink) openDocsLink.href = docsUrl + (activeProjectId ? "?project_id=" + encodeURIComponent(activeProjectId) + "&source=dashboard" : "");
+        if (openDocsLink) openDocsLink.href = docsLaunchUrl(activeProjectId);
         sessionStorage.setItem(sessionKey("active-project"), activeProjectId);
         syncProjectContextSelects();
         const token = await getValidAccessToken().catch(function () { return null; });

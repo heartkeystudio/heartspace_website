@@ -1,6 +1,11 @@
 -- Docs: gravação condicional, revisões imutáveis e trilha de auditoria.
 -- Executar depois de 20260925000100_docs_authorization.sql.
 
+-- No Supabase, extensões como pgcrypto ficam no schema `extensions`, que não
+-- faz parte do search_path restrito usado pelas RPCs abaixo.
+create schema if not exists extensions;
+create extension if not exists pgcrypto with schema extensions;
+
 create table if not exists public.doc_revisions (
   id uuid primary key default gen_random_uuid(),
   doc_id uuid not null references public.docs(id) on delete cascade,
@@ -38,7 +43,7 @@ create or replace function public.heartspace_save_doc_content(
 ) returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   current_doc public.docs%rowtype;
