@@ -2,6 +2,7 @@
     "use strict";
 
     const config = window.HEARTSPACE_ACCOUNT_CONFIG || {};
+    const docsUrl = config.docsUrl || "https://docs.heartspace.tools/";
     const googleButton = document.getElementById("googleSignIn");
     const magicLinkForm = document.getElementById("magicLinkForm");
     const emailInput = document.getElementById("email");
@@ -95,6 +96,7 @@
     const pendingInviteList = document.getElementById("pendingInviteList");
     const roleCatalog = document.getElementById("roleCatalog");
     const projectList = document.getElementById("projectList");
+    const openDocsLink = document.getElementById("openDocsLink");
     const projectsTitle = document.getElementById("projectsTitle");
     const projectsCopy = document.getElementById("projectsCopy");
     const createProjectForm = document.getElementById("createProjectForm");
@@ -1138,7 +1140,7 @@
             studiosCopy.textContent = "Comece criando o primeiro estúdio da sua conta.";
             const option = new Option("Criar novo estúdio…", "__create__"); studioContextSelect.add(option); studioContextSelect.value = "__create__"; studioContextSelect.disabled = false;
             overviewStudioTitle.textContent = "Crie seu primeiro estúdio";
-            overviewStudioCopy.textContent = "Seu estúdio organiza pessoas, acessos e projetos compartilhados. O trabalho continua local no Hub.";
+            overviewStudioCopy.textContent = "Seu estúdio organiza pessoas, acessos e projetos. Abra o Docs web para escrever documentos compartilhados com sua equipe.";
             studioList.hidden = true;
             inviteMemberForm.hidden = true;
             activeStudioId = "";
@@ -1317,7 +1319,7 @@
         currentStudioProjects = projects;
         overviewProjectCount.textContent = String(projects.length);
         projectsTitle.textContent = projects.length ? (projects.length === 1 ? "1 projeto neste estúdio." : projects.length + " projetos neste estúdio.") : "Seu próximo projeto começa aqui.";
-        projectsCopy.textContent = projects.length ? "Os projetos criados aqui já podem ser reconhecidos pelo Hub. O conteúdo e os arquivos continuam locais." : "O site cria a referência compartilhada. Quando você abrir o Hub, ela se transforma no seu espaço de trabalho local.";
+        projectsCopy.textContent = projects.length ? "Os projetos e acessos da equipe ficam conectados. Abra o Docs para criar e editar documentos online neste projeto." : "Crie um projeto e abra o Docs pelo Dashboard ou pelo Hub para trabalhar com a equipe.";
         projects.forEach(function (project) { appendListRow(projectList, project.name || "Projeto sem título", (project.status === "archived" ? "Arquivado" : "Ativo") + " · " + (project.description || "Sem descrição") + " · criado em " + formatDate(project.created_at)); });
         projectList.hidden = !projects.length;
         createProjectForm.hidden = !canManage;
@@ -1333,6 +1335,7 @@
         appsProjectSelect.disabled = !projects.length;
         if (projects.length) appsProjectSelect.value = activeProjectId;
         projectContextLabel.hidden = !projects.length;
+        if (openDocsLink) openDocsLink.href = docsUrl + (activeProjectId ? "?project_id=" + encodeURIComponent(activeProjectId) + "&source=dashboard" : "");
         if (activeProjectId) {
             projectContextSelect.value = activeProjectId;
             sessionStorage.setItem(sessionKey("active-project"), activeProjectId);
@@ -1651,6 +1654,7 @@
 
     projectContextSelect.addEventListener("change", async function () {
         activeProjectId = projectContextSelect.value;
+        if (openDocsLink) openDocsLink.href = docsUrl + (activeProjectId ? "?project_id=" + encodeURIComponent(activeProjectId) + "&source=dashboard" : "");
         sessionStorage.setItem(sessionKey("active-project"), activeProjectId);
         syncProjectContextSelects();
         const token = await getValidAccessToken().catch(function () { return null; });

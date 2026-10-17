@@ -9,6 +9,7 @@
 window.HEARTSPACE_ACCOUNT_CONFIG = {
     supabaseUrl: "https://yhjetfilhsjtjfvgqfod.supabase.co",
     supabaseAnonKey: "sb_publishable_sZOy3pHkcIbCQr2PwPSTog_Yw5BAxMR",
+    docsUrl: "https://docs.heartspace.tools/",
     studioFunctionUrl: "https://yhjetfilhsjtjfvgqfod.supabase.co/functions/v1/heartspace-studio",
     billingFunctionUrl: "",
     plans: {
