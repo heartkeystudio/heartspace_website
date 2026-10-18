@@ -499,11 +499,6 @@
         });
     }
 
-    function canOpenStudioRequiredView(button) {
-        if (button.hasAttribute("data-studio-member-required")) return currentStudios.length > 0;
-        return hasManagedStudio;
-    }
-
     const integrationTitles = { cloud: "Google Drive", discord: "Discord", github: "GitHub" };
     async function openIntegrationModal(integration) {
         const panel = workspacePanels.find(function (candidate) { return candidate.dataset.workspacePanel === integration; });
@@ -547,7 +542,7 @@
 
     workspaceButtons.forEach(function (button) {
         button.addEventListener("click", function () {
-            if (button.hasAttribute("data-studio-required") && !canOpenStudioRequiredView(button)) {
+            if (button.hasAttribute("data-studio-required") && !hasManagedStudio) {
                 selectWorkspaceView("create-studio");
                 studioName.focus();
                 return;
@@ -1219,12 +1214,9 @@
         currentStudios = studios;
         hasManagedStudio = studios.some(function (membership) { return membership.role === "owner" || membership.role === "admin"; });
         studioRequiredButtons.forEach(function (button) {
-            const canOpen = canOpenStudioRequiredView(button);
-            button.classList.toggle("is-unavailable", !canOpen);
-            button.setAttribute("aria-disabled", String(!canOpen));
-            button.title = canOpen ? "" : button.hasAttribute("data-studio-member-required")
-                ? "Faça parte de um estúdio para acessar Tasks."
-                : "Crie um estúdio ou tenha acesso de Admin para usar esta área.";
+            button.classList.toggle("is-unavailable", !hasManagedStudio);
+            button.setAttribute("aria-disabled", String(!hasManagedStudio));
+            button.title = hasManagedStudio ? "" : "Crie um estúdio ou tenha acesso de Admin para usar esta área.";
         });
         studioList.replaceChildren();
         inviteStudio.replaceChildren();
