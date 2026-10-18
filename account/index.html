@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#9501d8">
     <link rel="icon" type="image/png" href="../assets/icons/logo.png">
     <title>Conta | HeartSpace</title>
-    <link rel="stylesheet" href="account.css?v=20261016-03">
+    <link rel="stylesheet" href="account.css?v=20261017-12">
 </head>
 <body>
     <main class="account-shell">
@@ -31,6 +31,7 @@
                     <button class="workspace-nav-item is-active" type="button" data-workspace-view="overview"><span class="nav-icon">⌂</span><span class="nav-copy">Visão geral</span></button>
                     <button class="workspace-nav-item" type="button" data-workspace-view="studios" data-studio-required><span class="nav-icon">◇</span><span class="nav-copy">Estúdios</span></button>
                     <button class="workspace-nav-item" type="button" data-workspace-view="projects" data-studio-required><span class="nav-icon">▣</span><span class="nav-copy">Projetos</span></button>
+                    <button class="workspace-nav-item" type="button" data-workspace-view="tasks" data-studio-required title="Tasks"><span class="nav-icon">✓</span><span class="nav-copy">Tasks</span></button>
                     <button class="workspace-nav-item" type="button" data-workspace-view="apps" data-studio-required><span class="nav-icon">▦</span><span class="nav-copy">Apps</span></button>
                     <button class="workspace-nav-item" type="button" data-workspace-view="integrations" data-studio-required><span class="nav-icon">⌘</span><span class="nav-copy">API e integrações</span></button>
                     <button class="workspace-nav-item" type="button" data-workspace-view="members" data-studio-required><span class="nav-icon">◎</span><span class="nav-copy">Membros</span></button>
@@ -48,7 +49,7 @@
                     <section class="workspace-view is-active" data-workspace-panel="overview" aria-labelledby="memberTitle">
                         <p class="eyebrow">VISÃO GERAL</p>
                         <h1 id="memberTitle">Seu espaço começa aqui.</h1>
-                        <p class="workspace-lead">O site organiza pessoas, acesso e tudo que é compartilhado. O Hub continua sendo o lugar do trabalho local.</p>
+                        <p class="workspace-lead">O site conecta sua equipe e organiza o trabalho compartilhado. Use o Hub para as ferramentas de criação local e o Tasks para coordenar o projeto com a equipe.</p>
                         <div class="overview-metrics"><article><span id="overviewStudioCount">0</span><small>ESTÚDIOS</small></article><article><span id="overviewProjectCount">—</span><small>PROJETOS VINCULADOS</small></article><article><span>—</span><small>PUBLICAÇÕES ATIVAS</small></article></div>
                         <div class="overview-grid">
                             <article class="overview-card overview-card-accent"><p class="panel-kicker">ESTÚDIO</p><h2 id="overviewStudioTitle">Crie seu primeiro estúdio</h2><p id="overviewStudioCopy">Seu estúdio organiza pessoas, acessos e projetos compartilhados. O trabalho continua local no Hub.</p><button class="card-action" type="button" data-go-to="studios">Gerenciar estúdios</button></article>
@@ -56,6 +57,25 @@
                             <article class="overview-card"><p class="panel-kicker">PUBLICAÇÕES</p><h2>Documentos públicos, no seu controle</h2><p>Press kits, wikis e links não listados ficarão associados a um projeto e poderão ser revogados a qualquer momento.</p><button class="card-action" type="button" data-go-to="publications">Explorar publicações</button></article>
                             <article class="overview-card" id="overviewGithubCard"><p class="panel-kicker">GITHUB</p><h2 id="overviewGithubTitle">Código ainda não conectado</h2><p id="overviewGithubCopy">Vincule o GitHub App e os repositórios do estúdio para acompanhar sinais técnicos aqui.</p><button class="card-action" type="button" data-open-integration="github" aria-haspopup="dialog">Abrir integração GitHub</button></article>
                         </div>
+                    </section>
+
+                    <section class="workspace-view tasks-workspace-view" data-workspace-panel="tasks" hidden>
+                        <p class="eyebrow">TRABALHO EM EQUIPE</p><h1 id="tasksProjectTitle">Tasks</h1>
+                        <p class="workspace-lead">Organize o trabalho da game jam com a equipe. As mudanças são compartilhadas pelo projeto.</p>
+                        <nav class="tasks-tabs" aria-label="Área de trabalho Tasks" role="tablist"><button type="button" class="is-active" data-tasks-tab="backlog" role="tab" aria-selected="true">Backlog</button><button type="button" data-tasks-tab="board" role="tab" aria-selected="false">Quadro ativo</button></nav>
+                        <section class="tasks-view is-active" data-tasks-view="backlog" role="tabpanel">
+                            <div class="tasks-view-heading"><div><h2>Sprints</h2><p>Arraste as tarefas do backlog para distribuir o trabalho.</p></div><div class="tasks-heading-actions"><button class="row-button" id="openCreateSprint" type="button">+ Sprint</button><button class="portal-button" id="openCreateTask" type="button">+ Tarefa</button></div></div>
+                            <div class="tasks-sprints" id="tasksSprints"></div>
+                            <details class="tasks-backlog-deck" open><summary class="tasks-backlog-heading"><span><strong>Backlog geral</strong><small id="tasksCount">0 tarefas sem sprint · arraste para uma sprint</small></span><button class="row-button" id="refreshTasks" type="button">Atualizar</button></summary><div class="tasks-backlog-resize"><div class="tasks-backlog-list tasks-dropzone" id="tasksBacklogList" data-drop-backlog aria-live="polite"></div></div></details>
+                        </section>
+                        <section class="tasks-view" data-tasks-view="board" role="tabpanel" hidden>
+                            <div class="tasks-board-toolbar"><label class="tasks-sprint-picker">Sprint<select id="tasksActiveSprint" aria-label="Sprint do quadro ativo"><option value="">Selecione uma sprint</option></select></label><label class="tasks-search"><span aria-hidden="true">⌕</span><input id="tasksSearch" type="search" placeholder="Buscar tarefas…" aria-label="Buscar tarefas"></label><label class="tasks-mine-filter"><input id="tasksOnlyMine" type="checkbox"><span>Minhas tarefas</span></label><button class="portal-button" id="openCreateTaskFromBoard" type="button">+ Tarefa</button></div>
+                            <div class="tasks-board" id="tasksBoard" aria-live="polite"></div>
+                        </section>
+                        <p class="form-status tasks-global-status" id="tasksStatus" aria-live="polite"></p>
+                        <dialog class="tasks-modal" id="createTaskDialog" aria-labelledby="createTaskTitle"><form id="taskCreateForm"><header class="tasks-modal-header"><div><p class="panel-kicker">NOVA TAREFA</p><h2 id="createTaskTitle">Adicionar ao trabalho</h2></div><button class="tasks-modal-close" type="button" data-close-task-modal aria-label="Fechar">×</button></header><div class="tasks-modal-fields"><label>Título<input id="taskTitleInput" type="text" maxlength="160" placeholder="Ex.: Criar tela de início" required></label><label>Descrição<textarea id="taskDescriptionInput" maxlength="2000" rows="4" placeholder="Contexto, objetivo e próximos passos"></textarea></label><div class="tasks-modal-field-row"><label>Responsável<select id="taskAssigneeInput"><option value="">Sem responsável</option></select></label><label>Prioridade<select id="taskPriorityInput"><option value="low">Baixa</option><option value="normal" selected>Normal</option><option value="high">Alta</option></select></label></div><div class="tasks-modal-field-row"><label>Prazo<input id="taskDueDateInput" type="date"></label><label>Sprint<select id="taskSprintInput"><option value="">Backlog geral</option></select></label></div></div><p class="form-status" id="taskCreateStatus" aria-live="polite"></p><footer class="tasks-modal-actions"><button class="row-button" type="button" data-close-task-modal>Cancelar</button><button class="portal-button" type="submit">Criar tarefa</button></footer></form></dialog>
+                        <dialog class="tasks-modal" id="createSprintDialog" aria-labelledby="createSprintTitle"><form id="sprintCreateForm"><header class="tasks-modal-header"><div><p class="panel-kicker">NOVA SPRINT</p><h2 id="createSprintTitle">Criar sprint</h2></div><button class="tasks-modal-close" type="button" data-close-task-modal aria-label="Fechar">×</button></header><div class="tasks-modal-fields"><label>Nome<input id="sprintNameInput" type="text" maxlength="100" placeholder="Ex.: Semana 1" required></label><label>Objetivo<textarea id="sprintGoalInput" maxlength="500" rows="3" placeholder="Qual entrega queremos concluir?"></textarea></label><div class="tasks-modal-field-row"><label>Início<input id="sprintStartInput" type="date"></label><label>Fim<input id="sprintEndInput" type="date"></label></div></div><p class="form-status" id="sprintCreateStatus" aria-live="polite"></p><footer class="tasks-modal-actions"><button class="row-button" type="button" data-close-task-modal>Cancelar</button><button class="portal-button" type="submit">Criar sprint</button></footer></form></dialog>
+                        <dialog class="tasks-modal tasks-detail-modal" id="taskDetailsDialog" aria-labelledby="taskDetailsHeading"><header class="tasks-modal-header"><div><p class="panel-kicker">DETALHES DA TAREFA</p><h2 id="taskDetailsHeading">Tarefa</h2></div><button class="tasks-modal-close" type="button" data-close-task-modal aria-label="Fechar">×</button></header><div class="tasks-detail-layout"><form id="taskDetailsForm"><input id="taskDetailsId" type="hidden"><div class="tasks-modal-fields"><label>Título<input id="taskDetailsTitle" type="text" maxlength="160" required></label><label>Descrição<textarea id="taskDetailsDescription" maxlength="2000" rows="7"></textarea></label><div class="tasks-modal-field-row"><label>Status<select id="taskDetailsStatus"><option value="todo">A fazer</option><option value="in_progress">Em andamento</option><option value="review">Em revisão</option><option value="done">Concluído</option></select></label><label>Responsável<select id="taskDetailsAssignee"><option value="">Sem responsável</option></select></label></div><div class="tasks-modal-field-row"><label>Prioridade<select id="taskDetailsPriority"><option value="low">Baixa</option><option value="normal">Normal</option><option value="high">Alta</option></select></label><label>Prazo<input id="taskDetailsDueDate" type="date"></label></div><label>Sprint<select id="taskDetailsSprint"><option value="">Backlog geral</option></select></label></div><p class="form-status" id="taskDetailsStatusMessage" aria-live="polite"></p><footer class="tasks-modal-actions"><button class="tasks-delete-button" id="deleteTaskButton" type="button">Excluir tarefa</button><button class="row-button" type="button" data-close-task-modal>Fechar</button><button class="portal-button" type="submit">Salvar alterações</button></footer></form><aside class="tasks-comments"><div><p class="panel-kicker">COMENTÁRIOS</p><div class="tasks-comment-list" id="taskCommentList"></div></div><form id="taskCommentForm"><label class="sr-only" for="taskCommentInput">Escreva um comentário</label><div class="tasks-comment-composer"><input id="taskCommentInput" type="text" maxlength="1000" placeholder="Escreva uma mensagem…" required><button type="submit" aria-label="Enviar comentário">➤</button></div><p class="form-status" id="taskCommentStatus" aria-live="polite"></p></form></aside></div></dialog>
                     </section>
 
                     <section class="workspace-view" data-workspace-panel="studios" hidden>
@@ -160,6 +180,7 @@
         </section>
     </div>
     <script src="config.js?v=20260924-12"></script>
-    <script src="account.js?v=20261017-03"></script>
+    <script src="tasks.js?v=20261017-08"></script>
+    <script src="account.js?v=20261017-10"></script>
 </body>
 </html>

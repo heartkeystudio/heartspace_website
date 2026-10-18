@@ -102,6 +102,49 @@
     const roleCatalog = document.getElementById("roleCatalog");
     const projectList = document.getElementById("projectList");
     const openDocsLink = document.getElementById("openDocsLink");
+    const tasksPanel = document.querySelector('[data-workspace-panel="tasks"]');
+    const taskApp = window.HeartspaceTasks.create(tasksPanel, {
+        getProjectId: function () { return activeProjectId; },
+        getProjectName: function () {
+            const project = currentStudioProjects.find(function (item) { return String(item.id) === String(activeProjectId); });
+            return project ? (project.name || "Projeto") : "";
+        },
+        getMembers: function () { return activeStudioAdmin && Array.isArray(activeStudioAdmin.members) ? activeStudioAdmin.members : []; },
+        getUserId: function () { return currentUserId; },
+        getUserName: function () { return currentProfile && (currentProfile.nickname || currentProfile.full_name) || memberName.textContent || "Membro da equipe"; },
+        api: {
+            list: async function (projectId) {
+                const data = await tasksRequest("tasks?select=id,project_id,title,description,status,assigned_to,sprint_id,sort_order,created_at&project_id=eq." + encodeURIComponent(projectId) + "&order=sort_order.asc,created_at.asc", { method: "GET" });
+                return Array.isArray(data) ? data : [];
+            },
+            listSprints: async function (projectId) {
+                const data = await tasksRequest("sprints?select=id,project_id,name,goal,start_date,end_date,status,completed_at,sort_order,created_at&project_id=eq." + encodeURIComponent(projectId) + "&order=sort_order.asc,created_at.asc", { method: "GET" });
+                return Array.isArray(data) ? data : [];
+            },
+            create: function (payload) { return tasksRequest("tasks", { method: "POST", body: JSON.stringify(payload) }); },
+            createSprint: function (payload) { return tasksRequest("sprints", { method: "POST", body: JSON.stringify(payload) }); },
+            moveSprintTasksToBacklog: function (sprintId, projectId) {
+                return tasksRequest("tasks?sprint_id=eq." + encodeURIComponent(sprintId) + "&project_id=eq." + encodeURIComponent(projectId), { method: "PATCH", body: JSON.stringify({ sprint_id: null }) });
+            },
+            deleteSprint: function (sprintId, projectId) {
+                return tasksRequest("sprints?id=eq." + encodeURIComponent(sprintId) + "&project_id=eq." + encodeURIComponent(projectId), { method: "DELETE" });
+            },
+            deleteTask: function (taskId, projectId) {
+                return tasksRequest("tasks?id=eq." + encodeURIComponent(taskId) + "&project_id=eq." + encodeURIComponent(projectId), { method: "DELETE" });
+            },
+            update: function (taskId, patch, projectId) {
+                return tasksRequest("tasks?id=eq." + encodeURIComponent(taskId) + "&project_id=eq." + encodeURIComponent(projectId), { method: "PATCH", body: JSON.stringify(patch) });
+            },
+            updateSprint: function (sprintId, patch, projectId) {
+                return tasksRequest("sprints?id=eq." + encodeURIComponent(sprintId) + "&project_id=eq." + encodeURIComponent(projectId), { method: "PATCH", body: JSON.stringify(patch) });
+            },
+            listComments: async function (taskId) {
+                const data = await tasksRequest("task_comments?select=id,task_id,user_id,user_name,content,created_at&task_id=eq." + encodeURIComponent(taskId) + "&order=created_at.asc", { method: "GET" });
+                return Array.isArray(data) ? data : [];
+            },
+            createComment: function (payload) { return tasksRequest("task_comments", { method: "POST", body: JSON.stringify(payload) }); }
+        }
+    });
     const projectsTitle = document.getElementById("projectsTitle");
     const projectsCopy = document.getElementById("projectsCopy");
     const createProjectForm = document.getElementById("createProjectForm");
@@ -505,6 +548,8 @@
                 return;
             }
             selectWorkspaceView(button.dataset.workspaceView);
+            if (button.dataset.workspaceView !== "tasks") taskApp.stopPolling();
+            if (button.dataset.workspaceView === "tasks") { taskApp.setProject(activeProjectId); taskApp.startPolling(); }
             if (button.dataset.workspaceView === "publications") loadPublications();
             if (button.dataset.workspaceView === "apps") loadProjectApps();
             if (button.dataset.workspaceView === "security") loadAuditLog();
@@ -515,6 +560,17 @@
     function setPublicationStatus(message, state) {
         publicationStatusMessage.textContent = message;
         publicationStatusMessage.className = "form-status" + (state ? " is-" + state : "");
+    }
+
+    async function tasksRequest(path, options) {
+        const token = await getValidAccessToken();
+        if (!token) throw new Error("Sua sessão expirou. Entre novamente.");
+        const response = await fetch(config.supabaseUrl.replace(/\/$/, "") + "/rest/v1/" + path, Object.assign({
+            headers: { "apikey": config.supabaseAnonKey, "Authorization": "Bearer " + token, "Content-Type": "application/json", "Prefer": "return=representation" }
+        }, options || {}));
+        const data = await response.json().catch(function () { return []; });
+        if (!response.ok) throw new Error(data.message || data.details || "O Tasks não conseguiu acessar os dados deste projeto (HTTP " + response.status + ").");
+        return data;
     }
 
     function resetPublicationEditor() {
@@ -1678,6 +1734,7 @@
         if (viewName === "projects") await loadActiveProject(token);
         if (viewName === "apps") await loadProjectApps();
         if (viewName === "publications") await loadPublications();
+        if (viewName === "tasks") taskApp.setProject(activeProjectId);
         if (viewName === "cloud") await loadCloudSync();
         if (viewName === "discord") await loadDiscord();
         if (viewName === "github") await loadGithubIntegration();
