@@ -157,13 +157,13 @@ const productionTemplates: Record<string, { label: string; permissions: Record<s
   game_development: {
     label: "Desenvolvimento de jogos",
     permissions: {
-      game_designer: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true, create_sprints: true },
+      game_designer: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true, create_sprints: true, tasks_approve: true },
       artist: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true },
       programmer: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true },
       audio: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true },
       narrative: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true },
       qa: { can_view_wiki: true, can_comment_wiki: true, view_all_tasks: true },
-      producer: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true, create_sprints: true, delete_sprints: true, manage_wiki_visibility: true },
+      producer: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true, create_sprints: true, delete_sprints: true, manage_wiki_visibility: true, tasks_approve: true },
       marketing: { can_view_wiki: true, can_comment_wiki: true, view_all_tasks: true },
     },
     colors: { game_designer: "#a855f7", artist: "#ec4899", programmer: "#22c55e", audio: "#f59e0b", narrative: "#38bdf8", qa: "#f97316", producer: "#e879f9", marketing: "#60a5fa" },
@@ -171,12 +171,12 @@ const productionTemplates: Record<string, { label: string; permissions: Record<s
   creative_studio: {
     label: "Estúdio criativo",
     permissions: {
-      direction: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true, create_sprints: true, manage_wiki_visibility: true },
+      direction: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true, create_sprints: true, manage_wiki_visibility: true, tasks_approve: true },
       design: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true },
       illustration: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true },
       video: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true },
       writing: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true },
-      production: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true, create_sprints: true, delete_sprints: true },
+      production: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true, create_sprints: true, delete_sprints: true, tasks_approve: true },
     },
     colors: { direction: "#a855f7", design: "#ec4899", illustration: "#f97316", video: "#38bdf8", writing: "#22c55e", production: "#e879f9" },
   },
@@ -195,7 +195,7 @@ const productionTemplates: Record<string, { label: string; permissions: Record<s
   accounting: {
     label: "Contabilidade",
     permissions: {
-      management: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true, create_sprints: true },
+      management: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true, create_sprints: true, tasks_approve: true },
       accounting: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true },
       tax: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true },
       payroll: { can_view_wiki: true, can_edit_wiki: true, can_comment_wiki: true, view_all_tasks: true },
@@ -219,7 +219,7 @@ function cleanRoleKeys(value: unknown, permissions: Record<string, Record<string
 const allowedProjectPermissions = new Set([
   "manage_workspace", "manage_roles", "manage_billing", "delete_sprints", "create_sprints", "view_all_tasks",
   "manage_wiki_visibility", "can_edit_wiki", "can_comment_wiki", "can_view_wiki",
-  "docs_view", "docs_edit", "docs_comment", "manage_publications", "tasks_view", "tasks_edit", "canvas_view", "canvas_edit", "beats_view", "beats_edit",
+  "docs_view", "docs_edit", "docs_comment", "manage_publications", "tasks_view", "tasks_edit", "tasks_approve", "canvas_view", "canvas_edit", "beats_view", "beats_edit",
   "states_view", "states_edit", "dialogues_view", "dialogues_edit", "polygons_view", "polygons_edit", "designs_view", "designs_edit",
 ]);
 

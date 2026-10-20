@@ -110,11 +110,20 @@
             return project ? (project.name || "Projeto") : "";
         },
         getMembers: function () { return activeStudioAdmin && Array.isArray(activeStudioAdmin.members) ? activeStudioAdmin.members : []; },
+        canApproveTasks: function () {
+            const data = activeProjectAdmin;
+            if (!data || !data.project) return false;
+            const studioRole = data.membership && data.membership.role;
+            if (data.project.owner_id === currentUserId || studioRole === "owner" || studioRole === "admin") return true;
+            const member = (data.project_members || []).find(function (item) { return String(item.user_id) === String(currentUserId); });
+            const permissions = data.project.role_permissions && typeof data.project.role_permissions === "object" ? data.project.role_permissions : {};
+            return Boolean(member && (member.project_roles || []).some(function (role) { return permissions[role] && permissions[role].tasks_approve === true; }));
+        },
         getUserId: function () { return currentUserId; },
         getUserName: function () { return currentProfile && (currentProfile.nickname || currentProfile.full_name) || memberName.textContent || "Membro da equipe"; },
         api: {
             list: async function (projectId) {
-                const data = await tasksRequest("tasks?select=id,project_id,title,description,status,assigned_to,sprint_id,sort_order,created_at&project_id=eq." + encodeURIComponent(projectId) + "&order=sort_order.asc,created_at.asc", { method: "GET" });
+                const data = await tasksRequest("tasks?select=id,project_id,title,description,acceptance_criteria,status,assigned_to,sprint_id,sort_order,created_at&project_id=eq." + encodeURIComponent(projectId) + "&order=sort_order.asc,created_at.asc", { method: "GET" });
                 return Array.isArray(data) ? data : [];
             },
             listSprints: async function (projectId) {
@@ -1640,7 +1649,7 @@
 
     const projectPermissionLabels = {
         manage_workspace: "Gerenciar projeto", manage_roles: "Gerenciar cargos", manage_billing: "Gerenciar assinatura",
-        delete_sprints: "Excluir sprints", create_sprints: "Criar sprints", view_all_tasks: "Ver todas as tarefas",
+        delete_sprints: "Excluir sprints", create_sprints: "Criar sprints", view_all_tasks: "Ver todas as tarefas", tasks_approve: "Aprovar critérios de tarefas",
         manage_wiki_visibility: "Controlar visibilidade da wiki", can_edit_wiki: "Editar wiki", can_comment_wiki: "Comentar na wiki", can_view_wiki: "Ver wiki",
         docs_view: "Ver Docs", docs_edit: "Editar Docs", tasks_view: "Ver Tasks", tasks_edit: "Editar Tasks",
         canvas_view: "Ver Canvas", canvas_edit: "Editar Canvas", beats_view: "Ver Beats", beats_edit: "Editar Beats",
@@ -1761,7 +1770,7 @@
     async function refreshActiveProjectContext(token) {
         const visiblePanel = activeIntegrationPanel || workspacePanels.find(function (panel) { return panel.classList.contains("is-active"); });
         const viewName = visiblePanel && visiblePanel.dataset.workspacePanel;
-        if (viewName === "projects") await loadActiveProject(token);
+        if (viewName === "projects" || viewName === "tasks") await loadActiveProject(token);
         if (viewName === "apps") await loadProjectApps();
         if (viewName === "publications") await loadPublications();
         if (viewName === "tasks") taskApp.setProject(activeProjectId);

@@ -2,9 +2,9 @@
     "use strict";
 
     const projectId = "gamejam-preview";
-    const storageKey = "heartspace-tasks-preview-data";
-    const sprintStorageKey = "heartspace-tasks-preview-sprints";
-    const commentStorageKey = "heartspace-tasks-preview-comments";
+    const storageKey = "heartspace-tasks-preview-data-v2";
+    const sprintStorageKey = "heartspace-tasks-preview-sprints-v2";
+    const commentStorageKey = "heartspace-tasks-preview-comments-v2";
     const members = [
         { user_id: "member-ana", display_name: "Ana Souza" },
         { user_id: "member-caio", display_name: "Caio Lima" },
@@ -12,8 +12,8 @@
         { user_id: "member-ren", display_name: "Ren Oliveira" }
     ];
     const seed = [
-        { id: "preview-1", title: "Definir o loop principal", description: JSON.stringify({ text: "Fechar a sequência central de gameplay para a primeira versão.", priority: "high" }), status: "done", sort_order: 1, assigned_to: "member-ana", sprint_id: "sprint-preview-1" },
-        { id: "preview-2", title: "Implementar movimentação do personagem", description: JSON.stringify({ text: "Adicionar corrida, pulo e colisão com o cenário.", priority: "normal" }), status: "in_progress", sort_order: 2, assigned_to: "member-caio", sprint_id: "sprint-preview-1" },
+        { id: "preview-1", title: "Definir o loop principal", description: JSON.stringify({ text: "Fechar a sequência central de gameplay para a primeira versão.", priority: "high" }), acceptance_criteria: [{ id: "preview-criterion-1", text: "A pessoa jogadora consegue completar o ciclo principal.", approved_at: "2026-10-18T15:00:00.000Z", approved_by: "member-ana" }], status: "done", sort_order: 1, assigned_to: "member-ana", sprint_id: "sprint-preview-1" },
+        { id: "preview-2", title: "Implementar movimentação do personagem", description: JSON.stringify({ text: "Adicionar corrida, pulo e colisão com o cenário.", priority: "normal" }), acceptance_criteria: [{ id: "preview-criterion-2", text: "O personagem corre e pula com resposta imediata.", approved_at: null, approved_by: null }, { id: "preview-criterion-3", text: "A colisão impede atravessar o cenário.", approved_at: null, approved_by: null }], status: "in_progress", sort_order: 2, assigned_to: "member-caio", sprint_id: "sprint-preview-1" },
         { id: "preview-3", title: "Criar tela de início", description: JSON.stringify({ text: "Título, botão de jogar e créditos básicos." }), status: "todo", sort_order: 1, assigned_to: "member-lu" },
         { id: "preview-4", title: "Revisar efeitos sonoros", description: JSON.stringify({ text: "Conferir volumes e feedback dos eventos principais." }), status: "review", sort_order: 1, assigned_to: "member-ren" }
     ];
@@ -86,6 +86,7 @@
         getProjectId: function () { return projectId; },
         getProjectName: function () { return "Game Jam · Projeto de demonstração"; },
         getMembers: function () { return members; },
+        canApproveTasks: function () { return true; },
         getUserId: function () { return "member-ana"; },
         getUserName: function () { return "Ana Souza"; },
         syncLabel: "simulação local"

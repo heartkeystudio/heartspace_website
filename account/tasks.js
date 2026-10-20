@@ -36,6 +36,7 @@
     function create(root, options) {
         const api = options.api;
         const getMembers = options.getMembers || function () { return []; };
+        const canApproveTasks = options.canApproveTasks || function () { return false; };
         const getProjectName = options.getProjectName || function () { return ""; };
         const board = root.querySelector("#tasksBoard");
         const backlog = root.querySelector("#tasksBacklogList");
@@ -85,6 +86,8 @@
             return member ? (member.display_name || member.email || "Membro") : "Sem responsável";
         }
         function taskFor(id) { return rows.find(function (task) { return String(task.id) === String(id); }); }
+        function acceptanceCriteria(task) { return Array.isArray(task && task.acceptance_criteria) ? task.acceptance_criteria : []; }
+        function allCriteriaApproved(task) { const criteria = acceptanceCriteria(task); return criteria.length > 0 && criteria.every(function (item) { return Boolean(item.approved_at && item.approved_by); }); }
         function byOrder(a, b) { return (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0) || String(a.created_at || "").localeCompare(String(b.created_at || "")); }
         function orderedTasks(tasks) { return tasks.slice().sort(byOrder); }
         function taskOpenButton(task, compact) {
@@ -174,13 +177,15 @@
                 column.dataset.dropStatus = status.id; column.classList.add("tasks-dropzone");
                 if (!tasks.length) { const empty = document.createElement("p"); empty.className = "tasks-column-empty"; empty.textContent = "Nenhuma tarefa"; column.append(empty); }
                 tasks.forEach(function (task) {
-                    const card = document.createElement("article"); card.className = "task-card";
-                    const open = taskOpenButton(task, false); open.draggable = true; open.dataset.dragTask = task.id; card.append(open);
+                    const card = document.createElement("article"); card.className = "task-card"; card.tabIndex = 0; card.setAttribute("role", "button"); card.dataset.taskOpen = task.id; card.draggable = true; card.dataset.dragTask = task.id;
+                    const title = document.createElement("strong"); title.textContent = task.title || "Tarefa sem título"; card.append(title);
                     const meta = document.createElement("div"); meta.className = "task-card-meta";
                     const assignee = document.createElement("span"); assignee.textContent = "◎ " + memberName(task.assigned_to); meta.append(assignee);
                     const desc = descriptionState(task);
                     const priority = document.createElement("span"); priority.className = "task-priority-chip"; priority.textContent = priorityLabel(desc.priority || task.priority); meta.append(priority);
                     if (desc.due_date) { const due = document.createElement("span"); due.textContent = "Prazo " + formatDate(desc.due_date); meta.append(due); }
+                    const criteria = acceptanceCriteria(task);
+                    if (criteria.length) { const approved = criteria.filter(function (item) { return Boolean(item.approved_at && item.approved_by); }).length; const acceptance = document.createElement("span"); acceptance.className = "task-acceptance-progress"; acceptance.textContent = approved + "/" + criteria.length + " critérios aprovados"; meta.append(acceptance); }
                     card.append(meta); column.append(card);
                 });
                 board.append(column);
@@ -238,15 +243,41 @@
         function fillDetail(task) {
             const desc = descriptionState(task);
             field("taskDetailsId").value = task.id;
-            field("taskDetailsHeading").textContent = task.title || "Tarefa";
             field("taskDetailsTitle").value = task.title || "";
             field("taskDetailsDescription").value = desc.text || "";
             field("taskDetailsStatus").value = statusBucket(task.status);
+            const doneOption = field("taskDetailsStatus").querySelector('option[value="done"]');
+            if (doneOption) doneOption.disabled = !canApproveTasks() || !allCriteriaApproved(task);
             populateMemberOptions(field("taskDetailsAssignee"), task.assigned_to);
             field("taskDetailsPriority").value = String(desc.priority || task.priority || "normal").toLowerCase();
             field("taskDetailsDueDate").value = desc.due_date || "";
             populateSprintOptions(field("taskDetailsSprint"), task.sprint_id);
             message(field("taskDetailsStatusMessage"), "", "");
+            renderAcceptanceCriteria(task);
+        }
+        function renderAcceptanceCriteria(task) {
+            const list = field("taskAcceptanceCriteria");
+            if (!list) return;
+            list.replaceChildren();
+            const criteria = acceptanceCriteria(task);
+            criteria.forEach(function (criterion, index) {
+                const row = document.createElement("div"); row.className = "task-acceptance-row";
+                const input = document.createElement("input"); input.type = "text"; input.maxLength = 500; input.value = criterion.text || ""; input.placeholder = "Descreva um critério verificável"; input.dataset.acceptanceText = String(index); input.required = true;
+                const approval = document.createElement("span"); approval.className = "task-acceptance-approval";
+                if (criterion.approved_at && criterion.approved_by) approval.textContent = "Aprovado por " + memberName(criterion.approved_by);
+                else approval.textContent = "Aguardando aprovação da gestão";
+                row.append(input, approval);
+                if (canApproveTasks() && !(criterion.approved_at && criterion.approved_by)) {
+                    const approve = document.createElement("button"); approve.type = "button"; approve.className = "row-button"; approve.textContent = "Aprovar"; approve.dataset.approveCriterion = String(index); approve.disabled = !String(criterion.text || "").trim(); row.append(approve);
+                }
+                const remove = document.createElement("button"); remove.type = "button"; remove.className = "tasks-criterion-remove"; remove.textContent = "×"; remove.setAttribute("aria-label", "Remover critério"); remove.dataset.removeCriterion = String(index); row.append(remove);
+                list.append(row);
+            });
+            const add = document.createElement("button"); add.type = "button"; add.className = "row-button"; add.textContent = "+ Adicionar critério"; add.dataset.addCriterion = ""; list.append(add);
+            if (!criteria.length) { const hint = document.createElement("p"); hint.className = "tasks-acceptance-hint"; hint.textContent = "Adicione os critérios que precisam ser atendidos. A tarefa só poderá ser concluída depois que a gestão aprovar todos."; list.prepend(hint); }
+        }
+        function saveCriteria(task, nextCriteria) {
+            return api.update(task.id, { acceptance_criteria: nextCriteria }, projectId).then(function () { return load(true); });
         }
         async function loadComments(taskId) {
             const list = field("taskCommentList"); const notice = field("taskCommentStatus");
@@ -265,7 +296,12 @@
         }
         async function openDetails(task) {
             if (!task) return;
-            fillDetail(task); showDialog(detailsDialog); await loadComments(task.id);
+            const commentsContent = field("taskCommentsContent"); const commentsToggle = field("toggleTaskComments");
+            const detailLayout = detailsDialog.querySelector(".tasks-detail-layout");
+            if (commentsContent) commentsContent.hidden = true;
+            if (commentsToggle) { commentsToggle.setAttribute("aria-expanded", "false"); commentsToggle.textContent = "Revelar"; }
+            if (detailLayout) detailLayout.classList.add("is-comments-collapsed");
+            fillDetail(task); showDialog(detailsDialog);
         }
         async function load(quiet) {
             if (!projectId) { rows = []; sprints = []; render(); message(statusNode, "Escolha um projeto no seletor lateral para ver as tarefas.", ""); return; }
@@ -303,6 +339,41 @@
         if (mineInput) mineInput.addEventListener("change", renderBoard);
         if (sprintSelect) sprintSelect.addEventListener("change", function () { activeSprintId = sprintSelect.value; renderBoard(); });
         root.addEventListener("click", async function (event) {
+            const commentsToggle = event.target.closest("#toggleTaskComments");
+            if (commentsToggle) {
+                const content = field("taskCommentsContent"); const expanded = commentsToggle.getAttribute("aria-expanded") !== "true";
+                commentsToggle.setAttribute("aria-expanded", expanded ? "true" : "false"); commentsToggle.textContent = expanded ? "Ocultar" : "Revelar";
+                content.hidden = !expanded;
+                detailsDialog.querySelector(".tasks-detail-layout").classList.toggle("is-comments-collapsed", !expanded);
+                if (expanded) await loadComments(field("taskDetailsId").value);
+                return;
+            }
+            const addCriterion = event.target.closest("[data-add-criterion]");
+            if (addCriterion) {
+                const task = taskFor(field("taskDetailsId").value); if (!task) return;
+                const criteria = acceptanceCriteria(task).concat([{ id: window.crypto && crypto.randomUUID ? crypto.randomUUID() : String(Date.now()), text: "", approved_at: null, approved_by: null }]);
+                try { await saveCriteria(task, criteria); fillDetail(taskFor(task.id)); } catch (error) { message(field("taskDetailsStatusMessage"), error.message || "Não foi possível salvar o critério.", "error"); }
+                return;
+            }
+            const removeCriterion = event.target.closest("[data-remove-criterion]");
+            if (removeCriterion) {
+                const task = taskFor(field("taskDetailsId").value); if (!task) return;
+                const criteria = acceptanceCriteria(task).filter(function (_, index) { return index !== Number(removeCriterion.dataset.removeCriterion); });
+                try { await saveCriteria(task, criteria); fillDetail(taskFor(task.id)); } catch (error) { message(field("taskDetailsStatusMessage"), error.message || "Não foi possível remover o critério.", "error"); }
+                return;
+            }
+            const approveCriterion = event.target.closest("[data-approve-criterion]");
+            if (approveCriterion) {
+                const task = taskFor(field("taskDetailsId").value); if (!task || !canApproveTasks()) return;
+                const index = Number(approveCriterion.dataset.approveCriterion); const criteria = acceptanceCriteria(task).map(function (item, itemIndex) { return itemIndex === index ? Object.assign({}, item, { approved_at: new Date().toISOString(), approved_by: options.getUserId() }) : item; });
+                try {
+                    const complete = criteria.length > 0 && criteria.every(function (item) { return Boolean(item.approved_at && item.approved_by); });
+                    await api.update(task.id, { acceptance_criteria: criteria, ...(complete ? { status: "done" } : {}) }, projectId);
+                    await load(true); fillDetail(taskFor(task.id));
+                    if (complete) message(field("taskDetailsStatusMessage"), "Critérios aprovados. Tarefa concluída.", "success");
+                } catch (error) { message(field("taskDetailsStatusMessage"), error.message || "Não foi possível aprovar o critério.", "error"); }
+                return;
+            }
             const completeSprint = event.target.closest("[data-complete-sprint]");
             if (completeSprint) {
                 event.preventDefault(); event.stopPropagation();
@@ -340,6 +411,21 @@
             }
             const button = event.target.closest("[data-task-open]"); if (button) openDetails(taskFor(button.dataset.taskOpen));
         });
+        root.addEventListener("keydown", function (event) {
+            const card = event.target.closest(".task-card[data-task-open]");
+            if (!card || (event.key !== "Enter" && event.key !== " ")) return;
+            event.preventDefault(); openDetails(taskFor(card.dataset.taskOpen));
+        });
+        root.addEventListener("input", function (event) {
+            const input = event.target.closest("[data-acceptance-text]"); if (!input) return;
+            const task = taskFor(field("taskDetailsId").value); if (!task) return;
+            const criteria = acceptanceCriteria(task).map(function (item, index) { return index === Number(input.dataset.acceptanceText) ? Object.assign({}, item, { text: input.value, approved_at: null, approved_by: null }) : item; });
+            task.acceptance_criteria = criteria;
+            const row = input.closest(".task-acceptance-row"); const approval = row && row.querySelector(".task-acceptance-approval");
+            if (approval) approval.textContent = "Aguardando aprovação da gestão";
+            if (row && canApproveTasks() && !row.querySelector("[data-approve-criterion]")) { const button = document.createElement("button"); button.type = "button"; button.className = "row-button"; button.textContent = "Aprovar"; button.dataset.approveCriterion = input.dataset.acceptanceText; row.insertBefore(button, row.querySelector(".tasks-criterion-remove")); }
+            const approve = row && row.querySelector("[data-approve-criterion]"); if (approve) approve.disabled = !input.value.trim();
+        });
         if (createForm) createForm.addEventListener("submit", async function (event) {
             event.preventDefault();
             const submit = createForm.querySelector("button[type=submit]"); submit.disabled = true;
@@ -347,7 +433,7 @@
                 const description = { text: field("taskDescriptionInput").value.trim(), priority: field("taskPriorityInput").value, due_date: field("taskDueDateInput").value };
                 const sprintId = field("taskSprintInput").value || null;
                 const nextOrder = rows.filter(function (task) { return String(task.sprint_id || "") === String(sprintId || ""); }).reduce(function (max, task) { return Math.max(max, Number(task.sort_order) || 0); }, 0) + 1;
-                const payload = { project_id: projectId, title: field("taskTitleInput").value.trim(), description: JSON.stringify(description), status: "todo", sprint_id: sprintId, sort_order: nextOrder };
+                const payload = { project_id: projectId, title: field("taskTitleInput").value.trim(), description: JSON.stringify(description), acceptance_criteria: [], status: "todo", sprint_id: sprintId, sort_order: nextOrder };
                 if (field("taskAssigneeInput").value) payload.assigned_to = field("taskAssigneeInput").value;
                 await api.create(payload); closeDialog(taskDialog); message(statusNode, "Tarefa criada.", "success"); await load(true);
             } catch (error) { message(field("taskCreateStatus"), error.message || "Não foi possível criar a tarefa.", "error"); }
@@ -367,7 +453,10 @@
             const submit = detailsForm.querySelector("button[type=submit]"); submit.disabled = true;
             try {
                 const desc = descriptionState(task); desc.text = field("taskDetailsDescription").value.trim(); desc.priority = field("taskDetailsPriority").value; desc.due_date = field("taskDetailsDueDate").value;
-                await api.update(task.id, { title: field("taskDetailsTitle").value.trim(), description: JSON.stringify(desc), status: field("taskDetailsStatus").value, assigned_to: field("taskDetailsAssignee").value || null, sprint_id: field("taskDetailsSprint").value || null }, projectId);
+                const criteria = acceptanceCriteria(task).map(function (item, index) { const input = field("taskAcceptanceCriteria").querySelector('[data-acceptance-text="' + index + '"]'); const text = input ? input.value.trim() : String(item.text || ""); return Object.assign({}, item, { text: text, ...(text !== String(item.text || "") ? { approved_at: null, approved_by: null } : {}) }); });
+                const nextStatus = field("taskDetailsStatus").value;
+                if (nextStatus === "done" && (!canApproveTasks() || !criteria.length || !criteria.every(function (item) { return Boolean(item.approved_at && item.approved_by); }))) throw new Error("A gestão precisa aprovar todos os critérios antes de concluir a tarefa.");
+                await api.update(task.id, { title: field("taskDetailsTitle").value.trim(), description: JSON.stringify(desc), acceptance_criteria: criteria, status: nextStatus, assigned_to: field("taskDetailsAssignee").value || null, sprint_id: field("taskDetailsSprint").value || null }, projectId);
                 closeDialog(detailsDialog); message(statusNode, "Tarefa salva.", "success"); await load(true);
             } catch (error) { message(field("taskDetailsStatusMessage"), error.message || "Não foi possível salvar a tarefa.", "error"); }
             finally { submit.disabled = false; }
