@@ -79,7 +79,8 @@
         }
 
         .brand { justify-self: start; font-size: 1.32rem; font-weight: 900; letter-spacing: -0.6px; display: flex; align-items: center; gap: 11px; cursor: pointer; color: var(--text-main); }
-        .brand img { width: 38px; height: 38px; border-radius: 10px; object-fit: cover; }
+        .brand img { width: 38px; height: 38px; object-fit: contain; }
+        body:not(.light-mode) .brand img { filter: invert(1); }
 
         .nav-links { justify-self: center; display: flex; gap: 30px; }
         .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: 0.2s; }
@@ -94,12 +95,13 @@
         .menu-toggle { display: none; width: 38px; height: 38px; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--text-main); cursor: pointer; font-size: 1.2rem; }
         
         .btn-theme {
-            background: transparent; border: 1px solid var(--border); color: var(--text-main);
-            width: 38px; height: 38px; border-radius: 8px; cursor: pointer;
-            font-size: 1.1rem; display: flex; align-items: center; justify-content: center;
-            transition: 0.3s;
+            display: flex; align-items: center; justify-content: center;
+            width: 38px; height: 38px; padding: 0; border: 0; border-radius: 0;
+            background: transparent; cursor: pointer; transition: transform 0.2s ease;
         }
-        .btn-theme:hover { background: var(--bg-card); transform: scale(1.05); }
+        .btn-theme img { display: block; width: 32px; height: 32px; }
+        .btn-theme:hover { transform: scale(1.08); }
+        .btn-theme:focus-visible { outline: 2px solid var(--text-muted); outline-offset: 3px; }
 
         .btn-primary {
             background: var(--text-main); color: var(--bg-base);
@@ -816,7 +818,7 @@
 <body>
 
     <nav class="navbar">
-        <div class="brand"><img src="assets/icons/logo.png" alt="">HeartSpace</div>
+        <div class="brand"><img src="assets/icons/logo.svg" alt="">HeartSpace</div>
         <div class="nav-links" id="primaryNav">
             <a href="#ecosystem">Ecossistema</a>
             <a href="#publications">Publicações</a>
@@ -824,7 +826,7 @@
             <a class="mobile-account-link" id="mobileAccountLink" href="account/">Entrar ou criar conta</a>
         </div>
         <div class="nav-actions">
-            <button class="btn-theme" id="themeToggle" title="Trocar Tema">☀️</button>
+            <button class="btn-theme" id="themeToggle" type="button" aria-label="Ativar tema claro" title="Ativar tema claro"><img id="themeToggleIcon" src="assets/icons/light_mode_icon.svg" alt="" aria-hidden="true"></button>
             <span id="guestActions"><a href="account/" class="login-link">Entrar</a><a href="account/" class="btn-primary">Criar conta</a></span>
             <span id="signedInActions" hidden><a href="account/" class="login-link" id="homeAccountName">Minha conta</a><button class="login-link home-signout" id="homeSignOut" type="button">Sair</button></span>
             <button class="menu-toggle" id="menuToggle" type="button" aria-label="Abrir menu" aria-controls="primaryNav" aria-expanded="false">☰</button>
@@ -1063,7 +1065,7 @@
         <div class="footer-grid">
             
             <div class="footer-brand">
-                <div class="brand"><img src="assets/icons/logo.png" alt="">HeartSpace</div>
+                <div class="brand"><img src="assets/icons/logo.svg" alt="">HeartSpace</div>
                 <p>HeartSpace é o ecossistema local-first para estúdios indie criarem, decidirem, produzirem e entregarem jogos.</p>
             </div>
 
@@ -1112,6 +1114,7 @@
     <script src="account/config.js?v=20260924-12"></script>
     <script>
         const themeToggle = document.getElementById('themeToggle');
+        const themeToggleIcon = document.getElementById('themeToggleIcon');
         const menuToggle = document.getElementById('menuToggle');
         const navbar = document.querySelector('.navbar');
         const body = document.body;
@@ -1148,7 +1151,9 @@
 
         function setTheme(isLight) {
             body.classList.toggle('light-mode', isLight);
-            themeToggle.innerText = isLight ? '🌙' : '☀️';
+            themeToggleIcon.src = isLight ? 'assets/icons/dark_mode_icon.svg' : 'assets/icons/light_mode_icon.svg';
+            themeToggle.setAttribute('aria-label', isLight ? 'Ativar tema escuro' : 'Ativar tema claro');
+            themeToggle.title = isLight ? 'Ativar tema escuro' : 'Ativar tema claro';
         }
 
         try {
