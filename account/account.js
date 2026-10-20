@@ -27,7 +27,6 @@
     const cancelProfileEdit = document.getElementById("cancelProfileEdit");
     const memberArea = document.getElementById("memberArea");
     const memberName = document.getElementById("memberName");
-    const memberRole = document.getElementById("memberRole");
     const themeToggle = document.getElementById("themeToggle");
     const themeIcon = themeToggle && themeToggle.querySelector(".theme-icon");
     const themeLabel = themeToggle && themeToggle.querySelector(".theme-label");
@@ -71,8 +70,9 @@
     const membersTitle = document.getElementById("membersTitle");
     const membersCopy = document.getElementById("membersCopy");
     const studioContextSelect = document.getElementById("studioContextSelect");
+    const studioContextMark = document.querySelector(".studio-context-mark");
     const studioContextImage = document.getElementById("studioContextImage");
-    const studioContextFallback = document.getElementById("studioContextFallback");
+    const studioContextInitials = document.getElementById("studioContextInitials");
     const overviewStudioCount = document.getElementById("overviewStudioCount");
     const overviewProjectCount = document.getElementById("overviewProjectCount");
     const overviewStudioTitle = document.getElementById("overviewStudioTitle");
@@ -490,6 +490,9 @@
     });
 
     function selectWorkspaceView(viewName) {
+        const selectedButton = workspaceButtons.find(function (button) { return button.dataset.workspaceView === viewName; });
+        const navigationGroup = selectedButton && selectedButton.closest(".workspace-nav-group");
+        if (navigationGroup) navigationGroup.open = true;
         workspaceButtons.forEach(function (button) {
             const isSelected = button.dataset.workspaceView === viewName;
             button.classList.toggle("is-active", isSelected);
@@ -1171,7 +1174,6 @@
 
     function clearStudioAdministration() {
         activeStudioAdmin = null;
-        memberRole.hidden = true;
         studioSettingsPanel.hidden = true;
         studioActivityPanel.hidden = true;
         studioDangerPanel.hidden = true;
@@ -1198,8 +1200,15 @@
 
     function updateStudioContextMark(studio) {
         const logoUrl = studio && studio.logo_url;
+        const name = studio && studio.name ? studio.name.trim() : "";
+        const words = name.split(/\s+/).filter(Boolean);
+        const initials = words.length > 1
+            ? words.slice(0, 2).map(function (word) { return word.charAt(0); }).join("")
+            : name.slice(0, 2);
+        studioContextInitials.textContent = initials.toLocaleUpperCase("pt-BR");
+        studioContextInitials.hidden = Boolean(logoUrl);
+        studioContextMark.hidden = !logoUrl && !initials;
         studioContextImage.hidden = !logoUrl;
-        studioContextFallback.hidden = Boolean(logoUrl);
         studioContextImage.removeAttribute("src");
         if (logoUrl) studioContextImage.src = logoUrl;
     }
@@ -1210,7 +1219,7 @@
 
     studioContextImage.addEventListener("error", function () {
         studioContextImage.hidden = true;
-        studioContextFallback.hidden = false;
+        studioContextInitials.hidden = false;
     });
 
     function renderStudios(studios) {
@@ -1392,8 +1401,6 @@
         const canManage = role === "owner" || role === "admin";
         const isOwner = role === "owner";
         activeStudioHeading.textContent = studio.name;
-        memberRole.textContent = role === "owner" ? "Owner" : role === "admin" ? "Admin" : "Membro";
-        memberRole.hidden = false;
         activeStudioName.value = studio.name || "";
         activeStudioTemplate.value = studio.role_template_key || "blank";
         activeStudioIcon.value = studio.logo_url || "";
@@ -1503,7 +1510,6 @@
             if (activeProjectId) await loadActiveProject(token);
         } catch (error) {
             clearStudioAdministration();
-            memberRole.hidden = true;
             membersTitle.textContent = "Não foi possível carregar a equipe.";
             membersCopy.textContent = "Atualize a página ou confirme se a Function administrativa foi atualizada.";
         }
