@@ -42,7 +42,6 @@
         const sprintPanel = root.querySelector("#tasksSprints");
         const statusNode = root.querySelector("#tasksStatus");
         const countNode = root.querySelector("#tasksCount");
-        const projectTitle = root.querySelector("#tasksProjectTitle");
         const taskDialog = root.querySelector("#createTaskDialog");
         const sprintDialog = root.querySelector("#createSprintDialog");
         const detailsDialog = root.querySelector("#taskDetailsDialog");
@@ -105,8 +104,12 @@
             if (!sprintPanel) return;
             sprintPanel.replaceChildren();
             if (!sprints.length) {
-                const empty = document.createElement("p"); empty.className = "tasks-empty-state"; empty.textContent = "Ainda não há sprints. Você pode criar uma ou começar pelo backlog."; sprintPanel.append(empty); return;
+                const empty = document.createElement("div"); empty.className = "tasks-empty-action";
+                const messageText = document.createElement("p"); messageText.className = "tasks-empty-state"; messageText.textContent = "Ainda não há sprints.";
+                const create = document.createElement("button"); create.type = "button"; create.className = "tasks-inline-create"; create.dataset.createSprint = ""; create.textContent = "+ Criar";
+                empty.append(messageText, create); sprintPanel.append(empty); return;
             }
+            const createSprint = document.createElement("button"); createSprint.type = "button"; createSprint.className = "tasks-inline-create tasks-create-sprint-inline"; createSprint.dataset.createSprint = ""; createSprint.textContent = "+ Criar"; sprintPanel.append(createSprint);
             sprints.slice().sort(byOrder).forEach(function (sprint) {
                 const completed = isCompletedSprint(sprint);
                 const card = document.createElement("details"); card.className = "tasks-sprint-card" + (completed ? " is-completed" : ""); card.dataset.sprintId = sprint.id;
@@ -139,7 +142,7 @@
             backlog.replaceChildren();
             const tasks = orderedTasks(rows.filter(function (task) { return !task.sprint_id; }));
             if (countNode) countNode.textContent = tasks.length + (tasks.length === 1 ? " tarefa sem sprint" : " tarefas sem sprint");
-            if (!tasks.length) { const empty = document.createElement("p"); empty.className = "tasks-drop-hint"; empty.textContent = "Backlog vazio. Arraste uma tarefa para cá para devolvê-la ao deck."; backlog.append(empty); return; }
+            if (!tasks.length) { const empty = document.createElement("p"); empty.className = "tasks-drop-hint"; empty.textContent = "Seu backlog está vazio."; backlog.append(empty); return; }
             tasks.forEach(function (task) { const item = taskOpenButton(task, true); item.draggable = true; item.dataset.dragTask = task.id; backlog.append(item); });
         }
         function renderBoard() {
@@ -184,7 +187,6 @@
             });
         }
         function render() {
-            if (projectTitle) projectTitle.textContent = getProjectName(projectId) ? "Tasks · " + getProjectName(projectId) : "Tasks";
             renderSprints(); renderBacklog(); renderBoard();
         }
         let draggingTaskId = ""; let draggingSprintId = ""; let dropPlaceholder = null;
@@ -292,10 +294,11 @@
             });
         });
         root.querySelectorAll("#openCreateTask, #openCreateTaskFromBoard").forEach(function (button) { button.addEventListener("click", openCreateTask); });
-        const createSprintButton = root.querySelector("#openCreateSprint");
-        if (createSprintButton) createSprintButton.addEventListener("click", function () { sprintForm.reset(); message(field("sprintCreateStatus"), "", ""); showDialog(sprintDialog); });
+        root.addEventListener("click", function (event) {
+            if (!event.target.closest("[data-create-sprint]")) return;
+            sprintForm.reset(); message(field("sprintCreateStatus"), "", ""); showDialog(sprintDialog);
+        });
         root.querySelectorAll("[data-close-task-modal]").forEach(function (button) { button.addEventListener("click", function () { closeDialog(button.closest("dialog")); }); });
-        const refreshButton = root.querySelector("#refreshTasks"); if (refreshButton) refreshButton.addEventListener("click", function (event) { event.preventDefault(); event.stopPropagation(); load(); });
         if (searchInput) searchInput.addEventListener("input", renderBoard);
         if (mineInput) mineInput.addEventListener("change", renderBoard);
         if (sprintSelect) sprintSelect.addEventListener("change", function () { activeSprintId = sprintSelect.value; renderBoard(); });

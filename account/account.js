@@ -153,6 +153,7 @@
     const projectStatus = document.getElementById("projectStatus");
     const projectContextLabel = document.getElementById("projectContextLabel");
     const projectContextSelect = document.getElementById("projectContextSelect");
+    const projectContextList = document.getElementById("projectContextList");
     const projectSettingsPanel = document.getElementById("projectSettingsPanel");
     const projectSettingsForm = document.getElementById("projectSettingsForm");
     const activeProjectHeading = document.getElementById("activeProjectHeading");
@@ -420,8 +421,10 @@
         const isLight = theme === "light";
         document.body.classList.toggle("is-light", isLight);
         themeToggle.setAttribute("aria-pressed", String(isLight));
-        if (themeIcon) themeIcon.textContent = isLight ? "🌙" : "☀️";
+        if (themeIcon) themeIcon.src = isLight ? "../assets/icons/dark_mode_icon.svg" : "../assets/icons/light_mode_icon.svg";
         if (themeLabel) themeLabel.textContent = isLight ? "Modo escuro" : "Modo claro";
+        themeToggle.setAttribute("aria-label", isLight ? "Ativar modo escuro" : "Ativar modo claro");
+        themeToggle.title = isLight ? "Ativar modo escuro" : "Ativar modo claro";
         localStorage.setItem("heartspace-theme", isLight ? "light" : "dark");
     }
 
@@ -1411,6 +1414,27 @@
         projectList.hidden = !projects.length;
         createProjectForm.hidden = !canManage;
         if (!projects.some(function (project) { return project.id === activeProjectId; })) activeProjectId = projects.length ? projects[0].id : "";
+        if (projectContextList) {
+            projectContextList.replaceChildren();
+            projects.forEach(function (project) {
+                const button = document.createElement("button");
+                button.type = "button";
+                button.className = "project-switch-item" + (String(project.id) === String(activeProjectId) ? " is-active" : "");
+                button.dataset.projectId = project.id;
+                button.setAttribute("aria-current", String(project.id) === String(activeProjectId) ? "true" : "false");
+                button.setAttribute("aria-label", "Abrir projeto " + (project.name || "Projeto sem título"));
+                const icon = document.createElement("span"); icon.className = "project-switch-icon"; icon.setAttribute("aria-hidden", "true");
+                const imageUrl = project.cover_image || project.logo_url;
+                if (imageUrl) {
+                    const image = document.createElement("img"); image.src = imageUrl; image.alt = "";
+                    image.addEventListener("error", function () { image.remove(); icon.textContent = (project.name || "P").trim().charAt(0).toUpperCase(); });
+                    icon.append(image);
+                } else icon.textContent = (project.name || "P").trim().charAt(0).toUpperCase();
+                const name = document.createElement("span"); name.className = "project-switch-name nav-copy"; name.textContent = project.name || "Projeto sem título";
+                button.append(icon, name);
+                projectContextList.append(button);
+            });
+        }
         projectContextSelect.replaceChildren();
         projects.forEach(function (project) { projectContextSelect.add(new Option(project.name || "Projeto sem título", project.id)); });
         publicationProjectSelect.replaceChildren();
@@ -1747,6 +1771,17 @@
         syncProjectContextSelects();
         const token = await getValidAccessToken().catch(function () { return null; });
         if (token) await refreshActiveProjectContext(token);
+    });
+    if (projectContextList) projectContextList.addEventListener("click", function (event) {
+        const button = event.target.closest("[data-project-id]");
+        if (!button || !projectContextSelect || projectContextSelect.value === button.dataset.projectId) return;
+        projectContextList.querySelectorAll("[data-project-id]").forEach(function (item) {
+            const active = item === button;
+            item.classList.toggle("is-active", active);
+            item.setAttribute("aria-current", active ? "true" : "false");
+        });
+        projectContextSelect.value = button.dataset.projectId;
+        projectContextSelect.dispatchEvent(new Event("change", { bubbles: true }));
     });
 
     addProjectRole.addEventListener("click", function () {
@@ -2137,5 +2172,11 @@
         }
     });
 
-    restoreSession();
+    const localDesignPreview = new URLSearchParams(window.location.search).get("design-preview") === "1"
+        && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+    if (localDesignPreview) {
+        showMemberArea({ id: "local-design-preview", email: "preview@localhost", user_metadata: { full_name: "Prévia local" } }, { full_name: "Prévia local" });
+    } else {
+        restoreSession();
+    }
 }());

@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#9501d8">
     <link rel="icon" type="image/png" href="../assets/icons/logo.png">
     <title>Conta | HeartSpace</title>
-    <link rel="stylesheet" href="account.css?v=20261018-02">
+    <link rel="stylesheet" href="account.css?v=20261020-09">
 </head>
 <body>
     <main class="account-shell">
@@ -24,11 +24,11 @@
 
             <div class="workspace-layout">
                 <nav class="workspace-nav" aria-label="Administração da conta">
-                    <a class="workspace-brand" href="../" aria-label="Página inicial do HeartSpace"><img src="../assets/icons/logo.png" alt=""><span class="nav-copy">HeartSpace</span></a>
+                    <a class="workspace-brand" href="../" aria-label="Página inicial do HeartSpace"><img src="../assets/icons/logo.svg" alt=""><span class="nav-copy">HeartSpace</span></a>
                     <label class="studio-context" for="studioContextSelect"><span class="studio-context-mark"><img id="studioContextImage" alt="" hidden><span id="studioContextFallback" aria-hidden="true">✦</span></span><span><small>ESTÚDIO ATIVO</small><select id="studioContextSelect" disabled aria-label="Escolher estúdio"><option value="">Nenhum estúdio</option></select></span></label>
-                    <label class="project-context-sidebar" id="projectContextLabel" for="projectContextSelect" hidden><span class="nav-icon" aria-hidden="true">▣</span><span class="nav-copy"><small>PROJETO ATIVO</small><select id="projectContextSelect" aria-label="Escolher projeto ativo"></select></span></label>
+                    <div class="project-context-sidebar" id="projectContextLabel" hidden><small class="project-context-heading nav-copy">PROJETOS</small><div class="project-context-list" id="projectContextList" role="group" aria-label="Projetos do estúdio"></div><select id="projectContextSelect" aria-label="Escolher projeto ativo" hidden tabindex="-1" aria-hidden="true"></select></div>
                     <p class="workspace-nav-label"><span class="nav-copy">ADMINISTRAÇÃO</span></p>
-                    <button class="workspace-nav-item is-active" type="button" data-workspace-view="overview"><span class="nav-icon">⌂</span><span class="nav-copy">Visão geral</span></button>
+                    <button class="workspace-nav-item is-active" type="button" data-workspace-view="overview" aria-current="page"><img class="nav-image-icon" src="../assets/icons/home.svg" alt="" aria-hidden="true"><span class="nav-copy">Visão geral</span></button>
                     <button class="workspace-nav-item" type="button" data-workspace-view="studios" data-studio-required><span class="nav-icon">◇</span><span class="nav-copy">Estúdios</span></button>
                     <button class="workspace-nav-item" type="button" data-workspace-view="projects" data-studio-required><span class="nav-icon">▣</span><span class="nav-copy">Projetos</span></button>
                     <button class="workspace-nav-item" type="button" data-workspace-view="tasks" title="Tasks"><span class="nav-icon">✓</span><span class="nav-copy">Tasks</span></button>
@@ -42,7 +42,7 @@
                     <button class="workspace-nav-item" type="button" data-workspace-view="security"><span class="nav-icon">⌘</span><span class="nav-copy">Segurança</span></button>
                     <a class="workspace-hub-link" id="openDocsLink" href="https://docs.heartspace.tools/?source=dashboard" target="_blank" rel="noopener"><span class="nav-icon">▤</span><span class="nav-copy">Abrir Docs da equipe</span></a>
                     <a class="workspace-hub-link" href="../#download"><span class="nav-icon">↗</span><span class="nav-copy">Baixar ou abrir o Hub</span></a>
-                    <div class="sidebar-account-actions"><span class="member-name nav-copy" id="memberName"></span><span class="role-chip member-role nav-copy" id="memberRole" hidden></span><button class="theme-toggle" id="themeToggle" type="button" aria-label="Alternar tema" title="Trocar tema" aria-pressed="false"><span class="theme-icon" aria-hidden="true">☀️</span><span class="nav-copy theme-label">Modo claro</span></button><button class="signout-button" id="signOut" type="button"><span class="nav-icon" aria-hidden="true">↩</span><span class="nav-copy">Sair</span></button></div>
+                    <div class="sidebar-account-actions"><span class="member-name nav-copy" id="memberName"></span><span class="role-chip member-role nav-copy" id="memberRole" hidden></span><button class="theme-toggle" id="themeToggle" type="button" aria-label="Ativar modo claro" title="Ativar modo claro" aria-pressed="false"><img class="theme-icon" src="../assets/icons/light_mode_icon.svg" alt="" aria-hidden="true"><span class="nav-copy theme-label">Modo claro</span></button><button class="signout-button" id="signOut" type="button"><span class="nav-icon" aria-hidden="true">↩</span><span class="nav-copy">Sair</span></button></div>
                 </nav>
 
                 <div class="workspace-content">
@@ -60,16 +60,14 @@
                     </section>
 
                     <section class="workspace-view tasks-workspace-view" data-workspace-panel="tasks" hidden>
-                        <p class="eyebrow">TRABALHO EM EQUIPE</p><h1 id="tasksProjectTitle">Tasks</h1>
-                        <p class="workspace-lead">Organize o trabalho da game jam com a equipe. As mudanças são compartilhadas pelo projeto.</p>
                         <nav class="tasks-tabs" aria-label="Área de trabalho Tasks" role="tablist"><button type="button" class="is-active" data-tasks-tab="backlog" role="tab" aria-selected="true">Backlog</button><button type="button" data-tasks-tab="board" role="tab" aria-selected="false">Quadro ativo</button></nav>
                         <section class="tasks-view is-active" data-tasks-view="backlog" role="tabpanel">
-                            <div class="tasks-view-heading"><div><h2>Sprints</h2><p>Arraste as tarefas do backlog para distribuir o trabalho.</p></div><div class="tasks-heading-actions"><button class="row-button" id="openCreateSprint" type="button">+ Sprint</button><button class="portal-button" id="openCreateTask" type="button">+ Tarefa</button></div></div>
+                            <div class="tasks-view-heading"><h2>Sprints</h2></div>
                             <div class="tasks-sprints" id="tasksSprints"></div>
-                            <details class="tasks-backlog-deck" open><summary class="tasks-backlog-heading"><span><strong>Backlog geral</strong><small id="tasksCount">0 tarefas sem sprint · arraste para uma sprint</small></span><button class="row-button" id="refreshTasks" type="button">Atualizar</button></summary><div class="tasks-backlog-resize"><div class="tasks-backlog-list tasks-dropzone" id="tasksBacklogList" data-drop-backlog aria-live="polite"></div></div></details>
+                            <details class="tasks-backlog-deck" open><summary class="tasks-backlog-heading"><span><strong>Backlog</strong><small id="tasksCount">0 tarefas</small></span></summary><div class="tasks-backlog-content"><div class="tasks-backlog-resize"><div class="tasks-backlog-list tasks-dropzone" id="tasksBacklogList" data-drop-backlog aria-live="polite"></div></div><button class="tasks-inline-create" id="openCreateTask" type="button">+ Criar</button></div></details>
                         </section>
                         <section class="tasks-view" data-tasks-view="board" role="tabpanel" hidden>
-                            <div class="tasks-board-toolbar"><label class="tasks-sprint-picker">Sprint<select id="tasksActiveSprint" aria-label="Sprint do quadro ativo"><option value="">Selecione uma sprint</option></select></label><label class="tasks-search"><span aria-hidden="true">⌕</span><input id="tasksSearch" type="search" placeholder="Buscar tarefas…" aria-label="Buscar tarefas"></label><label class="tasks-mine-filter"><input id="tasksOnlyMine" type="checkbox"><span>Minhas tarefas</span></label><button class="portal-button" id="openCreateTaskFromBoard" type="button">+ Tarefa</button></div>
+                            <div class="tasks-board-toolbar"><label class="tasks-sprint-picker">Sprint<select id="tasksActiveSprint" aria-label="Sprint do quadro ativo"><option value="">Selecione uma sprint</option></select></label><label class="tasks-search"><span aria-hidden="true">⌕</span><input id="tasksSearch" type="search" placeholder="Buscar tarefas…" aria-label="Buscar tarefas"></label><label class="tasks-mine-filter"><input id="tasksOnlyMine" type="checkbox"><span>Minhas tarefas</span></label><button class="portal-button" id="openCreateTaskFromBoard" type="button">+ Criar</button></div>
                             <div class="tasks-board" id="tasksBoard" aria-live="polite"></div>
                         </section>
                         <p class="form-status tasks-global-status" id="tasksStatus" aria-live="polite"></p>
@@ -180,7 +178,7 @@
         </section>
     </div>
     <script src="config.js?v=20260924-12"></script>
-    <script src="tasks.js?v=20261018-01"></script>
-    <script src="account.js?v=20261018-03"></script>
+    <script src="tasks.js?v=20261020-03"></script>
+    <script src="account.js?v=20261020-04"></script>
 </body>
 </html>
