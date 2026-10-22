@@ -14,7 +14,8 @@
     const summaryInput = document.getElementById("readerPublishSummary");
     const visibilityInput = document.getElementById("readerPublishVisibility");
     const ignoredTags = new Set(["SCRIPT", "STYLE", "IFRAME", "OBJECT", "EMBED", "FORM", "INPUT", "BUTTON", "TEXTAREA", "SELECT", "OPTION", "SVG", "VIDEO", "AUDIO"]);
-    const allowedTags = new Set("A ABBR B BLOCKQUOTE BR CAPTION CODE DD DEL DETAILS DIV DL DT EM FIGCAPTION FIGURE H1 H2 H3 H4 H5 H6 HR I IMG LI MARK OL P PRE S SMALL SPAN STRONG SUB SUMMARY SUP TABLE TBODY TD TH THEAD TR U UL".split(" "));
+    const allowedTags = new Set("A ABBR ASIDE B BLOCKQUOTE BR CAPTION CODE DD DEL DETAILS DIV DL DT EM FIGCAPTION FIGURE H1 H2 H3 H4 H5 H6 HR I IMG LI MARK OL P PRE S SMALL SPAN STRONG SUB SUMMARY SUP TABLE TBODY TD TH THEAD TR U UL".split(" "));
+    const safeClasses = new Set("callout callout-heading callout-icon callout-title callout-body checklist-text checklist-box document-reference reader-mermaid reader-mermaid-preview reader-mermaid-source reader-mermaid-status reader-callout-toggle".split(" "));
     let loadedProjectId = "";
     let documents = [];
     let publications = [];
@@ -25,6 +26,8 @@
     let loading = false;
     const paperSpecs = { a4: [794, 1123], letter: [816, 1056], a5: [559, 794] };
     const marginSpecs = { narrow: [48, 48], normal: [76, 72], wide: [104, 96] };
+    let mermaidLibraryPromise = null;
+    let mermaidRenderSequence = 0;
 
     if (editorLink) {
         editorLink.addEventListener("click", function (event) {
@@ -64,7 +67,23 @@
         template.innerHTML = typeof html === "string" ? html : "";
         template.content.querySelectorAll("[data-mermaid-block]").forEach(function (block) {
             const source = block.querySelector(".mermaid-source");
-            const code = document.createElement("pre"); code.textContent = source?.value || source?.textContent || block.textContent || "Diagrama Mermaid"; block.replaceWith(code);
+            const figure = document.createElement("figure"); figure.className = "reader-mermaid";
+            const label = document.createElement("figcaption"); label.textContent = "Diagrama";
+            const preview = document.createElement("div"); preview.className = "reader-mermaid-preview"; preview.hidden = true;
+            const status = document.createElement("p"); status.className = "reader-mermaid-status"; status.textContent = "Carregando diagrama…";
+            const code = document.createElement("pre"); code.className = "reader-mermaid-source"; code.textContent = source?.value || source?.textContent || block.textContent || "Diagrama Mermaid";
+            figure.append(label, preview, status, code); block.replaceWith(figure);
+        });
+        template.content.querySelectorAll("li[data-checklist-item]").forEach(function (item) {
+            const checkbox = item.querySelector(".checklist-box");
+            if (!checkbox) return;
+            const checked = item.dataset.checked === "true" || checkbox.hasAttribute("checked");
+            item.dataset.checked = String(checked);
+            const indicator = document.createElement("span"); indicator.className = "checklist-box"; indicator.setAttribute("aria-hidden", "true"); indicator.textContent = checked ? "✓" : "";
+            checkbox.replaceWith(indicator);
+        });
+        template.content.querySelectorAll(".callout-toggle").forEach(function (button) {
+            const toggle = document.createElement("span"); toggle.className = "reader-callout-toggle"; toggle.setAttribute("aria-hidden", "true"); toggle.textContent = "⌄"; button.replaceWith(toggle);
         });
         const walk = document.createTreeWalker(template.content, NodeFilter.SHOW_ELEMENT);
         const nodes = []; while (walk.nextNode()) nodes.push(walk.currentNode);
@@ -74,6 +93,10 @@
             Array.from(node.attributes).forEach(function (attribute) {
                 const name = attribute.name.toLowerCase();
                 if (name.startsWith("on") || name === "contenteditable" || name === "srcset") node.removeAttribute(attribute.name);
+                else if (name === "class") {
+                    const classes = attribute.value.split(/\s+/).filter(function (value) { return safeClasses.has(value); });
+                    if (classes.length) node.setAttribute("class", classes.join(" ")); else node.removeAttribute("class");
+                }
                 else if (name === "style") {
                     const safeStyles = [];
                     const textAlign = node.style.textAlign;
@@ -85,7 +108,7 @@
                 else if (["href", "src"].includes(name)) {
                     const value = attribute.value.trim();
                     if (!/^(https:\/\/|mailto:|#)/i.test(value)) node.removeAttribute(attribute.name);
-                } else if (!(["alt", "title", "colspan", "rowspan", "scope", "data-docs-image", "data-image-style", "data-caption-position", "data-caption-align", "data-list-type", "data-checklist-item", "data-indent", "data-list-marker", "data-mermaid-block"].includes(name))) node.removeAttribute(attribute.name);
+                } else if (!(["alt", "title", "colspan", "rowspan", "scope", "hidden", "aria-label", "aria-hidden", "data-docs-image", "data-image-style", "data-caption-position", "data-caption-align", "data-list-type", "data-checklist-item", "data-checklist-text", "data-checked", "data-indent", "data-list-marker", "data-callout-type", "data-collapsed", "data-remote-image", "data-local-image", "data-doc-ref", "data-placeholder"].includes(name))) node.removeAttribute(attribute.name);
             });
             if (node.tagName === "A") { node.setAttribute("rel", "noopener noreferrer"); node.setAttribute("target", "_blank"); }
         });
@@ -102,6 +125,55 @@
                 else image.removeAttribute("src");
             } catch (_) { image.removeAttribute("src"); }
         });
+        root.querySelectorAll("img[data-remote-image]").forEach(async function (image) {
+            try {
+                const path = image.dataset.remoteImage;
+                const parts = path.split("/");
+                if (!parts.length || parts.some(function (part) { return !part || part === "." || part === ".." || !/^[A-Za-z0-9._-]+$/.test(part); })) throw new Error("Caminho de imagem inválido.");
+                const accessToken = await token();
+                const imageUrl = context.supabaseUrl.replace(/\/$/, "") + "/storage/v1/object/docs-assets/" + parts.map(encodeURIComponent).join("/");
+                const response = await fetch(imageUrl, { headers: { apikey: context.supabaseKey, Authorization: "Bearer " + accessToken } });
+                if (!response.ok) throw new Error("A imagem não pôde ser carregada.");
+                image.src = URL.createObjectURL(await response.blob());
+            } catch (_) {
+                const fallback = document.createElement("span"); fallback.className = "reader-media-fallback"; fallback.textContent = image.alt || "Imagem indisponível";
+                image.replaceWith(fallback);
+            }
+        });
+        root.querySelectorAll("img[data-local-image]:not([data-remote-image])").forEach(function (image) {
+            const fallback = document.createElement("span"); fallback.className = "reader-media-fallback"; fallback.textContent = image.alt || "Imagem salva apenas no dispositivo do Docs";
+            image.replaceWith(fallback);
+        });
+    }
+    async function hydrateMermaid(root) {
+        const figures = Array.from(root.querySelectorAll(".reader-mermaid"));
+        if (!figures.length) return;
+        try {
+            if (!mermaidLibraryPromise) {
+                mermaidLibraryPromise = new Promise(function (resolve, reject) {
+                    if (window.mermaid) { resolve(window.mermaid); return; }
+                    const script = document.createElement("script");
+                    script.src = new URL("vendor/mermaid/mermaid-12.0.0.min.js", context.docsUrl).toString();
+                    script.async = true;
+                    script.onload = function () { window.mermaid ? resolve(window.mermaid) : reject(new Error("Biblioteca de diagramas indisponível.")); };
+                    script.onerror = function () { reject(new Error("Não foi possível carregar a biblioteca de diagramas.")); };
+                    document.head.append(script);
+                }).then(function (mermaid) { mermaid.initialize({ startOnLoad: false, securityLevel: "strict", theme: "default" }); return mermaid; }).catch(function (error) { mermaidLibraryPromise = null; throw error; });
+            }
+            const mermaid = await mermaidLibraryPromise;
+            for (const figure of figures) {
+                const source = figure.querySelector(".reader-mermaid-source");
+                const preview = figure.querySelector(".reader-mermaid-preview");
+                const status = figure.querySelector(".reader-mermaid-status");
+                try {
+                    const result = await mermaid.render("heartspace-reader-mermaid-" + (++mermaidRenderSequence), source.textContent);
+                    preview.innerHTML = result.svg;
+                    preview.hidden = false; source.hidden = true; status.hidden = true;
+                } catch (error) { status.textContent = "Não foi possível renderizar o diagrama: " + (error.message || "fonte inválida"); }
+            }
+        } catch (error) {
+            figures.forEach(function (figure) { const status = figure.querySelector(".reader-mermaid-status"); status.textContent = error.message || "Não foi possível carregar o diagrama."; });
+        }
     }
     function renderList() {
         list.replaceChildren();
@@ -152,7 +224,7 @@
         const selectionAction = document.createElement("button"); selectionAction.type = "button"; selectionAction.className = "reader-selection-action"; selectionAction.dataset.readerAction = "request-review"; selectionAction.textContent = "Solicitar revisão"; selectionAction.hidden = true;
         main.append(toolbar, title, subtitle, bookControls, stage, footer, selectionAction);
         configureReaderStage(stage, rendered, content);
-        hydrateImages(rendered); loadComments(doc.id, commentList);
+        hydrateImages(rendered); hydrateMermaid(rendered); loadComments(doc.id, commentList);
         if (content.layout === "book") updatePageInformation(stage, pageInfo);
         loadApprovedRevision(doc, publishButton);
         document.getSelection()?.removeAllRanges();
@@ -288,6 +360,12 @@
     }
     list.addEventListener("click", function (event) { const button = event.target.closest("[data-reader-doc]"); if (!button) return; const doc = documents.find(function (item) { return item.id === button.dataset.readerDoc; }); if (doc) renderReader(doc); });
     main.addEventListener("click", function (event) {
+        const calloutToggle = event.target.closest(".reader-callout-toggle");
+        if (calloutToggle) {
+            const callout = calloutToggle.closest(".callout"); const body = callout && callout.querySelector(".callout-body");
+            if (body) { body.hidden = !body.hidden; callout.dataset.collapsed = String(body.hidden); calloutToggle.textContent = body.hidden ? "›" : "⌄"; }
+            return;
+        }
         const action = event.target.closest("[data-reader-action]"); if (!action) return;
         if (action.dataset.readerAction === "publish") showPublishDialog();
         if (action.dataset.readerAction === "request-review") {
