@@ -97,10 +97,9 @@
         main.innerHTML = "";
         const toolbar = document.createElement("div"); toolbar.className = "reader-toolbar";
         const format = document.createElement("span"); format.className = "reader-format-tag"; format.textContent = content.layout === "canvas" ? "PRANCHETA" : "LIVRO";
-        const commentButton = document.createElement("button"); commentButton.type = "button"; commentButton.className = "row-button"; commentButton.dataset.readerAction = "comment"; commentButton.textContent = "Marcar trecho para revisão"; commentButton.disabled = true;
         currentPublication = publications.find(function (publication) { return publication.source_document_id === doc.id; }) || null;
         const publishButton = document.createElement("button"); publishButton.type = "button"; publishButton.className = "portal-button"; publishButton.dataset.readerAction = "publish"; publishButton.textContent = currentPublication ? (currentPublication.status === "withdrawn" ? "Republicar na Wiki" : "Atualizar Wiki") : "Publicar na Wiki";
-        toolbar.append(format, commentButton, publishButton);
+        toolbar.append(format, publishButton);
         const title = document.createElement("h2"); title.className = "reader-document-title"; title.textContent = doc.title || content.title || "Sem título";
         const subtitle = document.createElement("p"); subtitle.className = "reader-document-subtitle"; subtitle.textContent = content.subtitle || ""; subtitle.hidden = !subtitle.textContent;
         const bookControls = document.createElement("div"); bookControls.className = "reader-page-controls"; bookControls.hidden = content.layout === "canvas";
@@ -120,7 +119,8 @@
         const summary = document.createElement("summary"); summary.textContent = "Comentários de revisão";
         const commentList = document.createElement("div"); commentList.className = "reader-comments-list"; commentList.dataset.readerComments = "true";
         comments.append(summary, commentList); footer.append(quote, composer, comments);
-        main.append(toolbar, title, subtitle, bookControls, stage, footer);
+        const selectionAction = document.createElement("button"); selectionAction.type = "button"; selectionAction.className = "reader-selection-action"; selectionAction.dataset.readerAction = "request-review"; selectionAction.textContent = "Solicitar revisão"; selectionAction.hidden = true;
+        main.append(toolbar, title, subtitle, bookControls, stage, footer, selectionAction);
         hydrateImages(rendered); loadComments(doc.id, commentList);
         if (content.layout === "book") updatePageInformation(stage, pageInfo);
         loadApprovedRevision(doc, publishButton);
@@ -214,44 +214,56 @@
     main.addEventListener("click", function (event) {
         const action = event.target.closest("[data-reader-action]"); if (!action) return;
         if (action.dataset.readerAction === "publish") showPublishDialog();
-        if (action.dataset.readerAction === "comment") {
+        if (action.dataset.readerAction === "request-review") {
             if (!selectedQuote) return;
             const quote = main.querySelector("[data-reader-quote]"); quote.textContent = "“" + selectedQuote + "”"; quote.hidden = false;
-            const composer = main.querySelector("[data-reader-composer]"); composer.hidden = false; composer.querySelector("textarea").focus();
+            const composer = main.querySelector("[data-reader-composer]"); composer.hidden = false; action.hidden = true; composer.querySelector("textarea").focus();
         }
-        if (action.dataset.readerAction === "cancel-comment") { main.querySelector("[data-reader-composer]").hidden = true; main.querySelector("[data-reader-quote]").hidden = true; }
+        if (action.dataset.readerAction === "cancel-comment") { main.querySelector("[data-reader-composer]").hidden = true; main.querySelector("[data-reader-quote]").hidden = true; selectedQuote = ""; action.hidden = true; document.getSelection()?.removeAllRanges(); }
         if (["next-page", "previous-page"].includes(action.dataset.readerAction)) {
             const stage = main.querySelector("[data-reader-stage]"); const direction = action.dataset.readerAction === "next-page" ? 1 : -1;
             stage.scrollBy({ left: direction * (bookPageWidth(stage) + 54), behavior: "smooth" });
         }
     });
     main.addEventListener("pointerdown", function (event) {
-        if (event.target.closest('[data-reader-action="comment"]')) {
+        if (event.target.closest('[data-reader-action="request-review"]')) {
+            event.preventDefault();
             const selection = document.getSelection();
             if (selection && selection.toString().trim()) selectedQuote = selection.toString().trim().slice(0, 2000);
         }
     });
+    function updateSelectionAction() {
+        const selectionAction = main.querySelector('[data-reader-action="request-review"]');
+        const composer = main.querySelector("[data-reader-composer]");
+        if (!selectionAction || !composer || !main.closest('[data-workspace-panel="docs-reader"]')?.classList.contains("is-active") || !composer.hidden) return;
+        const selection = document.getSelection(); const content = main.querySelector("[data-reader-content]");
+        const hasSelection = Boolean(selection && content && selection.rangeCount && content.contains(selection.anchorNode) && content.contains(selection.focusNode) && selection.toString().trim().length >= 2);
+        selectedQuote = hasSelection ? selection.toString().trim().slice(0, 2000) : "";
+        if (!hasSelection) { selectionAction.hidden = true; return; }
+        const rect = selection.getRangeAt(0).getBoundingClientRect();
+        if (!rect.width && !rect.height) { selectionAction.hidden = true; return; }
+        selectionAction.hidden = false;
+        const actionRect = selectionAction.getBoundingClientRect();
+        const left = Math.min(window.innerWidth - actionRect.width - 12, Math.max(12, rect.left + rect.width / 2 - actionRect.width / 2));
+        const top = rect.top > actionRect.height + 16 ? rect.top - actionRect.height - 10 : Math.min(window.innerHeight - actionRect.height - 12, rect.bottom + 10);
+        selectionAction.style.left = Math.round(left) + "px"; selectionAction.style.top = Math.round(top) + "px";
+    }
     document.addEventListener("selectionchange", function () {
-        if (!activeDocument || !main.classList.contains("is-active")) return;
-        const selection = document.getSelection(); const button = main.querySelector('[data-reader-action="comment"]');
-        const content = main.querySelector("[data-reader-content]");
-        selectedQuote = selection && content && content.contains(selection.anchorNode) && content.contains(selection.focusNode) ? selection.toString().trim().slice(0, 2000) : "";
-        if (button) button.disabled = selectedQuote.length < 2;
+        if (activeDocument) updateSelectionAction();
     });
-    main.addEventListener("scroll", function (event) { const stage = event.target.closest("[data-reader-stage]"); const info = main.querySelector("[data-reader-page-info]"); if (stage && info) updatePageInformation(stage, info); }, true);
+    main.addEventListener("scroll", function (event) { const stage = event.target.closest("[data-reader-stage]"); const info = main.querySelector("[data-reader-page-info]"); if (stage && info) updatePageInformation(stage, info); if (stage) updateSelectionAction(); }, true);
+    window.addEventListener("resize", updateSelectionAction);
     main.addEventListener("submit", async function (event) {
         const form = event.target.closest("[data-reader-composer]"); if (!form || !activeDocument) return;
         event.preventDefault(); const textarea = form.querySelector("textarea"); const body = textarea.value.trim(); if (!body || !selectedQuote) return;
         const user = context.getUser() || {}; const profile = context.getProfile() || {};
         const name = profile.nickname || profile.full_name || user.user_metadata?.nickname || user.user_metadata?.full_name || user.email || "Membro";
-        const commentButton = main.querySelector('[data-reader-action="comment"]'); commentButton.disabled = true;
         try {
             const inserted = await rest("doc_comments", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ doc_id: activeDocument.id, block_id: "reader-quote:" + Date.now(), author_name: String(name).slice(0, 120), body: body, quote: selectedQuote }) });
-            textarea.value = ""; form.hidden = true; main.querySelector("[data-reader-quote]").hidden = true; const comments = main.querySelector(".reader-comments"); comments.open = true;
+            textarea.value = ""; form.hidden = true; main.querySelector("[data-reader-quote]").hidden = true; main.querySelector('[data-reader-action="request-review"]').hidden = true; selectedQuote = ""; const comments = main.querySelector(".reader-comments"); comments.open = true;
             await loadComments(activeDocument.id, main.querySelector("[data-reader-comments]")); setStatus("Comentário de revisão registrado.", "success");
             if (inserted && inserted[0]) main.querySelector("[data-reader-comments]").scrollIntoView({ block: "nearest", behavior: "smooth" });
         } catch (error) { setStatus(error.message || "Você não tem permissão para comentar neste documento.", "error"); }
-        finally { commentButton.disabled = false; }
     });
     document.getElementById("readerRefresh").addEventListener("click", function () { load(true); });
     document.getElementById("readerPublishClose").addEventListener("click", function () { dialog.close(); });

@@ -786,6 +786,9 @@ body.is-light .project-switch-item.is-active { border-color: transparent; color:
 .reader-main { min-width:0; }
 .reader-toolbar { display:flex; align-items:center; justify-content:flex-end; gap:8px; }
 .reader-toolbar .portal-button { min-height:36px; margin:0; }
+.reader-selection-action { position:fixed; z-index:1000; min-height:38px; padding:0 14px; border:1px solid #c45cf0; border-radius:9px; color:#fff; background:#8700c9; box-shadow:0 8px 24px #0008,0 0 0 3px #aa36d533; font-size:.79rem; font-weight:800; white-space:nowrap; }
+.reader-selection-action:hover { background:#a10ce4; transform:translateY(-1px); }
+.reader-selection-action[hidden] { display:none !important; }
 .reader-format-tag { margin-right:auto; color:#d8a8ee; font-size:.65rem; font-weight:850; letter-spacing:.12em; }
 .reader-document-title { margin:18px 0 5px; font-size:clamp(1.65rem,3vw,2.35rem); letter-spacing:-.04em; }
 .reader-document-subtitle { margin:0 0 18px; color:var(--muted); line-height:1.55; }
