@@ -24,6 +24,19 @@
     let selectedQuote = "";
     let loading = false;
 
+    if (editorLink) {
+        editorLink.addEventListener("click", function (event) {
+            if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+            event.preventDefault();
+            const destination = new URL(context.docsUrl, window.location.href);
+            destination.searchParams.set("source", "dashboard");
+            const projectId = context.getProjectId();
+            if (projectId) destination.searchParams.set("project_id", projectId);
+            const docsWindow = window.open(destination.toString(), "_blank");
+            if (!docsWindow) setStatus("O navegador bloqueou a nova aba. Permita pop-ups para abrir o Docs.", "error");
+        });
+    }
+
     function setStatus(message, state) { status.textContent = message; status.className = "form-status" + (state ? " is-" + state : ""); }
     function setPublishStatus(message, state) { publishStatus.textContent = message; publishStatus.className = "form-status" + (state ? " is-" + state : ""); }
     function parseContent(value) { if (typeof value === "string") { try { value = JSON.parse(value); } catch (_) { value = {}; } } return value && typeof value === "object" ? value : {}; }
@@ -204,7 +217,12 @@
             if (context.getProjectId() !== projectId) return;
             documents = rows.map(function (row) { const readerContent = parseContent(row.content); return Object.assign({}, row, { readerContent: readerContent }); }).filter(function (row) { return row.readerContent.format === "heartspace-html-v1" && !row.readerContent.trash?.deleted_at; });
             setStatus(documents.length + (documents.length === 1 ? " documento disponível." : " documentos disponíveis."));
-            if (editorLink) editorLink.href = context.docsUrl + "?source=dashboard&project_id=" + encodeURIComponent(projectId);
+            if (editorLink) {
+                const destination = new URL(context.docsUrl, window.location.href);
+                destination.searchParams.set("source", "dashboard");
+                destination.searchParams.set("project_id", projectId);
+                editorLink.href = destination.toString();
+            }
             renderList();
             if (documents.length) renderReader(documents[0]); else { activeDocument = null; emptyMain("Nenhum documento encontrado", "Crie ou compartilhe um documento do Docs neste projeto."); }
         } catch (error) { documents = []; activeDocument = null; renderList(); emptyMain("Não foi possível carregar", error.message || "Verifique sua conexão e tente novamente."); setStatus(error.message || "Falha ao carregar documentos.", "error"); }
