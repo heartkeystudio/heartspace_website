@@ -191,8 +191,16 @@
     }
     function bookPageWidth(stage) { return Math.max(1, Number(stage.dataset.pagePitch) || stage.clientWidth || 760); }
     function updatePageInformation(stage, label) {
-        const pitch = bookPageWidth(stage); const page = Math.max(1, Math.floor((stage.scrollLeft + 1) / pitch) + 1);
+        const pitch = bookPageWidth(stage);
+        const lastPageIndex = Math.max(0, Math.floor((stage.scrollWidth - 1) / pitch));
+        const pageIndex = Math.min(lastPageIndex, Math.max(0, Math.round(stage.scrollLeft / pitch)));
+        const page = pageIndex + 1;
         label.textContent = "Página " + page; label.dataset.page = String(page);
+        const controls = label.closest(".reader-page-controls");
+        const previous = controls && controls.querySelector('[data-reader-action="previous-page"]');
+        const next = controls && controls.querySelector('[data-reader-action="next-page"]');
+        if (previous) previous.disabled = pageIndex <= 0;
+        if (next) next.disabled = pageIndex >= lastPageIndex;
     }
     async function loadComments(docId, host) {
         host.replaceChildren();
@@ -289,8 +297,12 @@
         }
         if (action.dataset.readerAction === "cancel-comment") { main.querySelector("[data-reader-composer]").hidden = true; main.querySelector("[data-reader-quote]").hidden = true; selectedQuote = ""; action.hidden = true; document.getSelection()?.removeAllRanges(); }
         if (["next-page", "previous-page"].includes(action.dataset.readerAction)) {
-            const stage = main.querySelector("[data-reader-stage]"); const direction = action.dataset.readerAction === "next-page" ? 1 : -1;
-            stage.scrollBy({ left: direction * (bookPageWidth(stage) + 54), behavior: "smooth" });
+            const stage = main.querySelector("[data-reader-stage]"); const pitch = bookPageWidth(stage);
+            const lastPageIndex = Math.max(0, Math.floor((stage.scrollWidth - 1) / pitch));
+            const currentPageIndex = Math.min(lastPageIndex, Math.max(0, Math.round(stage.scrollLeft / pitch)));
+            const direction = action.dataset.readerAction === "next-page" ? 1 : -1;
+            const targetPageIndex = Math.min(lastPageIndex, Math.max(0, currentPageIndex + direction));
+            stage.scrollTo({ left: targetPageIndex * pitch, behavior: "smooth" });
         }
     });
     main.addEventListener("pointerdown", function (event) {

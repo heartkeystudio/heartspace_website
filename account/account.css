@@ -805,7 +805,7 @@ body.is-light .project-switch-item.is-active { border-color: transparent; color:
 .reader-rendered-content h4 { margin:20px 0 8px; font-size:18px; line-height:1.4; }
 .reader-rendered-content h5 { margin:16px 0 6px; font-size:16px; line-height:1.45; }
 .reader-rendered-content h6 { margin:14px 0 6px; font-size:15px; line-height:1.45; }
-.reader-book-title { margin:0 0 12px !important; color:#f3eff4 !important; font-size:34px !important; line-height:1.2 !important; letter-spacing:-.04em; font-weight:700; }
+.reader-book-title { margin:0 0 12px !important; color:#201b22 !important; font-size:34px !important; line-height:1.2 !important; letter-spacing:-.04em; font-weight:700; }
 .reader-book-subtitle { min-height:1.5em; margin:0 0 36px !important; color:#aaa4b0; font-size:15px; line-height:1.5; }
 .reader-book-stage .reader-book-subtitle[hidden] { display:none; }
 .reader-book-stage .reader-rendered-content h1,.reader-book-stage .reader-rendered-content h2,.reader-book-stage .reader-rendered-content h3 { color:#201b22; }
