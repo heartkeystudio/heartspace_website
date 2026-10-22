@@ -23,6 +23,8 @@
     let currentPublication = null;
     let approvedRevision = null;
     let selectedQuote = "";
+    let pageSnapTimer = 0;
+    let pageSnapSuppressedUntil = 0;
     let loading = false;
     const paperSpecs = { a4: [794, 1123], letter: [816, 1056], a5: [559, 794] };
     const marginSpecs = { narrow: [48, 48], normal: [76, 72], wide: [104, 96] };
@@ -194,7 +196,8 @@
         const format = document.createElement("span"); format.className = "reader-format-tag"; format.textContent = content.layout === "canvas" ? "PRANCHETA" : "LIVRO";
         currentPublication = publications.find(function (publication) { return publication.source_document_id === doc.id; }) || null;
         const publishButton = document.createElement("button"); publishButton.type = "button"; publishButton.className = "portal-button"; publishButton.dataset.readerAction = "publish"; publishButton.textContent = currentPublication ? (currentPublication.status === "withdrawn" ? "Republicar na Wiki" : "Atualizar Wiki") : "Publicar na Wiki";
-        toolbar.append(format, publishButton);
+        const fullscreenButton = document.createElement("button"); fullscreenButton.type = "button"; fullscreenButton.className = "row-button reader-fullscreen-button"; fullscreenButton.dataset.readerAction = "fullscreen"; fullscreenButton.textContent = "Tela cheia"; fullscreenButton.setAttribute("aria-label", "Abrir leitura em tela cheia");
+        toolbar.append(format, fullscreenButton, publishButton);
         const title = document.createElement("h2"); title.className = "reader-document-title"; title.textContent = doc.title || content.title || "Sem título";
         const subtitle = document.createElement("p"); subtitle.className = "reader-document-subtitle"; subtitle.textContent = content.subtitle || ""; subtitle.hidden = !subtitle.textContent;
         const bookControls = document.createElement("div"); bookControls.className = "reader-page-controls"; bookControls.hidden = content.layout === "canvas";
@@ -242,7 +245,9 @@
         const height = landscape ? size[0] : size[1];
         const margin = marginSpecs[page.margin] || marginSpecs.normal;
         const availableWidth = Math.max(240, main.clientWidth || width);
-        const scale = Math.min(1, availableWidth / width);
+        const fullscreen = main.matches(":fullscreen");
+        const availableHeight = fullscreen ? Math.max(240, main.clientHeight - 126) : height;
+        const scale = Math.min(1, availableWidth / width, availableHeight / height);
         const gap = 54;
         stage.style.setProperty("--reader-page-width", width + "px");
         stage.style.setProperty("--reader-page-height", height + "px");
@@ -264,6 +269,24 @@
         rendered.style.zoom = String(scale);
     }
     function bookPageWidth(stage) { return Math.max(1, Number(stage.dataset.pagePitch) || stage.clientWidth || 760); }
+    function moveToPage(stage, pageIndex, behavior) {
+        const pitch = bookPageWidth(stage);
+        const lastPageIndex = Math.max(0, Math.floor((stage.scrollWidth - 1) / pitch));
+        const target = Math.min(lastPageIndex, Math.max(0, pageIndex)) * pitch;
+        pageSnapSuppressedUntil = performance.now() + 500;
+        if (behavior === "quick") {
+            const from = stage.scrollLeft; const distance = target - from; const started = performance.now(); const duration = Math.min(280, Math.max(150, Math.abs(distance) * .22));
+            function frame(now) { const t = Math.min(1, (now - started) / duration); const eased = 1 - Math.pow(1 - t, 3); stage.scrollLeft = from + distance * eased; if (t < 1) requestAnimationFrame(frame); }
+            requestAnimationFrame(frame);
+        } else stage.scrollTo({ left: target, behavior: "smooth" });
+    }
+    function syncFullscreenButton() {
+        const button = main.querySelector('[data-reader-action="fullscreen"]');
+        if (!button) return;
+        const isFullscreen = document.fullscreenElement === main;
+        button.textContent = isFullscreen ? "Sair da tela cheia" : "Tela cheia";
+        button.setAttribute("aria-label", isFullscreen ? "Sair da tela cheia" : "Abrir leitura em tela cheia");
+    }
     function updatePageInformation(stage, label) {
         const pitch = bookPageWidth(stage);
         const lastPageIndex = Math.max(0, Math.floor((stage.scrollWidth - 1) / pitch));
@@ -370,6 +393,10 @@
         }
         const action = event.target.closest("[data-reader-action]"); if (!action) return;
         if (action.dataset.readerAction === "publish") showPublishDialog();
+        if (action.dataset.readerAction === "fullscreen") {
+            if (document.fullscreenElement === main) document.exitFullscreen?.();
+            else main.requestFullscreen?.();
+        }
         if (action.dataset.readerAction === "request-review") {
             if (!selectedQuote) return;
             const quote = main.querySelector("[data-reader-quote]"); quote.textContent = "“" + selectedQuote + "”"; quote.hidden = false;
@@ -378,11 +405,9 @@
         if (action.dataset.readerAction === "cancel-comment") { main.querySelector("[data-reader-composer]").hidden = true; main.querySelector("[data-reader-quote]").hidden = true; selectedQuote = ""; action.hidden = true; document.getSelection()?.removeAllRanges(); }
         if (["next-page", "previous-page"].includes(action.dataset.readerAction)) {
             const stage = main.querySelector("[data-reader-stage]"); const pitch = bookPageWidth(stage);
-            const lastPageIndex = Math.max(0, Math.floor((stage.scrollWidth - 1) / pitch));
-            const currentPageIndex = Math.min(lastPageIndex, Math.max(0, Math.round(stage.scrollLeft / pitch)));
+            const currentPageIndex = Math.max(0, Math.round(stage.scrollLeft / pitch));
             const direction = action.dataset.readerAction === "next-page" ? 1 : -1;
-            const targetPageIndex = Math.min(lastPageIndex, Math.max(0, currentPageIndex + direction));
-            stage.scrollTo({ left: targetPageIndex * pitch, behavior: "smooth" });
+            moveToPage(stage, currentPageIndex + direction, "quick");
         }
     });
     main.addEventListener("pointerdown", function (event) {
@@ -412,6 +437,21 @@
         if (activeDocument) updateSelectionAction();
     });
     main.addEventListener("scroll", function (event) { const stage = event.target.closest("[data-reader-stage]"); const info = main.querySelector("[data-reader-page-info]"); if (stage && info) updatePageInformation(stage, info); if (stage) updateSelectionAction(); }, true);
+    main.addEventListener("scroll", function (event) {
+        const stage = event.target.closest(".reader-book-stage");
+        if (!stage) return;
+        if (performance.now() < pageSnapSuppressedUntil) return;
+        window.clearTimeout(pageSnapTimer);
+        pageSnapTimer = window.setTimeout(function () {
+            const pitch = bookPageWidth(stage);
+            moveToPage(stage, Math.round(stage.scrollLeft / pitch), "smooth");
+        }, 100);
+    }, true);
+    document.addEventListener("fullscreenchange", function () {
+        syncFullscreenButton();
+        const stage = main.querySelector("[data-reader-stage]"); const rendered = main.querySelector("[data-reader-content]");
+        if (activeDocument && stage && rendered) { configureReaderStage(stage, rendered, activeDocument.readerContent); if (activeDocument.readerContent.layout === "book") moveToPage(stage, Number(main.querySelector("[data-reader-page-info]")?.dataset.page || 1) - 1, "smooth"); }
+    });
     window.addEventListener("resize", function () {
         updateSelectionAction();
         const stage = main.querySelector("[data-reader-stage]"); const rendered = main.querySelector("[data-reader-content]");
