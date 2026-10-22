@@ -248,6 +248,8 @@
         stage.style.setProperty("--reader-page-height", height + "px");
         stage.style.setProperty("--reader-margin-x", margin[0] + "px");
         stage.style.setProperty("--reader-margin-y", margin[1] + "px");
+        stage.style.setProperty("--reader-column-width", (width - 2 * margin[0]) + "px");
+        stage.style.setProperty("--reader-column-gap", (2 * margin[0] + gap) + "px");
         stage.style.height = Math.round(height * scale) + "px";
         stage.style.width = Math.round(width * scale) + "px";
         stage.style.marginInline = "auto";
