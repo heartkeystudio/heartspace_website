@@ -131,7 +131,14 @@
         const next = document.createElement("button"); next.type = "button"; next.dataset.readerAction = "next-page"; next.textContent = "Próxima página →";
         bookControls.append(previous, pageInfo, next);
         const stage = document.createElement("div"); stage.className = content.layout === "canvas" ? "reader-canvas-stage" : "reader-book-stage"; stage.dataset.readerStage = "true";
-        const rendered = document.createElement("div"); rendered.className = "reader-rendered-content"; rendered.dataset.readerContent = "true"; rendered.innerHTML = sanitizeHTML(content.body || "<p>Este documento está vazio.</p>"); stage.append(rendered);
+        const rendered = document.createElement("div"); rendered.className = "reader-rendered-content"; rendered.dataset.readerContent = "true"; rendered.innerHTML = sanitizeHTML(content.body || "<p>Este documento está vazio.</p>");
+        if (content.layout === "book") {
+            const pageTitle = document.createElement("h1"); pageTitle.className = "reader-book-title"; pageTitle.textContent = doc.title || content.title || "Sem título";
+            const pageSubtitle = document.createElement("p"); pageSubtitle.className = "reader-book-subtitle"; pageSubtitle.textContent = content.subtitle || ""; pageSubtitle.hidden = !pageSubtitle.textContent;
+            rendered.prepend(pageTitle, pageSubtitle);
+            title.hidden = true; subtitle.hidden = true;
+        }
+        stage.append(rendered);
         const footer = document.createElement("div"); footer.className = "reader-review-footer";
         const quote = document.createElement("blockquote"); quote.className = "reader-selected-quote"; quote.dataset.readerQuote = "true"; quote.hidden = true;
         const composer = document.createElement("form"); composer.className = "reader-comment-composer"; composer.dataset.readerComposer = "true"; composer.hidden = true;
@@ -170,6 +177,8 @@
         stage.style.setProperty("--reader-margin-x", margin[0] + "px");
         stage.style.setProperty("--reader-margin-y", margin[1] + "px");
         stage.style.height = Math.round(height * scale) + "px";
+        stage.style.width = Math.round(width * scale) + "px";
+        stage.style.marginInline = "auto";
         stage.style.backgroundColor = "#25232a";
         stage.style.backgroundSize = Math.round((width + gap) * scale) + "px " + Math.round(height * scale) + "px";
         stage.style.backgroundImage = "repeating-linear-gradient(to right, #eee9df 0, #eee9df " + Math.round(width * scale) + "px, #c9c2b8 " + Math.round(width * scale) + "px, #eee9df " + Math.round((width + 1) * scale) + "px, transparent " + Math.round((width + 1) * scale) + "px, transparent " + Math.round((width + gap) * scale) + "px)";
@@ -177,6 +186,7 @@
         rendered.style.width = width + "px";
         rendered.style.height = height + "px";
         rendered.style.padding = margin[1] + "px " + margin[0] + "px";
+        rendered.style.marginRight = margin[0] + "px";
         rendered.style.zoom = String(scale);
     }
     function bookPageWidth(stage) { return Math.max(1, Number(stage.dataset.pagePitch) || stage.clientWidth || 760); }
