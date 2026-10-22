@@ -721,8 +721,9 @@ Deno.serve(async (request) => {
     if (!studioId || !projectId) return response({ error: "Selecione um projeto." }, 400, origin);
     const { membership, error: membershipError } = await getMembership(admin, studioId, authData.user.id);
     if (membershipError || !membership) return response({ error: "Você não possui acesso a este projeto." }, 403, origin);
+    const publicationAccess = await canManageProjectPublications(admin, studioId, projectId, authData.user.id);
     const { data, error } = await admin.from("project_publications")
-      .select("id, project_id, title, slug, summary, source_url, visibility, status, published_at, created_at, updated_at")
+      .select(publicationAccess.allowed ? "id, project_id, source_document_id, title, slug, summary, source_url, visibility, status, published_at, created_at, updated_at" : "id, project_id, title, slug, summary, source_url, visibility, status, published_at, created_at, updated_at")
       .eq("studio_id", studioId).eq("project_id", projectId).order("updated_at", { ascending: false });
     if (error) return response({ error: "Não foi possível carregar as publicações." }, 500, origin);
     return response({ publications: data || [] }, 200, origin);

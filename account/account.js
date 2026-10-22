@@ -395,15 +395,18 @@
         });
     });
 
-    if (openDocsLink) openDocsLink.addEventListener("click", function (event) {
-        if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-        event.preventDefault();
-        const selectedProjectId = projectContextSelect && projectContextSelect.value || activeProjectId;
-        const launchUrl = docsLaunchUrl(selectedProjectId);
-        openDocsLink.href = launchUrl;
-        const docsWindow = window.open(launchUrl, "_blank");
-        if (!docsWindow) window.location.assign(launchUrl);
-    });
+    window.HeartspaceReaderContext = {
+        getAccessToken: getValidAccessToken,
+        getProjectId: function () { return activeProjectId; },
+        getStudioId: function () { return activeStudioId; },
+        getUser: function () { return currentAccountUser; },
+        getProfile: function () { return currentProfile; },
+        getProject: function () { return currentStudioProjects.find(function (item) { return String(item.id) === String(activeProjectId); }) || null; },
+        docsUrl: docsUrl,
+        supabaseUrl: config.supabaseUrl,
+        supabaseKey: config.supabaseAnonKey,
+        studioFunctionUrl: config.studioFunctionUrl
+    };
 
     function showMemberArea(user, profile) {
         currentAccountUser = user || currentAccountUser;
@@ -569,6 +572,7 @@
             if (button.dataset.workspaceView === "apps") loadProjectApps();
             if (button.dataset.workspaceView === "security") loadAuditLog();
             if (button.dataset.workspaceView === "billing") loadAccountUsage();
+            if (button.dataset.workspaceView === "docs-reader" && window.HeartspaceDocsReader) window.HeartspaceDocsReader.load();
         });
     });
 
@@ -1774,6 +1778,7 @@
         if (viewName === "apps") await loadProjectApps();
         if (viewName === "publications") await loadPublications();
         if (viewName === "tasks") taskApp.setProject(activeProjectId);
+        if (viewName === "docs-reader" && window.HeartspaceDocsReader) await window.HeartspaceDocsReader.load();
         if (viewName === "cloud") await loadCloudSync();
         if (viewName === "discord") await loadDiscord();
         if (viewName === "github") await loadGithubIntegration();

@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#9501d8">
     <link rel="icon" type="image/png" href="../assets/icons/logo.png">
     <title>Conta | HeartSpace</title>
-    <link rel="stylesheet" href="account.css?v=20261020-22">
+    <link rel="stylesheet" href="account.css?v=20261022-01">
 </head>
 <body>
     <main class="account-shell">
@@ -29,7 +29,7 @@
                     <div class="project-context-sidebar" id="projectContextLabel" hidden><small class="project-context-heading nav-copy">PROJETOS</small><div class="project-context-list" id="projectContextList" role="group" aria-label="Projetos do estúdio"></div><select id="projectContextSelect" aria-label="Escolher projeto ativo" hidden tabindex="-1" aria-hidden="true"></select></div>
                     <button class="workspace-nav-item is-active" type="button" data-workspace-view="overview" aria-current="page"><img class="nav-image-icon" src="../assets/icons/home.svg" alt="" aria-hidden="true"><span class="nav-copy">Visão geral</span></button>
                     <button class="workspace-nav-item" type="button" data-workspace-view="tasks" title="Tasks"><img class="nav-image-icon" src="../assets/icons/tasks.svg" alt="" aria-hidden="true"><span class="nav-copy">Tasks</span></button>
-                    <a class="workspace-nav-item docs-nav-item" id="openDocsLink" href="https://docs.heartspace.tools/?source=dashboard" target="_blank" rel="noopener"><img class="nav-image-icon" src="../assets/icons/docs.svg" alt="" aria-hidden="true"><span class="nav-copy">Docs</span></a>
+                    <button class="workspace-nav-item docs-nav-item" id="openDocsLink" type="button" data-workspace-view="docs-reader"><img class="nav-image-icon" src="../assets/icons/docs.svg" alt="" aria-hidden="true"><span class="nav-copy">Docs</span></button>
                     <details class="workspace-nav-group">
                         <summary class="workspace-nav-label"><img class="nav-image-icon" src="../assets/icons/studios.svg" alt="" aria-hidden="true"><span class="nav-copy">Estúdio</span></summary>
                         <button class="workspace-nav-item" type="button" data-workspace-view="studios" data-studio-required><span class="nav-icon">◇</span><span class="nav-copy">Estúdios</span></button>
@@ -53,6 +53,14 @@
                 </nav>
 
                 <div class="workspace-content">
+                    <section class="workspace-view docs-reader-view" data-workspace-panel="docs-reader" hidden aria-labelledby="docsReaderTitle">
+                        <header class="reader-heading"><div><p class="eyebrow">HEARTSPACE DOCS</p><h1 id="docsReaderTitle">Leitura da equipe</h1><p class="workspace-lead">Leia documentos do projeto, marque trechos para revisão e publique versões aprovadas na Wiki.</p></div><a class="reader-editor-link" id="readerEditorLink" href="https://docs.heartspace.tools/" target="_blank" rel="noopener">Abrir no Docs ↗</a></header>
+                        <p class="form-status" id="readerStatus" aria-live="polite">Escolha um projeto para carregar os documentos.</p>
+                        <div class="reader-layout"><aside class="reader-library"><div class="reader-library-heading"><strong>Documentos</strong><button class="row-button" id="readerRefresh" type="button">Atualizar</button></div><div class="reader-document-list" id="readerDocumentList"></div></aside>
+                            <article class="reader-main" id="readerMain"><div class="reader-empty"><span>▤</span><h2>Escolha um documento</h2><p>Os documentos compartilhados com você aparecerão aqui.</p></div></article>
+                        </div>
+                        <dialog class="reader-publish-dialog" id="readerPublishDialog"><form id="readerPublishForm" class="studio-form"><div class="admin-detail-heading"><div><p class="panel-kicker">WIKI HEARTSPACE</p><h2>Publicar versão aprovada</h2></div><button class="integration-modal-close" type="button" id="readerPublishClose" aria-label="Fechar">×</button></div><p class="field-note">A Wiki recebe uma cópia da revisão aprovada. Alterações futuras no Docs não mudam esta publicação.</p><label for="readerPublishTitle">Título</label><input id="readerPublishTitle" maxlength="160" required><label for="readerPublishSlug">Endereço</label><input id="readerPublishSlug" maxlength="60" required><label for="readerPublishSummary">Resumo</label><textarea id="readerPublishSummary" maxlength="500"></textarea><label for="readerPublishVisibility">Visibilidade</label><select id="readerPublishVisibility"><option value="public">Pública</option><option value="unlisted">Não listada</option></select><p class="form-status" id="readerPublishStatus" aria-live="polite"></p><div class="reader-dialog-actions"><button type="button" class="row-button" id="readerPublishCancel">Cancelar</button><button class="portal-button" id="readerPublishSubmit" type="submit">Publicar na Wiki</button></div></form></dialog>
+                    </section>
                     <section class="workspace-view is-active" data-workspace-panel="overview" aria-labelledby="memberTitle">
                         <p class="eyebrow">VISÃO GERAL</p>
                         <h1 id="memberTitle">Seu espaço começa aqui.</h1>
@@ -186,6 +194,7 @@
     </div>
     <script src="config.js?v=20260924-12"></script>
     <script src="tasks.js?v=20261020-05"></script>
-    <script src="account.js?v=20261020-07"></script>
+    <script src="account.js?v=20261022-01"></script>
+    <script src="reader.js?v=20261022-01"></script>
 </body>
 </html>
