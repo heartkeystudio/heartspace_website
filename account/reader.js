@@ -23,6 +23,8 @@
     let approvedRevision = null;
     let selectedQuote = "";
     let loading = false;
+    const paperSpecs = { a4: [794, 1123], letter: [816, 1056], a5: [559, 794] };
+    const marginSpecs = { narrow: [48, 48], normal: [76, 72], wide: [104, 96] };
 
     if (editorLink) {
         editorLink.addEventListener("click", function (event) {
@@ -71,7 +73,15 @@
             if (!allowedTags.has(node.tagName)) { node.replaceWith(...node.childNodes); return; }
             Array.from(node.attributes).forEach(function (attribute) {
                 const name = attribute.name.toLowerCase();
-                if (name.startsWith("on") || name === "style" || name === "contenteditable" || name === "srcset") node.removeAttribute(attribute.name);
+                if (name.startsWith("on") || name === "contenteditable" || name === "srcset") node.removeAttribute(attribute.name);
+                else if (name === "style") {
+                    const safeStyles = [];
+                    const textAlign = node.style.textAlign;
+                    if (["left", "center", "right", "justify"].includes(textAlign)) safeStyles.push("text-align:" + textAlign);
+                    const lineIndent = node.style.getPropertyValue("--line-indent").trim();
+                    if (/^(?:0|[1-9]\d{0,2})px$/.test(lineIndent)) safeStyles.push("--line-indent:" + lineIndent);
+                    if (safeStyles.length) node.setAttribute("style", safeStyles.join(";")); else node.removeAttribute("style");
+                }
                 else if (["href", "src"].includes(name)) {
                     const value = attribute.value.trim();
                     if (!/^(https:\/\/|mailto:|#)/i.test(value)) node.removeAttribute(attribute.name);
@@ -134,14 +144,44 @@
         comments.append(summary, commentList); footer.append(quote, composer, comments);
         const selectionAction = document.createElement("button"); selectionAction.type = "button"; selectionAction.className = "reader-selection-action"; selectionAction.dataset.readerAction = "request-review"; selectionAction.textContent = "Solicitar revisão"; selectionAction.hidden = true;
         main.append(toolbar, title, subtitle, bookControls, stage, footer, selectionAction);
+        configureReaderStage(stage, rendered, content);
         hydrateImages(rendered); loadComments(doc.id, commentList);
         if (content.layout === "book") updatePageInformation(stage, pageInfo);
         loadApprovedRevision(doc, publishButton);
         document.getSelection()?.removeAllRanges();
     }
-    function bookPageWidth(stage) { const content = stage.querySelector(".reader-rendered-content"); return Math.max(1, content && content.clientWidth || stage.clientWidth || 760); }
+    function configureReaderStage(stage, rendered, content) {
+        if (content.layout !== "book") {
+            stage.style.removeProperty("height"); stage.style.removeProperty("background-size"); stage.style.removeProperty("background-image");
+            rendered.style.removeProperty("zoom"); rendered.style.removeProperty("width"); rendered.style.removeProperty("height"); rendered.style.removeProperty("padding");
+            stage.dataset.pagePitch = ""; return;
+        }
+        const page = content.page || {};
+        const size = paperSpecs[page.size] || paperSpecs.a4;
+        const landscape = page.orientation === "landscape";
+        const width = landscape ? size[1] : size[0];
+        const height = landscape ? size[0] : size[1];
+        const margin = marginSpecs[page.margin] || marginSpecs.normal;
+        const availableWidth = Math.max(240, main.clientWidth || width);
+        const scale = Math.min(1, availableWidth / width);
+        const gap = 54;
+        stage.style.setProperty("--reader-page-width", width + "px");
+        stage.style.setProperty("--reader-page-height", height + "px");
+        stage.style.setProperty("--reader-margin-x", margin[0] + "px");
+        stage.style.setProperty("--reader-margin-y", margin[1] + "px");
+        stage.style.height = Math.round(height * scale) + "px";
+        stage.style.backgroundColor = "#25232a";
+        stage.style.backgroundSize = Math.round((width + gap) * scale) + "px " + Math.round(height * scale) + "px";
+        stage.style.backgroundImage = "repeating-linear-gradient(to right, #eee9df 0, #eee9df " + Math.round(width * scale) + "px, #c9c2b8 " + Math.round(width * scale) + "px, #eee9df " + Math.round((width + 1) * scale) + "px, transparent " + Math.round((width + 1) * scale) + "px, transparent " + Math.round((width + gap) * scale) + "px)";
+        stage.dataset.pagePitch = String((width + gap) * scale);
+        rendered.style.width = width + "px";
+        rendered.style.height = height + "px";
+        rendered.style.padding = margin[1] + "px " + margin[0] + "px";
+        rendered.style.zoom = String(scale);
+    }
+    function bookPageWidth(stage) { return Math.max(1, Number(stage.dataset.pagePitch) || stage.clientWidth || 760); }
     function updatePageInformation(stage, label) {
-        const width = bookPageWidth(stage); const gap = 54; const page = Math.max(1, Math.floor((stage.scrollLeft + gap) / (width + gap)) + 1);
+        const pitch = bookPageWidth(stage); const page = Math.max(1, Math.floor((stage.scrollLeft + 1) / pitch) + 1);
         label.textContent = "Página " + page; label.dataset.page = String(page);
     }
     async function loadComments(docId, host) {
@@ -270,7 +310,11 @@
         if (activeDocument) updateSelectionAction();
     });
     main.addEventListener("scroll", function (event) { const stage = event.target.closest("[data-reader-stage]"); const info = main.querySelector("[data-reader-page-info]"); if (stage && info) updatePageInformation(stage, info); if (stage) updateSelectionAction(); }, true);
-    window.addEventListener("resize", updateSelectionAction);
+    window.addEventListener("resize", function () {
+        updateSelectionAction();
+        const stage = main.querySelector("[data-reader-stage]"); const rendered = main.querySelector("[data-reader-content]");
+        if (activeDocument && stage && rendered) configureReaderStage(stage, rendered, activeDocument.readerContent);
+    });
     main.addEventListener("submit", async function (event) {
         const form = event.target.closest("[data-reader-composer]"); if (!form || !activeDocument) return;
         event.preventDefault(); const textarea = form.querySelector("textarea"); const body = textarea.value.trim(); if (!body || !selectedQuote) return;
