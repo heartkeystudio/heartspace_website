@@ -213,7 +213,8 @@
             rendered.prepend(pageTitle, pageSubtitle);
             title.hidden = true; subtitle.hidden = true;
         }
-        stage.append(rendered);
+        const pageTail = document.createElement("div"); pageTail.className = "reader-page-tail"; pageTail.setAttribute("aria-hidden", "true");
+        stage.append(rendered, pageTail);
         const footer = document.createElement("div"); footer.className = "reader-review-footer";
         const quote = document.createElement("blockquote"); quote.className = "reader-selected-quote"; quote.dataset.readerQuote = "true"; quote.hidden = true;
         const composer = document.createElement("form"); composer.className = "reader-comment-composer"; composer.dataset.readerComposer = "true"; composer.hidden = true;
@@ -234,6 +235,7 @@
     }
     function configureReaderStage(stage, rendered, content) {
         if (content.layout !== "book") {
+            stage.querySelector(".reader-page-tail")?.remove();
             stage.style.removeProperty("height"); stage.style.removeProperty("background-size"); stage.style.removeProperty("background-image");
             rendered.style.removeProperty("zoom"); rendered.style.removeProperty("width"); rendered.style.removeProperty("height"); rendered.style.removeProperty("padding");
             stage.dataset.pagePitch = ""; return;
@@ -254,9 +256,7 @@
         stage.style.setProperty("--reader-margin-x", margin[0] + "px");
         stage.style.setProperty("--reader-margin-y", margin[1] + "px");
         stage.style.setProperty("--reader-column-width", (width - 2 * margin[0]) + "px");
-        // A coluna começa depois da margem esquerda; some só a margem direita
-        // e o vão visual entre folhas para manter cada página no centro do stage.
-        stage.style.setProperty("--reader-column-gap", (margin[0] + gap) + "px");
+        stage.style.setProperty("--reader-column-gap", (2 * margin[0] + gap) + "px");
         stage.style.height = Math.round(height * scale) + "px";
         stage.style.width = Math.round(width * scale) + "px";
         stage.style.marginInline = "auto";
@@ -267,8 +267,13 @@
         rendered.style.width = width + "px";
         rendered.style.height = height + "px";
         rendered.style.padding = margin[1] + "px " + margin[0] + "px";
-        rendered.style.marginRight = margin[0] + "px";
+        rendered.style.marginRight = "0px";
         rendered.style.zoom = String(scale);
+        // O layout em colunas termina no limite do texto, antes da margem direita
+        // da última folha. Reserva a área de rolagem para alinhar todas as folhas.
+        const pageCount = Math.max(1, Math.ceil(Math.max(1, rendered.scrollWidth - margin[0]) / (width + gap)));
+        const tail = stage.querySelector(".reader-page-tail");
+        if (tail) tail.style.width = Math.max(0, (pageCount - 1) * (width + gap) * scale) + "px";
     }
     function bookPageWidth(stage) { return Math.max(1, Number(stage.dataset.pagePitch) || stage.clientWidth || 760); }
     function moveToPage(stage, pageIndex, behavior) {
