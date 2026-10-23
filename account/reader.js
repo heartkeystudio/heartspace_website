@@ -252,8 +252,7 @@
         const margin = marginSpecs[page.margin] || marginSpecs.normal;
         const availableWidth = Math.max(240, main.clientWidth || width);
         const fullscreen = main.matches(":fullscreen");
-        const toolbarHeight = main.querySelector(".reader-toolbar")?.getBoundingClientRect().height || 36;
-        const availableHeight = fullscreen ? Math.max(240, main.clientHeight - toolbarHeight - 36) : height;
+        const availableHeight = fullscreen ? Math.max(240, main.clientHeight - 28) : height;
         const scale = Math.min(1, availableWidth / width, availableHeight / height);
         const gap = 54;
         stage.style.setProperty("--reader-page-width", width + "px");
