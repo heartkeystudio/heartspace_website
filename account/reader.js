@@ -254,7 +254,9 @@
         stage.style.setProperty("--reader-margin-x", margin[0] + "px");
         stage.style.setProperty("--reader-margin-y", margin[1] + "px");
         stage.style.setProperty("--reader-column-width", (width - 2 * margin[0]) + "px");
-        stage.style.setProperty("--reader-column-gap", (2 * margin[0] + gap) + "px");
+        // A coluna começa depois da margem esquerda; some só a margem direita
+        // e o vão visual entre folhas para manter cada página no centro do stage.
+        stage.style.setProperty("--reader-column-gap", (margin[0] + gap) + "px");
         stage.style.height = Math.round(height * scale) + "px";
         stage.style.width = Math.round(width * scale) + "px";
         stage.style.marginInline = "auto";
@@ -270,12 +272,13 @@
     }
     function bookPageWidth(stage) { return Math.max(1, Number(stage.dataset.pagePitch) || stage.clientWidth || 760); }
     function moveToPage(stage, pageIndex, behavior) {
+        window.clearTimeout(pageSnapTimer);
         const pitch = bookPageWidth(stage);
         const lastPageIndex = Math.max(0, Math.floor((stage.scrollWidth - 1) / pitch));
         const target = Math.min(lastPageIndex, Math.max(0, pageIndex)) * pitch;
         pageSnapSuppressedUntil = performance.now() + 500;
         if (behavior === "quick") {
-            const from = stage.scrollLeft; const distance = target - from; const started = performance.now(); const duration = Math.min(280, Math.max(150, Math.abs(distance) * .22));
+            const from = stage.scrollLeft; const distance = target - from; const started = performance.now(); const duration = Math.min(190, Math.max(120, Math.abs(distance) * .16));
             function frame(now) { const t = Math.min(1, (now - started) / duration); const eased = 1 - Math.pow(1 - t, 3); stage.scrollLeft = from + distance * eased; if (t < 1) requestAnimationFrame(frame); }
             requestAnimationFrame(frame);
         } else stage.scrollTo({ left: target, behavior: "smooth" });
@@ -404,10 +407,14 @@
         }
         if (action.dataset.readerAction === "cancel-comment") { main.querySelector("[data-reader-composer]").hidden = true; main.querySelector("[data-reader-quote]").hidden = true; selectedQuote = ""; action.hidden = true; document.getSelection()?.removeAllRanges(); }
         if (["next-page", "previous-page"].includes(action.dataset.readerAction)) {
-            const stage = main.querySelector("[data-reader-stage]"); const pitch = bookPageWidth(stage);
-            const currentPageIndex = Math.max(0, Math.round(stage.scrollLeft / pitch));
+            const stage = main.querySelector("[data-reader-stage]");
+            const pageLabel = main.querySelector("[data-reader-page-info]");
+            const currentPageIndex = Math.max(0, Number(pageLabel?.dataset.page || 1) - 1);
             const direction = action.dataset.readerAction === "next-page" ? 1 : -1;
-            moveToPage(stage, currentPageIndex + direction, "quick");
+            const lastPageIndex = Math.max(0, Math.floor((stage.scrollWidth - 1) / bookPageWidth(stage)));
+            const targetPageIndex = Math.min(lastPageIndex, Math.max(0, currentPageIndex + direction));
+            moveToPage(stage, targetPageIndex, "quick");
+            if (pageLabel) { pageLabel.dataset.page = String(targetPageIndex + 1); pageLabel.textContent = "Página " + (targetPageIndex + 1); }
         }
     });
     main.addEventListener("pointerdown", function (event) {
