@@ -854,10 +854,15 @@ body.is-light .project-switch-item.is-active { border-color: transparent; color:
 .reader-book-stage .reader-rendered-content td,.reader-book-stage .reader-rendered-content th { border:1px solid #aaa; padding:6px; }
 .reader-canvas-stage { width:100%; height:calc(100vh - 190px); min-height:480px; max-height:none; overflow:auto; padding:clamp(20px,3vw,40px); border:1px solid var(--border); border-radius:12px; background:rgba(7,7,10,.25); }
 .reader-canvas-stage .reader-rendered-content { width:100%; max-width:none; margin:0; color:var(--text); font-size:1rem; line-height:1.5; overflow-wrap:anywhere; }
-.reader-main:fullscreen { box-sizing:border-box; display:flex; flex-direction:column; gap:0; width:100vw; height:100vh; min-height:0; padding:14px 22px; overflow:auto; color:var(--text); background:var(--bg,#111516); }
+.reader-main:fullscreen { position:relative; box-sizing:border-box; display:flex; flex-direction:column; gap:0; width:100vw; height:100vh; min-height:0; padding:14px 22px; overflow:auto; color:var(--text); background:var(--bg,#111516); }
 .reader-main:fullscreen .reader-toolbar { flex:0 0 auto; }
 .reader-main:fullscreen .reader-document-title { flex:0 0 auto; margin:0 0 8px; }
 .reader-main:fullscreen .reader-page-controls { flex:0 0 auto; margin:4px 0 8px; }
+.reader-main:fullscreen .reader-page-controls.is-fullscreen-overlay:not([hidden]) { position:absolute; inset:0; z-index:5; display:block; margin:0; pointer-events:none; }
+.reader-main:fullscreen .reader-page-controls.is-fullscreen-overlay [data-reader-page-info] { display:none; }
+.reader-main:fullscreen .reader-page-controls.is-fullscreen-overlay button { position:absolute; display:grid; width:44px; height:44px; padding:0; place-items:center; transform:translateY(-50%); border:1px solid #ffffff36; border-radius:50%; color:#fff; background:#17151de8; box-shadow:0 5px 18px #0005; font-size:1.5rem; line-height:1; pointer-events:auto; }
+.reader-main:fullscreen .reader-page-controls.is-fullscreen-overlay button:hover:not(:disabled) { border-color:#d492f0; background:#30213a; }
+.reader-main:fullscreen .reader-page-controls.is-fullscreen-overlay button:disabled { opacity:.32; }
 .reader-main:fullscreen .reader-book-stage { flex:0 0 auto; }
 .reader-main:fullscreen .reader-canvas-stage { flex:1 1 auto; width:100%; height:auto; min-height:0; }
 .reader-main:fullscreen .reader-review-footer { flex:0 0 auto; max-height:18vh; overflow:auto; }

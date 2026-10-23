@@ -252,7 +252,8 @@
         const margin = marginSpecs[page.margin] || marginSpecs.normal;
         const availableWidth = Math.max(240, main.clientWidth || width);
         const fullscreen = main.matches(":fullscreen");
-        const availableHeight = fullscreen ? Math.max(240, main.clientHeight - 126) : height;
+        const toolbarHeight = main.querySelector(".reader-toolbar")?.getBoundingClientRect().height || 36;
+        const availableHeight = fullscreen ? Math.max(240, main.clientHeight - toolbarHeight - 36) : height;
         const scale = Math.min(1, availableWidth / width, availableHeight / height);
         const gap = 54;
         stage.style.setProperty("--reader-page-width", width + "px");
@@ -313,6 +314,40 @@
         const isFullscreen = document.fullscreenElement === main;
         button.textContent = isFullscreen ? "Sair da tela cheia" : "Tela cheia";
         button.setAttribute("aria-label", isFullscreen ? "Sair da tela cheia" : "Abrir leitura em tela cheia");
+        const controls = main.querySelector(".reader-page-controls");
+        const previous = controls?.querySelector('[data-reader-action="previous-page"]');
+        const next = controls?.querySelector('[data-reader-action="next-page"]');
+        const pageInfo = controls?.querySelector("[data-reader-page-info]");
+        if (!controls || !previous || !next) return;
+        const showSideControls = isFullscreen && activeDocument?.readerContent.layout === "book";
+        if (!showSideControls) {
+            controls.classList.remove("is-fullscreen-overlay");
+            previous.textContent = "← Página anterior"; next.textContent = "Próxima página →";
+            previous.removeAttribute("style"); next.removeAttribute("style");
+            previous.setAttribute("aria-label", "Página anterior"); next.setAttribute("aria-label", "Próxima página");
+            if (pageInfo) pageInfo.hidden = false;
+            return;
+        }
+        controls.classList.add("is-fullscreen-overlay");
+        previous.textContent = "←"; next.textContent = "→";
+        previous.setAttribute("aria-label", "Página anterior"); next.setAttribute("aria-label", "Próxima página");
+        if (pageInfo) pageInfo.hidden = true;
+        positionFullscreenPageControls();
+    }
+    function positionFullscreenPageControls() {
+        if (document.fullscreenElement !== main || activeDocument?.readerContent.layout !== "book") return;
+        const stage = main.querySelector(".reader-book-stage");
+        const controls = main.querySelector(".reader-page-controls");
+        const previous = controls?.querySelector('[data-reader-action="previous-page"]');
+        const next = controls?.querySelector('[data-reader-action="next-page"]');
+        if (!stage || !controls || !previous || !next) return;
+        const root = main.getBoundingClientRect(); const page = stage.getBoundingClientRect();
+        const previousWidth = previous.getBoundingClientRect().width || 44; const nextWidth = next.getBoundingClientRect().width || 44;
+        const y = page.top - root.top + page.height / 2;
+        const left = Math.max(8, page.left - root.left - previousWidth - 14);
+        const right = Math.min(root.width - nextWidth - 8, page.right - root.left + 14);
+        previous.style.left = Math.round(left) + "px"; previous.style.top = Math.round(y) + "px";
+        next.style.left = Math.round(right) + "px"; next.style.top = Math.round(y) + "px";
     }
     function updatePageInformation(stage, label) {
         const pitch = bookPageWidth(stage);
@@ -482,7 +517,13 @@
     document.addEventListener("fullscreenchange", function () {
         syncFullscreenButton();
         const stage = main.querySelector("[data-reader-stage]"); const rendered = main.querySelector("[data-reader-content]");
-        if (activeDocument && stage && rendered) { configureReaderStage(stage, rendered, activeDocument.readerContent); if (activeDocument.readerContent.layout === "book") moveToPage(stage, Number(main.querySelector("[data-reader-page-info]")?.dataset.page || 1) - 1, "smooth"); }
+        if (activeDocument && stage && rendered) {
+            const pageInfo = main.querySelector("[data-reader-page-info]");
+            const pageIndex = Math.max(0, Number(pageInfo?.dataset.page || 1) - 1);
+            configureReaderStage(stage, rendered, activeDocument.readerContent);
+            if (activeDocument.readerContent.layout === "book") { moveToPage(stage, pageIndex, "instant"); if (pageInfo) updatePageInformation(stage, pageInfo); }
+            requestAnimationFrame(positionFullscreenPageControls);
+        }
     });
     window.addEventListener("resize", function () {
         updateSelectionAction();
@@ -494,6 +535,7 @@
             if (activeDocument.readerContent.layout === "book") {
                 moveToPage(stage, pageIndex, "instant");
                 if (pageInfo) updatePageInformation(stage, pageInfo);
+                positionFullscreenPageControls();
             }
         }
     });
