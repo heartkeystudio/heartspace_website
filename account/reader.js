@@ -276,7 +276,11 @@
         // da última folha. Reserva a área de rolagem para alinhar todas as folhas.
         const pageCount = Math.max(1, Math.ceil(Math.max(1, rendered.scrollWidth - margin[0]) / (width + gap)));
         const tail = stage.querySelector(".reader-page-tail");
-        if (tail) tail.style.width = Math.max(0, (pageCount - 1) * (width + gap) * scale) + "px";
+        if (tail) {
+            const finalPageRightEdge = (pageCount - 1) * (width + gap) * scale + Math.round(width * scale);
+            tail.style.left = Math.max(0, finalPageRightEdge - 1) + "px";
+            tail.style.width = "1px";
+        }
     }
     function bookPageWidth(stage) { return Math.max(1, Number(stage.dataset.pagePitch) || stage.clientWidth || 760); }
     function moveToPage(stage, pageIndex, behavior) {
