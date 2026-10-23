@@ -210,6 +210,9 @@
         if (content.layout === "book") {
             const pageTitle = document.createElement("h1"); pageTitle.className = "reader-book-title"; pageTitle.textContent = doc.title || content.title || "Sem título";
             const pageSubtitle = document.createElement("p"); pageSubtitle.className = "reader-book-subtitle"; pageSubtitle.textContent = content.subtitle || ""; pageSubtitle.hidden = !pageSubtitle.textContent;
+            const titleAlign = ["left", "center", "right", "justify"].includes(content.title_align) ? content.title_align : "left";
+            pageTitle.style.textAlign = titleAlign;
+            pageSubtitle.style.textAlign = titleAlign;
             rendered.prepend(pageTitle, pageSubtitle);
             title.hidden = true; subtitle.hidden = true;
         }
