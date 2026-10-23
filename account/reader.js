@@ -289,7 +289,8 @@
         const lastPageIndex = Math.max(0, Math.floor((stage.scrollWidth - 1) / pitch));
         const target = Math.min(lastPageIndex, Math.max(0, pageIndex)) * pitch;
         pageSnapSuppressedUntil = performance.now() + 500;
-        if (behavior === "quick") {
+        if (behavior === "instant") stage.scrollLeft = target;
+        else if (behavior === "quick") {
             const from = stage.scrollLeft; const distance = target - from; const started = performance.now(); const duration = Math.min(190, Math.max(120, Math.abs(distance) * .16));
             function frame(now) { const t = Math.min(1, (now - started) / duration); const eased = 1 - Math.pow(1 - t, 3); stage.scrollLeft = from + distance * eased; if (t < 1) requestAnimationFrame(frame); }
             requestAnimationFrame(frame);
@@ -474,7 +475,15 @@
     window.addEventListener("resize", function () {
         updateSelectionAction();
         const stage = main.querySelector("[data-reader-stage]"); const rendered = main.querySelector("[data-reader-content]");
-        if (activeDocument && stage && rendered) configureReaderStage(stage, rendered, activeDocument.readerContent);
+        if (activeDocument && stage && rendered) {
+            const pageInfo = main.querySelector("[data-reader-page-info]");
+            const pageIndex = Math.max(0, Number(pageInfo?.dataset.page || 1) - 1);
+            configureReaderStage(stage, rendered, activeDocument.readerContent);
+            if (activeDocument.readerContent.layout === "book") {
+                moveToPage(stage, pageIndex, "instant");
+                if (pageInfo) updatePageInformation(stage, pageInfo);
+            }
+        }
     });
     main.addEventListener("submit", async function (event) {
         const form = event.target.closest("[data-reader-composer]"); if (!form || !activeDocument) return;
