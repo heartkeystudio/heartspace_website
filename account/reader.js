@@ -206,6 +206,7 @@
         const next = document.createElement("button"); next.type = "button"; next.dataset.readerAction = "next-page"; next.textContent = "Próxima página →";
         bookControls.append(previous, pageInfo, next);
         const stage = document.createElement("div"); stage.className = content.layout === "canvas" ? "reader-canvas-stage" : "reader-book-stage"; stage.dataset.readerStage = "true";
+        if (content.layout === "book") { stage.tabIndex = 0; stage.setAttribute("aria-label", "Página do livro. Use as setas esquerda e direita para navegar."); }
         const rendered = document.createElement("div"); rendered.className = "reader-rendered-content"; rendered.dataset.readerContent = "true"; rendered.innerHTML = sanitizeHTML(content.body || "<p>Este documento está vazio.</p>");
         if (content.layout === "book") {
             const pageTitle = document.createElement("h1"); pageTitle.className = "reader-book-title"; pageTitle.textContent = doc.title || content.title || "Sem título";
@@ -295,6 +296,16 @@
             function frame(now) { const t = Math.min(1, (now - started) / duration); const eased = 1 - Math.pow(1 - t, 3); stage.scrollLeft = from + distance * eased; if (t < 1) requestAnimationFrame(frame); }
             requestAnimationFrame(frame);
         } else stage.scrollTo({ left: target, behavior: "smooth" });
+    }
+    function navigatePage(direction) {
+        const stage = main.querySelector(".reader-book-stage");
+        const pageInfo = main.querySelector("[data-reader-page-info]");
+        if (!stage || !pageInfo) return;
+        const currentPageIndex = Math.max(0, Number(pageInfo.dataset.page || 1) - 1);
+        const lastPageIndex = Math.max(0, Math.floor((stage.scrollWidth - 1) / bookPageWidth(stage)));
+        const targetPageIndex = Math.min(lastPageIndex, Math.max(0, currentPageIndex + direction));
+        moveToPage(stage, targetPageIndex, "instant");
+        updatePageInformation(stage, pageInfo);
     }
     function syncFullscreenButton() {
         const button = main.querySelector('[data-reader-action="fullscreen"]');
@@ -420,15 +431,16 @@
         }
         if (action.dataset.readerAction === "cancel-comment") { main.querySelector("[data-reader-composer]").hidden = true; main.querySelector("[data-reader-quote]").hidden = true; selectedQuote = ""; action.hidden = true; document.getSelection()?.removeAllRanges(); }
         if (["next-page", "previous-page"].includes(action.dataset.readerAction)) {
-            const stage = main.querySelector("[data-reader-stage]");
-            const pageLabel = main.querySelector("[data-reader-page-info]");
-            const currentPageIndex = Math.max(0, Number(pageLabel?.dataset.page || 1) - 1);
-            const direction = action.dataset.readerAction === "next-page" ? 1 : -1;
-            const lastPageIndex = Math.max(0, Math.floor((stage.scrollWidth - 1) / bookPageWidth(stage)));
-            const targetPageIndex = Math.min(lastPageIndex, Math.max(0, currentPageIndex + direction));
-            moveToPage(stage, targetPageIndex, "quick");
-            if (pageLabel) { pageLabel.dataset.page = String(targetPageIndex + 1); pageLabel.textContent = "Página " + (targetPageIndex + 1); }
+            navigatePage(action.dataset.readerAction === "next-page" ? 1 : -1);
         }
+    });
+    main.addEventListener("keydown", function (event) {
+        if (event.altKey || event.ctrlKey || event.metaKey || !["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+        if (event.target.closest("input, textarea, select, button, [contenteditable='true']")) return;
+        const stage = event.target.closest(".reader-book-stage") || (document.fullscreenElement === main ? main.querySelector(".reader-book-stage") : null);
+        if (!stage) return;
+        event.preventDefault();
+        navigatePage(event.key === "ArrowRight" ? 1 : -1);
     });
     main.addEventListener("pointerdown", function (event) {
         if (event.target.closest('[data-reader-action="request-review"]')) {
