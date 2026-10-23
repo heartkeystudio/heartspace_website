@@ -194,10 +194,14 @@
         main.innerHTML = "";
         const toolbar = document.createElement("div"); toolbar.className = "reader-toolbar";
         const format = document.createElement("span"); format.className = "reader-format-tag"; format.textContent = content.layout === "canvas" ? "PRANCHETA" : "LIVRO";
+        const docsButton = document.createElement("a"); docsButton.className = "row-button reader-docs-button"; docsButton.textContent = "Abrir no Docs ↗"; docsButton.href = context.docsUrl; docsButton.target = "_blank"; docsButton.rel = "noopener noreferrer";
+        const docsDestination = new URL(context.docsUrl, window.location.href); docsDestination.searchParams.set("source", "dashboard");
+        const projectId = context.getProjectId(); if (projectId) docsDestination.searchParams.set("project_id", projectId);
+        docsButton.href = docsDestination.toString();
         currentPublication = publications.find(function (publication) { return publication.source_document_id === doc.id; }) || null;
         const publishButton = document.createElement("button"); publishButton.type = "button"; publishButton.className = "portal-button"; publishButton.dataset.readerAction = "publish"; publishButton.textContent = currentPublication ? (currentPublication.status === "withdrawn" ? "Republicar na Wiki" : "Atualizar Wiki") : "Publicar na Wiki";
         const fullscreenButton = document.createElement("button"); fullscreenButton.type = "button"; fullscreenButton.className = "row-button reader-fullscreen-button"; fullscreenButton.dataset.readerAction = "fullscreen"; fullscreenButton.textContent = "Tela cheia"; fullscreenButton.setAttribute("aria-label", "Abrir leitura em tela cheia");
-        toolbar.append(format, fullscreenButton, publishButton);
+        toolbar.append(format, docsButton, fullscreenButton, publishButton);
         const title = document.createElement("h2"); title.className = "reader-document-title"; title.textContent = doc.title || content.title || "Sem título";
         const subtitle = document.createElement("p"); subtitle.className = "reader-document-subtitle"; subtitle.textContent = content.subtitle || ""; subtitle.hidden = !subtitle.textContent;
         const bookControls = document.createElement("div"); bookControls.className = "reader-page-controls"; bookControls.hidden = content.layout === "canvas";
