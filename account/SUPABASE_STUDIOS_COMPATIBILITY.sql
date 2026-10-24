@@ -4,6 +4,7 @@
 
 alter table public.studios add column if not exists slug text;
 alter table public.studios add column if not exists created_by uuid references auth.users(id) on delete restrict;
+alter table public.studios add column if not exists owner_id uuid references auth.users(id) on delete restrict;
 alter table public.studios add column if not exists updated_at timestamptz not null default now();
 -- SUPABASE_STUDIO_SCHEMA.sql instala o trigger genérico set_updated_at também
 -- em profiles. A tabela legada precisa desta coluna para que qualquer update

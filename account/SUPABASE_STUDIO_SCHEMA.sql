@@ -17,6 +17,7 @@ create table if not exists public.studios (
     slug text not null unique check (slug ~ '^[a-z0-9](?:[a-z0-9-]{1,58}[a-z0-9])?$'),
     name text not null check (char_length(name) between 2 and 80),
     created_by uuid not null references auth.users(id) on delete restrict,
+    owner_id uuid references auth.users(id) on delete restrict,
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now()
 );
@@ -104,7 +105,7 @@ alter table public.studio_audit_log enable row level security;
 create policy "profile owner reads own profile" on public.profiles for select to authenticated using (id = auth.uid());
 create policy "profile owner creates own profile" on public.profiles for insert to authenticated with check (id = auth.uid());
 create policy "profile owner updates own profile" on public.profiles for update to authenticated using (id = auth.uid()) with check (id = auth.uid());
-create policy "members read their studios" on public.studios for select to authenticated using (public.is_studio_member(id));
+create policy "members and owners read their studios" on public.studios for select to authenticated using (public.is_studio_member(id) or owner_id = auth.uid());
 create policy "members read studio roster" on public.studio_members for select to authenticated using (public.is_studio_member(studio_id));
 create policy "members read studio projects" on public.studio_projects for select to authenticated using (public.is_studio_member(studio_id));
 create policy "admins read studio invites" on public.studio_invites for select to authenticated using (public.is_studio_admin(studio_id));

@@ -478,11 +478,12 @@ Deno.serve(async (request) => {
       return response({ error: "Não foi possível carregar seus estúdios." }, 500, origin);
     }
     const studioIds = (memberships || []).map((membership) => membership.studio_id);
-    if (!studioIds.length) return response({ studios: [] }, 200, origin);
-    const { data: studios, error: studiosError } = await admin
-      // A listagem precisa continuar compatível com o banco legado do Hub, onde
-      // `slug` não era uma coluna obrigatória.
-      .from("studios").select("id, name, created_at").in("id", studioIds);
+    const { data: studios, error: studiosError } = studioIds.length
+      ? await admin
+        // A listagem precisa continuar compatível com o banco legado do Hub, onde
+        // `slug` não era uma coluna obrigatória.
+        .from("studios").select("id, name, created_at").in("id", studioIds)
+      : { data: [], error: null };
     if (studiosError) {
       console.error("list_studios studios failed", {
         code: studiosError.code,
@@ -491,8 +492,27 @@ Deno.serve(async (request) => {
       });
       return response({ error: "Não foi possível carregar seus estúdios." }, 500, origin);
     }
-    const byId = new Map((studios || []).map((studio) => [studio.id, studio]));
-    return response({ studios: (memberships || []).map((membership) => ({ ...membership, studios: byId.get(membership.studio_id) })).filter((membership) => membership.studios) }, 200, origin);
+    const listed = new Map();
+    for (const membership of memberships || []) {
+      const studio = (studios || []).find((item) => item.id === membership.studio_id);
+      if (studio) listed.set(membership.studio_id, { ...membership, studios: studio });
+    }
+
+    // O Hub já trata owner_id como vínculo de contingência: estúdios antigos
+    // podem existir antes da associação studio_members ser sincronizada.
+    const { data: ownedStudios, error: ownedStudiosError } = await admin
+      .from("studios").select("id, name, created_at").eq("owner_id", authData.user.id);
+    if (ownedStudiosError) {
+      console.warn("list_studios owner fallback failed", {
+        code: ownedStudiosError.code,
+        message: ownedStudiosError.message,
+      });
+    } else {
+      for (const studio of ownedStudios || []) {
+        listed.set(studio.id, { studio_id: studio.id, role: "owner", studios: studio });
+      }
+    }
+    return response({ studios: [...listed.values()] }, 200, origin);
   }
 
   if (payload.action === "create_studio") {

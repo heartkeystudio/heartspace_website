@@ -1136,7 +1136,12 @@
         const membershipsResponse = await fetch(membersUrl.toString(), { headers: headers });
         const memberships = await membershipsResponse.json().catch(function () { return []; });
         if (!membershipsResponse.ok || !Array.isArray(memberships)) throw new Error("A lista de estúdios não respondeu.");
-        const studioIds = memberships.map(function (membership) { return membership.studio_id; }).filter(Boolean);
+        const ownedUrl = new URL(restBase + "studios");
+        ownedUrl.searchParams.set("select", "id,name,created_at");
+        if (currentUserId) ownedUrl.searchParams.set("owner_id", "eq." + currentUserId);
+        const ownedResponse = currentUserId ? await fetch(ownedUrl.toString(), { headers: headers }) : null;
+        const ownedStudios = ownedResponse && ownedResponse.ok ? await ownedResponse.json().catch(function () { return []; }) : [];
+        const studioIds = Array.from(new Set(memberships.map(function (membership) { return membership.studio_id; }).concat(ownedStudios.map(function (studio) { return studio.id; })).filter(Boolean)));
         if (!studioIds.length) return [];
         const studiosUrl = new URL(restBase + "studios");
         // `slug` é opcional na estrutura legada do Hub; a lista não depende dele.
@@ -1146,7 +1151,15 @@
         const studios = await studiosResponse.json().catch(function () { return []; });
         if (!studiosResponse.ok || !Array.isArray(studios)) throw new Error("Os dados dos estúdios não responderam.");
         const studiosById = new Map(studios.map(function (studio) { return [studio.id, studio]; }));
-        return memberships.map(function (membership) { return Object.assign({}, membership, { studios: studiosById.get(membership.studio_id) }); }).filter(function (membership) { return membership.studios; });
+        const listed = new Map();
+        memberships.forEach(function (membership) {
+            const studio = studiosById.get(membership.studio_id);
+            if (studio) listed.set(membership.studio_id, Object.assign({}, membership, { studios: studio }));
+        });
+        ownedStudios.forEach(function (studio) {
+            if (studio && studio.id && studiosById.has(studio.id)) listed.set(studio.id, { studio_id: studio.id, role: "owner", studios: studiosById.get(studio.id) });
+        });
+        return Array.from(listed.values());
     }
 
     async function loadProfile(token) {
