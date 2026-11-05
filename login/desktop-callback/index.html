@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="referrer" content="no-referrer">
+    <meta name="theme-color" content="#9501d8">
+    <title>Concluir acesso | HeartSpace</title>
+    <style>
+        :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; background: #101213; color: #f5f2f7; }
+        * { box-sizing: border-box; }
+        body { min-height: 100vh; margin: 0; display: grid; place-items: center; padding: 24px; background: radial-gradient(ellipse at 50% 0, #321641 0, #17141b 38%, #101213 78%); }
+        main { width: min(100%, 510px); padding: clamp(24px, 6vw, 42px); border: 1px solid #37323c; border-radius: 18px; background: #19181d; box-shadow: 0 24px 80px #0008; }
+        .brand { display: inline-flex; align-items: center; gap: 10px; color: #fff; font-weight: 800; text-decoration: none; }
+        .mark { display: grid; width: 32px; height: 32px; place-items: center; border-radius: 9px; color: #fff; background: #9501d8; }
+        .eyebrow { margin: 30px 0 9px; color: #d99df2; font-size: .69rem; font-weight: 850; letter-spacing: .14em; }
+        h1 { margin: 0; font-size: clamp(1.6rem, 6vw, 2.1rem); letter-spacing: -.04em; }
+        p { color: #bcb5c2; font-size: .94rem; line-height: 1.65; }
+        button { display: block; width: 100%; min-height: 48px; margin-top: 24px; border: 0; border-radius: 9px; color: #fff; background: #9501d8; font: inherit; font-weight: 800; cursor: pointer; }
+        button:hover { background: #ad20ed; }
+        button:focus-visible, a:focus-visible { outline: 3px solid #db9cff; outline-offset: 3px; }
+        button[hidden], [hidden] { display: none !important; }
+        .status { min-height: 1.6em; margin: 16px 0 0; font-size: .82rem; }
+        .status.is-error { color: #ffb0bd; }
+        .status.is-success { color: #9ce3b2; }
+        .footnote { margin: 22px 0 0; font-size: .76rem; }
+    </style>
+</head>
+<body>
+    <main>
+        <div class="brand" aria-label="HeartSpace"><span class="mark" aria-hidden="true">H</span><span>HeartSpace</span></div>
+        <p class="eyebrow">LOGIN DESKTOP · PROTOCOLO 1</p>
+        <h1 id="title">Conclua no HeartSpace Core.</h1>
+        <p id="description">Mantenha o Core aberto neste computador. Ao continuar, o código temporário de autenticação será encaminhado apenas ao listener local que iniciou este login.</p>
+        <button id="continueButton" type="button" hidden>Concluir no HeartSpace Core</button>
+        <p class="status" id="status" role="status" aria-live="polite"></p>
+        <p class="footnote">Se o Core estiver fechado, abra-o e inicie uma nova tentativa de login.</p>
+    </main>
+    <script>
+        (() => {
+            "use strict";
+            const query = new URLSearchParams(window.location.search);
+            const exactlyOne = (name) => {
+                const values = query.getAll(name);
+                return values.length === 1 ? values[0] : null;
+            };
+            const attempt = {
+                version: exactlyOne("protocol_version"),
+                state: exactlyOne("state"),
+                port: exactlyOne("port"),
+                code: exactlyOne("code"),
+                hasTokenFragment: /(?:^|[&#])(?:access_token|refresh_token|token_type)=/i.test(window.location.hash.slice(1)),
+            };
+            window.history.replaceState(null, document.title, window.location.pathname);
+
+            const button = document.getElementById("continueButton");
+            const status = document.getElementById("status");
+            const title = document.getElementById("title");
+            const description = document.getElementById("description");
+            const validPort = typeof attempt.port === "string" && /^[0-9]{1,5}$/.test(attempt.port) && Number(attempt.port) >= 1024 && Number(attempt.port) <= 65535;
+            const valid = attempt.version === "1" && /^[A-Za-z0-9_-]{43}$/.test(attempt.state || "") && validPort && typeof attempt.code === "string" && attempt.code.length > 0 && attempt.code.length <= 2048 && !attempt.hasTokenFragment;
+            if (!valid) {
+                title.textContent = "Este link não pode concluir o login desktop.";
+                description.textContent = attempt.hasTokenFragment ? "O provedor retornou tokens em um formato inesperado. Por segurança, eles não foram lidos nem encaminhados. Inicie um novo login pelo Core." : "Os dados do retorno estão ausentes, duplicados ou inválidos. Inicie uma nova tentativa pelo HeartSpace Core.";
+                status.textContent = "Nenhum dado foi salvo neste navegador.";
+                status.classList.add("is-error");
+                return;
+            }
+
+            button.hidden = false;
+            button.addEventListener("click", () => {
+                const destination = new URL("http://127.0.0.1:" + Number(attempt.port) + "/auth/callback");
+                destination.searchParams.set("protocol_version", "1");
+                destination.searchParams.set("state", attempt.state);
+                destination.searchParams.set("code", attempt.code);
+                window.location.assign(destination.toString());
+            });
+        })();
+    </script>
+</body>
+</html>

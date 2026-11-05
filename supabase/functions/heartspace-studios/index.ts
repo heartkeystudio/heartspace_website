@@ -381,6 +381,55 @@ Deno.serve(async (request) => {
     return response({ ok: true }, 200, origin);
   }
 
+  if (payload.action === "request_desktop_magic_link") {
+    const email = typeof payload.email === "string" ? payload.email.trim().toLowerCase() : "";
+    const state = typeof payload.state === "string" ? payload.state : "";
+    const codeChallenge = typeof payload.code_challenge === "string" ? payload.code_challenge : "";
+    const port = payload.port;
+    const validPort = typeof port === "number" && Number.isInteger(port) && port >= 1024 && port <= 65535;
+    if (payload.protocol_version !== 1 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 || !/^[A-Za-z0-9_-]{43}$/.test(state) || !validPort || !/^[A-Za-z0-9_-]{43}$/.test(codeChallenge) || payload.code_challenge_method !== "S256") {
+      return response({ error: "Os dados da tentativa de login são inválidos." }, 400, origin);
+    }
+    const { data: access, error: accessError } = await admin.from("beta_access")
+      .select("status").eq("email", email).maybeSingle();
+    if (accessError) {
+      console.error("desktop magic link access lookup failed", { code: accessError.code, message: accessError.message });
+      return response({ error: "Não foi possível verificar o acesso ao beta agora." }, 503, origin);
+    }
+    if (access?.status === "approved") {
+      const publicApiKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY") || "";
+      if (!publicApiKey) {
+        console.error("desktop magic link is missing its configured public Auth API key");
+        return response({ error: "O envio do link desktop ainda não está configurado no servidor." }, 503, origin);
+      }
+      const callback = new URL("https://www.heartspace.tools/login/desktop-callback/");
+      callback.searchParams.set("protocol_version", "1");
+      callback.searchParams.set("state", state);
+      callback.searchParams.set("port", String(port));
+      const otpUrl = new URL(supabaseUrl.replace(/\/$/, "") + "/auth/v1/otp");
+      otpUrl.searchParams.set("redirect_to", callback.toString());
+      let authResponse: Response;
+      try {
+        authResponse = await fetch(otpUrl.toString(), {
+          method: "POST",
+          headers: { apikey: publicApiKey, "Content-Type": "application/json" },
+          body: JSON.stringify({ email, create_user: true, code_challenge: codeChallenge, code_challenge_method: "s256" }),
+        });
+      } catch {
+        return response({ error: "Não foi possível enviar o link agora." }, 503, origin);
+      }
+      if (authResponse.status === 429) return response({ error: "Muitas tentativas de envio. Aguarde antes de tentar novamente.", code: "RATE_LIMITED" }, 429, origin);
+      if (!authResponse.ok) {
+        const authError = await authResponse.json().catch(() => ({}));
+        const description = [authError.error, authError.error_description, authError.message, authError.msg, authError.code, authError.error_code].filter((value) => typeof value === "string").join(" ").toLowerCase();
+        if (description.includes("captcha")) return response({ error: "O provedor de autenticação exige CAPTCHA para este envio.", code: "CAPTCHA_REQUIRED" }, 503, origin);
+        return response({ error: "Não foi possível enviar o link agora." }, 503, origin);
+      }
+    }
+    // Mantém a resposta indistinguível quando o e-mail não está liberado.
+    return response({ ok: true }, 200, origin);
+  }
+
   if (payload.action === "get_publication") {
     const publicationId = typeof payload.publication_id === "string" ? payload.publication_id : "";
     if (!publicationId) return response({ error: "Publicação inválida." }, 400, origin);

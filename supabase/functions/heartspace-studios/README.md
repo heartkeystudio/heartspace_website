@@ -26,6 +26,47 @@ com estado temporário e de uso único.
 | `configure_project_cloud_sync` | `{ "action": "configure_project_cloud_sync", "studio_id": "...", "project_id": "..." }` | cria/atualiza a pasta online do projeto |
 | `get_hub_project_cloud_sync` | `{ "action": "get_hub_project_cloud_sync", "project_id": "..." }` | metadados seguros de sincronização para o Hub |
 | `issue_hub_cloud_access` | `{ "action": "issue_hub_cloud_access", "project_id": "..." }` | token de acesso curto, mantido apenas em memória pelo Hub |
+| `request_desktop_magic_link` | versão 1, e-mail, state, porta loopback e challenge PKCE do Core | envia OTP somente após validar o acesso ao beta; resposta não revela se o e-mail está aprovado |
+
+## Login desktop do Core (protocolo v1)
+
+O login desktop usa PKCE do Core e não cria sessão no navegador. A ação
+`request_desktop_magic_link` valida `protocol_version`, e-mail, `state`, porta
+entre 1024 e 65535, `code_challenge` e `code_challenge_method: "S256"`. Para
+e-mails aprovados, a Function chama diretamente `/auth/v1/otp` com o challenge
+recebido e o método `s256`; não usa o SDK Admin para gerar um verificador
+concorrente. E-mails não aprovados recebem a mesma resposta `200 {"ok":true}`.
+Limites de envio da API Auth são preservados como `429`; a Function não registra
+o link, o código nem o corpo enviado ao Auth.
+
+Antes de publicar a Function e o site:
+
+1. Inclua `https://www.heartspace.tools/login/desktop-callback/` na allowlist de
+   redirects do Supabase Auth, mantendo o domínio e o caminho exatos e permitindo
+   somente a query dinâmica prevista no documento `CORE_DESKTOP_AUTH_V1.md` do
+   projeto HeartSpace.
+2. Confirme que o template de confirmação usa a URL de confirmação do Supabase
+   e preserva o `redirect_to` para que o retorno chegue como `?code=...` junto
+   de `protocol_version`, `state` e `port`. Não configure retorno de tokens em
+   fragmento.
+3. Se a Function não receber a variável padrão `SUPABASE_ANON_KEY`, configure-a
+   com a chave pública de Auth do mesmo projeto. A service role continua apenas
+   no servidor.
+4. O domínio publicado usa GitHub Pages atrás do Cloudflare e atualmente não
+   envia `Cache-Control: no-store` para páginas HTML. Crie no Cloudflare uma
+   regra de resposta para `/login/desktop-callback/*` que defina
+   `Cache-Control: no-store` e `Referrer-Policy: no-referrer`, além de ignorar
+   cache nessa rota. A meta `no-referrer` da página é defesa adicional; ela não
+   substitui o cabeçalho HTTP. A integração não está pronta para produção até
+   essa regra estar ativa e verificada.
+5. Se CAPTCHA estiver habilitado no Auth, a ação retorna `CAPTCHA_REQUIRED` e
+   não contorna a proteção. Adapte a tela para coletar e encaminhar o desafio
+   antes de ativar o fluxo desktop.
+
+O callback do site valida os parâmetros, remove query/fragment da barra de
+endereço antes de qualquer navegação adicional e mantém os valores somente em
+memória. O botão navega para o IP loopback e caminho fixos definidos no contrato;
+somente o Core troca o código por uma sessão.
 
 Antes de publicar, aplique `account/SUPABASE_STUDIO_SCHEMA.sql` e configure o
 segredo `HEARTSPACE_ALLOWED_ORIGINS` com os domínios públicos permitidos. A
