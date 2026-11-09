@@ -679,7 +679,7 @@
         }
         .download-panel h2 { font-size: 2.4rem; letter-spacing: -1px; }
         .download-panel p { max-width: 600px; margin: 14px auto 28px; color: var(--text-muted); line-height: 1.5; }
-        .platform-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; max-width: 520px; margin: 0 auto; }
+        .platform-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; max-width: 520px; margin: 0 auto; }
         .platform-option { padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: rgba(255,255,255,0.03); text-align: left; text-decoration: none; color: var(--text-main); transition: 0.25s; }
         .platform-option:hover { border-color: var(--primary); background: rgba(149,1,216,0.12); transform: translateY(-2px); }
         .platform-option.recommended { border-color: rgba(149,1,216,0.8); background: rgba(149,1,216,0.12); }
@@ -859,10 +859,10 @@
 
         <h1><span class="text-gradient">Seu estúdio, conectado.</span></h1>
         
-        <p>O HeartSpace Hub reúne seu estúdio, seus projetos e apps especializados. Crie localmente, sincronize quando houver rede e mantenha seus arquivos sempre seus.</p>
+        <p>O HeartSpace reúne Core e Hub para você organizar seu estúdio, seus projetos e apps especializados. Crie localmente, sincronize quando houver rede e mantenha seus arquivos sempre seus.</p>
         
         <div class="hero-cta-group">
-            <a id="primaryDownload" href="#download" class="btn-primary btn-large">Baixar o Hub grátis</a>
+            <a id="primaryDownload" href="#download" class="btn-primary btn-large">Baixar HeartSpace</a>
             <a href="#ecosystem" class="btn-primary btn-outline btn-large">Explorar o ecossistema</a>
         </div>
 
@@ -991,20 +991,20 @@
 
     <section id="download" class="download-section">
         <div class="download-panel">
-            <h2>O Hub será o seu ponto de partida.</h2>
-            <p>Baixe a versão alpha do HeartSpace Hub para reunir seus projetos, apps e contexto de estúdio em um só lugar.</p>
-            <div class="platform-grid" aria-label="Downloads do HeartSpace Hub" id="hubDownloads">
-                <a class="platform-option" data-platform="windows-x86_64" href="https://github.com/heartkeystudio/heartspace-releases/releases/download/hub-v0.8.1.alpha.4/hub-windows-x86_64-v0.8.1.alpha.4.zip"><b>Windows</b><small>x86_64 · Alpha 0.8.1 · 70 MB</small></a>
-                <a class="platform-option" data-platform="linux-x86_64" href="https://github.com/heartkeystudio/heartspace-releases/releases/download/hub-v0.8.1.alpha.4/hub-linux-x86_64-v0.8.1.alpha.4.zip"><b>Linux</b><small>x86_64 · Alpha 0.8.1 · 63 MB</small></a>
+            <h2>HeartSpace para Linux.</h2>
+            <p>Baixe o HeartSpace Desktop: Core + Hub em um pacote portátil. Esta prévia alpha está disponível para Linux x86_64.</p>
+            <div class="platform-grid" aria-label="Download do HeartSpace para Linux" id="heartspaceDownloads">
+                <a class="platform-option recommended" data-platform="linux-x86_64" href="https://github.com/heartkeystudio/heartspace-releases/releases/download/desktop-v0.1.0-alpha.1/HeartSpace-0.1.0-alpha.1-linux-x86_64.tar.gz"><b>Linux</b><small>x86_64 · Alpha 0.1.0 · 71 MB</small></a>
             </div>
+            <p class="download-requirements">Extraia a pasta completa em um local permanente, execute <code>HeartSpace</code> e siga as boas-vindas. No Linux, requer GTK3, WebKitGTK 4.1 e uma bandeja do sistema disponível.</p>
         </div>
         <div id="changelog" class="changelog-section">
             <article class="release-card">
-                <div class="release-version" data-release-version>v0.8.1.alpha.4</div>
+                <div class="release-version" data-release-version>v0.1.0-alpha.1</div>
                 <div class="release-copy">
                     <small data-release-channel>Canal alpha</small>
-                    <h3>HeartSpace Hub</h3>
-                    <p data-release-notes>Primeira versão enviada para QA da Heartkey.</p>
+                    <h3>HeartSpace Desktop</h3>
+                    <p data-release-notes>Core + Hub em um pacote portátil para Linux x86_64.</p>
                 </div>
             </article>
         </div>
@@ -1170,30 +1170,30 @@
             try { localStorage.setItem(THEME_STORAGE_KEY, isLight ? 'light' : 'dark'); } catch (_) {}
         });
 
-        const HUB_RELEASE_CATALOG_URL = 'https://cdn.heartspace.tools/hub-release.json';
+        const HEARTSPACE_RELEASE_CATALOG_URL = 'https://cdn.heartspace.tools/heartspace-desktop-release.json';
+        const HEARTSPACE_LINUX_FALLBACK_URL = 'https://github.com/heartkeystudio/heartspace-releases/releases/download/desktop-v0.1.0-alpha.1/HeartSpace-0.1.0-alpha.1-linux-x86_64.tar.gz';
 
         function formatMegabytes(bytes) {
             return `${Math.round(Number(bytes) / 1000000)} MB`;
         }
 
         function highlightRecommendedPlatform() {
-            const userAgent = navigator.userAgent.toLowerCase();
-            const platform = userAgent.includes('windows') ? 'windows-x86_64' : userAgent.includes('linux') ? 'linux-x86_64' : null;
-            if (!platform) return;
-            const option = document.querySelector(`[data-platform="${platform}"]`);
+            const option = document.querySelector('[data-platform="linux-x86_64"]');
             if (!option) return;
             option.classList.add('recommended');
             const primaryDownload = document.getElementById('primaryDownload');
             if (primaryDownload) primaryDownload.href = option.href;
         }
 
-        async function refreshHubDownloads() {
+        async function refreshHeartSpaceDownloads() {
             try {
-                const response = await fetch(HUB_RELEASE_CATALOG_URL, { cache: 'no-store' });
+                const response = await fetch(HEARTSPACE_RELEASE_CATALOG_URL, { cache: 'no-store' });
                 if (!response.ok) throw new Error('Catálogo indisponível');
 
                 const catalog = await response.json();
-                if (!Array.isArray(catalog.platforms) || typeof catalog.version !== 'string') return;
+                if (catalog.schema_version !== 1 || catalog.product_id !== 'heartspace-desktop' || typeof catalog.version !== 'string' || !Array.isArray(catalog.platforms)) return;
+                const release = catalog.platforms.find((item) => item.platform === 'linux-x86_64');
+                if (!release || typeof release.package_url !== 'string' || !release.package_url.startsWith('https://') || !/^\d+$/.test(String(release.package_size_bytes))) return;
 
                 const version = document.querySelector('[data-release-version]');
                 const channel = document.querySelector('[data-release-channel]');
@@ -1202,23 +1202,21 @@
                 if (channel && typeof catalog.channel === 'string') channel.textContent = `Canal ${catalog.channel}`;
                 if (notes && typeof catalog.release_notes === 'string') notes.textContent = catalog.release_notes;
 
-                document.querySelectorAll('[data-platform]').forEach((link) => {
-                    const release = catalog.platforms.find((item) => item.platform === link.dataset.platform);
-                    if (!release || typeof release.package_url !== 'string' || !release.package_url.startsWith('https://')) return;
-
+                const link = document.querySelector('[data-platform="linux-x86_64"]');
+                if (link) {
                     link.href = release.package_url;
                     const details = link.querySelector('small');
-                    if (details) {
-                        details.textContent = `x86_64 · Alpha ${catalog.version} · ${formatMegabytes(release.package_size_bytes)}`;
-                    }
-                });
+                    if (details) details.textContent = `x86_64 · Alpha ${catalog.version} · ${formatMegabytes(release.package_size_bytes)}`;
+                }
                 highlightRecommendedPlatform();
             } catch (_) {
-                // Os links do HTML são o fallback da última release conhecida.
+                // Mantém o download conhecido da release alpha publicada.
+                const link = document.querySelector('[data-platform="linux-x86_64"]');
+                if (link) link.href = HEARTSPACE_LINUX_FALLBACK_URL;
             }
         }
 
-        refreshHubDownloads();
+        refreshHeartSpaceDownloads();
         highlightRecommendedPlatform();
 
         menuToggle.addEventListener('click', () => {
