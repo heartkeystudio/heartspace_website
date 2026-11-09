@@ -27,6 +27,22 @@ com estado temporário e de uso único.
 | `get_hub_project_cloud_sync` | `{ "action": "get_hub_project_cloud_sync", "project_id": "..." }` | metadados seguros de sincronização para o Hub |
 | `issue_hub_cloud_access` | `{ "action": "issue_hub_cloud_access", "project_id": "..." }` | token de acesso curto, mantido apenas em memória pelo Hub |
 | `request_desktop_magic_link` | versão 1, e-mail, state, porta loopback e challenge PKCE do Core | envia OTP somente após validar o acesso ao beta; resposta não revela se o e-mail está aprovado |
+| `get_desktop_app_context` | contrato v1 com app, estúdio, projeto e intenção `home` | contexto do Docs e permissões validados para o Core, sem tokens ou URLs |
+
+## Admissão dos apps web no Core
+
+A ação `get_desktop_app_context` aceita inicialmente apenas `app_id: "docs"`.
+Ela valida o formato estrito do contrato, a sessão e o beta, o vínculo entre
+projeto e estúdio, a associação da conta, a configuração em `project_apps` e a
+permissão de leitura. A projeção de `read`, `edit`, `comment` e `publish` vem da
+função SQL `heartspace_project_access`, que também sustenta as políticas RLS do
+Docs; a Edge Function não mantém uma segunda matriz de cargos.
+
+Respostas desta ação usam `Cache-Control: no-store` e o envelope de erro do
+contrato Core/apps web v1. Requisições nativas sem `Origin` continuam obrigadas a
+apresentar um Bearer válido. A origem `https://docs.heartspace.tools` faz parte da
+lista base de CORS; `HEARTSPACE_ALLOWED_ORIGINS` pode acrescentar outras origens
+permitidas sem removê-la.
 
 ## Login desktop do Core (protocolo v1)
 

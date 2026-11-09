@@ -8,7 +8,8 @@ const corsHeaders = {
 };
 
 function allowedOrigin(origin: string | null) {
-  const configured = (Deno.env.get("HEARTSPACE_ALLOWED_ORIGINS") || "https://heartspace.tools,https://www.heartspace.tools,https://heartspace.com.br,https://www.heartspace.com.br")
+  const required = "https://heartspace.tools,https://www.heartspace.tools,https://docs.heartspace.tools,https://heartspace.com.br,https://www.heartspace.com.br";
+  const configured = `${required},${Deno.env.get("HEARTSPACE_ALLOWED_ORIGINS") || ""}`
     .split(",").map((value) => value.trim()).filter(Boolean);
   return origin && configured.includes(origin) ? origin : null;
 }
@@ -17,6 +18,25 @@ function response(body: Record<string, unknown>, status = 200, origin: string | 
   const headers = new Headers({ ...corsHeaders, "Content-Type": "application/json" });
   if (origin) headers.set("Access-Control-Allow-Origin", origin);
   return new Response(JSON.stringify(body), { status, headers });
+}
+
+function desktopContextResponse(body: Record<string, unknown>, status: number, origin: string | null) {
+  const result = response(body, status, origin);
+  result.headers.set("Cache-Control", "no-store");
+  return result;
+}
+
+function desktopContextError(code: string, message: string, retryable: boolean, status: number, origin: string | null) {
+  return desktopContextResponse({ error: { code, message, retryable } }, status, origin);
+}
+
+const canonicalUuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+
+function isExactObject(value: unknown, keys: string[]) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const actual = Object.keys(value as Record<string, unknown>).sort();
+  const expected = [...keys].sort();
+  return actual.length === expected.length && actual.every((key, index) => key === expected[index]);
 }
 
 function betaRedirectUrl(value: unknown) {
@@ -352,6 +372,21 @@ Deno.serve(async (request) => {
 
   let payload: Record<string, unknown>;
   try { payload = await request.json(); } catch { return response({ error: "Corpo da requisição inválido." }, 400, origin); }
+  const desktopContextRequest = payload.action === "get_desktop_app_context";
+  if (desktopContextRequest) {
+    const studioId = typeof payload.studio_id === "string" ? payload.studio_id : "";
+    const projectId = typeof payload.project_id === "string" ? payload.project_id : "";
+    const intent = payload.intent;
+    if (!isExactObject(payload, ["action", "protocol_version", "app_id", "studio_id", "project_id", "intent"])
+      || payload.protocol_version !== 1
+      || payload.app_id !== "docs"
+      || !canonicalUuidPattern.test(studioId)
+      || !canonicalUuidPattern.test(projectId)
+      || !isExactObject(intent, ["kind"])
+      || (intent as Record<string, unknown>).kind !== "home") {
+      return desktopContextError("INVALID_REQUEST", "A solicitação para abrir o Docs é inválida.", false, 400, origin);
+    }
+  }
 
   // A entrada no beta passa pela Function para impedir a criação indiscriminada
   // de contas diretamente no endpoint público de OTP do Supabase.
@@ -446,16 +481,95 @@ Deno.serve(async (request) => {
   }
 
   const authorization = request.headers.get("authorization") || "";
-  if (!authorization.startsWith("Bearer ")) return response({ error: "Autenticação necessária." }, 401, origin);
+  if (!authorization.startsWith("Bearer ")) {
+    return desktopContextRequest
+      ? desktopContextError("AUTH_REQUIRED", "A sessão do HeartSpace não está disponível.", false, 401, origin)
+      : response({ error: "Autenticação necessária." }, 401, origin);
+  }
   const token = authorization.slice("Bearer ".length);
   const { data: authData, error: authError } = await admin.auth.getUser(token);
-  if (authError || !authData.user) return response({ error: "Sessão inválida ou expirada." }, 401, origin);
+  if (authError || !authData.user) {
+    return desktopContextRequest
+      ? desktopContextError("AUTH_REQUIRED", "A sessão do HeartSpace expirou.", false, 401, origin)
+      : response({ error: "Sessão inválida ou expirada." }, 401, origin);
+  }
   let beta;
   try { beta = await betaAccessForUser(admin, authData.user); }
-  catch (error) { return response({ error: error instanceof Error ? error.message : "Não foi possível verificar o acesso ao beta." }, 500, origin); }
+  catch (error) {
+    return desktopContextRequest
+      ? desktopContextError("APP_UNAVAILABLE", "Não foi possível verificar o acesso ao HeartSpace.", true, 503, origin)
+      : response({ error: error instanceof Error ? error.message : "Não foi possível verificar o acesso ao beta." }, 500, origin);
+  }
   if (payload.action === "get_beta_access") return response({ beta }, 200, origin);
-  if (!beta.allowed) return response({ error: "Seu acesso ao beta fechado ainda não foi liberado.", code: "BETA_ACCESS_REQUIRED" }, 403, origin);
+  if (!beta.allowed) {
+    return desktopContextRequest
+      ? desktopContextError("ACCESS_DENIED", "Não foi possível abrir este projeto.", false, 403, origin)
+      : response({ error: "Seu acesso ao beta fechado ainda não foi liberado.", code: "BETA_ACCESS_REQUIRED" }, 403, origin);
+  }
   await syncProfileFromAuth(admin, authData.user);
+
+  if (payload.action === "get_desktop_app_context") {
+    const studioId = payload.studio_id as string;
+    const projectId = payload.project_id as string;
+
+    const [{ data: project, error: projectError }, { data: studio, error: studioError }, { membership, error: membershipError }] = await Promise.all([
+      admin.from("projects").select("id, studio_id, owner_id, name").eq("id", projectId).eq("studio_id", studioId).maybeSingle(),
+      admin.from("studios").select("id, name").eq("id", studioId).maybeSingle(),
+      getMembership(admin, studioId, authData.user.id),
+    ]);
+    if (projectError || studioError || membershipError) {
+      return desktopContextError("APP_UNAVAILABLE", "Não foi possível verificar o acesso ao projeto.", true, 503, origin);
+    }
+    if (!project || !studio || !membership) {
+      return desktopContextError("ACCESS_DENIED", "Não foi possível abrir este projeto.", false, 403, origin);
+    }
+
+    const docsApp = await isProjectAppEnabled(admin, projectId, "docs");
+    if (docsApp.error) {
+      return desktopContextError("APP_UNAVAILABLE", "Não foi possível verificar a disponibilidade do Docs.", true, 503, origin);
+    }
+    if (!docsApp.enabled) {
+      return desktopContextError("APP_DISABLED", "O Docs não está habilitado neste projeto.", false, 403, origin);
+    }
+
+    const publicApiKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY") || "";
+    if (!publicApiKey) {
+      return desktopContextError("APP_UNAVAILABLE", "A validação das permissões do Docs não está configurada.", false, 503, origin);
+    }
+    const userClient = createClient(supabaseUrl, publicApiKey, {
+      auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false },
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    });
+    const { data: access, error: accessError } = await userClient.rpc("heartspace_project_access", { target_project_id: projectId });
+    if (accessError || !access || typeof access !== "object") {
+      return desktopContextError("APP_UNAVAILABLE", "Não foi possível verificar as permissões do Docs.", true, 503, origin);
+    }
+    const capabilities = (access as Record<string, unknown>).capabilities;
+    if (!capabilities || typeof capabilities !== "object" || Array.isArray(capabilities) || (capabilities as Record<string, unknown>).docs_view !== true) {
+      return desktopContextError("ACCESS_DENIED", "Não foi possível abrir este projeto.", false, 403, origin);
+    }
+    const grants = capabilities as Record<string, unknown>;
+    const permissions = [
+      "read",
+      ...(grants.docs_edit === true ? ["edit"] : []),
+      ...(grants.docs_comment === true ? ["comment"] : []),
+      ...(grants.manage_publications === true ? ["publish"] : []),
+    ];
+    const studioName = typeof studio.name === "string" ? studio.name.trim() : "";
+    const projectName = typeof project.name === "string" ? project.name.trim() : "";
+    if (!studioName || !projectName || studioName.length > 200 || projectName.length > 200) {
+      return desktopContextError("APP_UNAVAILABLE", "O contexto deste projeto não pôde ser preparado.", false, 503, origin);
+    }
+    return desktopContextResponse({
+      protocol_version: 1,
+      app_id: "docs",
+      account_id: authData.user.id,
+      studio: { id: studio.id, name: studioName },
+      project: { id: project.id, name: projectName },
+      permissions,
+      intent: { kind: "home" },
+    }, 200, origin);
+  }
 
   if (payload.action === "get_profile") {
     const { data, error } = await admin.from("profiles")
