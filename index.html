@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HeartSpace Hub | O centro do seu estúdio</title>
-    <meta name="description" content="HeartSpace é o ecossistema local-first para estúdios indie criarem, decidirem, produzirem e entregarem jogos.">
-    <meta name="theme-color" content="#9501d8">
+    <title>HeartSpace | Seu estúdio, conectado.</title>
+    <meta name="description" content="Conheça Hub, Docs, Tasks, Canvas, Beats e Travels: as ferramentas do ecossistema HeartSpace para estúdios indie.">
+    <meta name="theme-color" content="#0c8ce9">
     <link rel="icon" type="image/png" href="assets/icons/logo.png">
     <link rel="canonical" href="https://heartspace.tools/">
     <meta property="og:type" content="website">
     <meta property="og:locale" content="pt_BR">
-    <meta property="og:title" content="HeartSpace Hub | Seu estúdio, conectado.">
+    <meta property="og:title" content="HeartSpace | Seu estúdio, conectado.">
     <meta property="og:description" content="O ecossistema local-first para estúdios indie criarem, decidirem, produzirem e entregarem jogos.">
     <meta property="og:url" content="https://heartspace.tools/">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="HeartSpace Hub | Seu estúdio, conectado.">
+    <meta name="twitter:title" content="HeartSpace | Seu estúdio, conectado.">
     <meta name="twitter:description" content="O ecossistema local-first para estúdios indie criarem, decidirem, produzirem e entregarem jogos.">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700;900&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
     <style>
@@ -29,9 +29,8 @@
             --text-main: #ffffff;
             --text-muted: #888888;
             --border: rgba(255, 255, 255, 0.08);
-            --primary: #9501d8;
-            --primary-glow: rgba(149, 1, 216, 0.22);
-            --hero-gradient: linear-gradient(135deg, #ffffff 0%, #a1a1aa 100%);
+            --primary: #0c8ce9;
+            --primary-glow: rgba(12, 140, 233, 0.22);
             --shadow-soft: 0 10px 40px rgba(0,0,0,0.5);
         }
 
@@ -43,9 +42,8 @@
             --text-main: #111111;
             --text-muted: #666666;
             --border: rgba(0, 0, 0, 0.08);
-            --primary: #9501d8;
-            --primary-glow: rgba(149, 1, 216, 0.14);
-            --hero-gradient: linear-gradient(135deg, #111111 0%, #555555 100%);
+            --primary: #0c8ce9;
+            --primary-glow: rgba(12, 140, 233, 0.14);
             --shadow-soft: 0 10px 40px rgba(0,0,0,0.08);
         }
 
@@ -104,7 +102,7 @@
         .btn-theme:focus-visible { outline: 2px solid var(--text-muted); outline-offset: 3px; }
 
         .btn-primary {
-            background: var(--text-main); color: var(--bg-base);
+            background: var(--primary); color: #ffffff;
             padding: 10px 20px; border-radius: 8px; font-weight: 700; text-decoration: none; font-size: 0.9rem;
             transition: 0.3s; border: none; cursor: pointer;
         }
@@ -137,22 +135,10 @@
             padding: 140px 20px 0 20px;
         }
 
-        .hero-glow {
-            position: absolute; top: 30%; left: 50%; transform: translate(-50%, -50%);
-            width: 800px; height: 600px;
-            background: radial-gradient(circle, rgba(149,1,216,0.16) 0%, rgba(224,64,251,0.05) 40%, transparent 70%);
-            filter: blur(60px); z-index: -1; pointer-events: none; transition: 0.4s;
-        }
-
-        body.light-mode .hero-glow {
-            display: none;
-        }
-
         .hero h1 {
-            font-size: 4.5rem; font-weight: 900; letter-spacing: -2px; line-height: 1.1;
+            font-size: clamp(2.8rem, 6vw, 4.5rem); font-weight: 900; letter-spacing: -2px; line-height: 1.1;
             max-width: 800px; margin-bottom: 25px;
-            background: var(--hero-gradient);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            color: var(--text-main);
             transition: 0.4s;
         }
 
@@ -161,7 +147,7 @@
             max-width: 650px; margin-bottom: 40px; line-height: 1.6;
         }
 
-        .hero-cta-group { display: flex; gap: 15px; justify-content: center; margin-bottom: 60px; }
+        .hero-cta-group { display: flex; gap: 15px; justify-content: center; margin-bottom: 24px; }
         .btn-large { padding: 15px 35px; font-size: 1rem; border-radius: 12px; }
         .btn-outline { background: transparent; color: var(--text-main); border: 1px solid var(--border); }
         .btn-outline:hover { background: var(--bg-card); }
@@ -189,8 +175,8 @@
         .shape-1 {
             width: 140px; height: 140px;
             border-radius: 50%;
-            background: linear-gradient(135deg, rgba(149, 1, 216, 0.16), rgba(149, 1, 216, 0.02));
-            border: 1px solid rgba(149, 1, 216, 0.32);
+            background: linear-gradient(135deg, rgba(12, 140, 233, 0.16), rgba(12, 140, 233, 0.02));
+            border: 1px solid rgba(12, 140, 233, 0.32);
             top: 12%; left: 10%;
             animation: drift-soft 18s ease-in-out infinite alternate;
         }
@@ -220,8 +206,8 @@
             filter: drop-shadow(0 15px 30px rgba(0,0,0,0.15));
         }
         .shape-2 polygon {
-            fill: rgba(149, 1, 216, 0.05);
-            stroke: rgba(149, 1, 216, 0.42);
+            fill: rgba(12, 140, 233, 0.05);
+            stroke: rgba(12, 140, 233, 0.42);
             stroke-width: 2px;
             stroke-linejoin: round;
         }
@@ -252,8 +238,8 @@
         .shape-4 {
             width: 60px; height: 160px;
             border-radius: 30px;
-            background: linear-gradient(135deg, rgba(149, 1, 216, 0.12), rgba(149, 1, 216, 0.02));
-            border: 1px solid rgba(149, 1, 216, 0.28);
+            background: linear-gradient(135deg, rgba(12, 140, 233, 0.12), rgba(12, 140, 233, 0.02));
+            border: 1px solid rgba(12, 140, 233, 0.28);
             top: 45%; right: 6%;
             animation: drift-rotate 20s ease-in-out infinite alternate-reverse;
             animation-delay: -8s;
@@ -315,10 +301,10 @@
 
         /* Falso Header do Mac/Windows dentro do Mockup */
         .mockup-header { height: 34px; background: #151515; border-bottom: 1px solid rgba(255,255,255,.1); display: flex; align-items: center; justify-content: center; position: relative; color: #d5d5d5; font-size: .65rem; font-weight: 600; }
-        .mockup-header::after { content: 'HUB — HEARTSPACE'; letter-spacing: .04em; }
+        .mockup-header::after { content: attr(data-label); letter-spacing: .04em; }
         .mockup-header .mockup-controls { position: absolute; right: 12px; display: flex; gap: 7px; }
         .mockup-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border); }
-        .dot-r { background: #ff5252; } .dot-y { background: #ffc107; } .dot-g { background: #9501d8; }
+        .dot-r { background: #ff5252; } .dot-y { background: #ffc107; } .dot-g { background: #0c8ce9; }
 
         /* Dashboard Hub: visual neutro e próximo da aplicação real. */
         .mockup-body { height: calc(100% - 34px); display: grid; grid-template-columns: 66px 1fr; color: #f2f2f2; }
@@ -327,15 +313,15 @@
         .hub-project-space { flex: 1; min-height: 120px; }
         .hub-nav-button { display: grid; place-items: center; width: 38px; height: 38px; border: 1px solid transparent; border-radius: 8px; transition: .2s; cursor: default; }
         .hub-nav-button img, .hub-utility img { width: 19px; height: 19px; object-fit: contain; filter: grayscale(1) brightness(3); opacity: .9; }
-        .hub-nav-button:hover, .hub-nav-button.active { border-color: #9501d8; background: rgba(149,1,216,.14); box-shadow: 0 0 15px rgba(149,1,216,.35); }
+        .hub-nav-button:hover, .hub-nav-button.active { border-color: #0c8ce9; background: rgba(12,140,233,.14); box-shadow: 0 0 15px rgba(12,140,233,.35); }
         .hub-home-icon { position: relative; width: 17px; height: 14px; margin-top: 4px; border: 2px solid #f2f2f2; border-top: 0; border-radius: 2px; }.hub-home-icon::before { content: ''; position: absolute; width: 12px; height: 12px; top: -7px; left: .5px; border-top: 2px solid #f2f2f2; border-left: 2px solid #f2f2f2; transform: rotate(45deg); }.hub-home-icon::after { content: ''; position: absolute; bottom: 0; left: 5px; width: 4px; height: 7px; background: #f2f2f2; }
         .mockup-content { min-width: 0; padding: 18px 22px 12px; display: grid; grid-template-rows: auto 1fr auto; gap: 14px; }
         .hub-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
         .hub-toolbar h3 { font-size: 1rem; letter-spacing: .08em; } .hub-toolbar small { display: block; margin-top: 3px; color: #9a9a9a; font-size: .61rem; }
         .hub-utilities { display: flex; align-items: center; gap: 11px; }.hub-utility { display: grid; place-items: center; width: 25px; height: 25px; }.hub-utility.profile { width: 27px; height: 27px; border: 2px solid #73e1aa; border-radius: 50%; background: #b6b6b6; }
         .hub-dashboard { display: grid; grid-template-columns: minmax(0,1.48fr) minmax(0,.92fr); gap: 13px; }
-        .hub-dashboard-left { display: grid; grid-template-rows: 180px 1fr; gap: 13px; }.hub-welcome { border: 1px solid rgba(149,1,216,.45); border-radius: 12px; padding: 20px; background: linear-gradient(180deg, rgba(149,1,216,.34), rgba(20,20,20,.92) 55%); box-shadow: inset 0 1px rgba(255,255,255,.08); }.hub-welcome small { color: #e2d5e9; }.hub-welcome h2 { margin-top: 44px; font-size: clamp(1.35rem,2.2vw,2.2rem); letter-spacing: -.05em; }.hub-welcome h2 span { color: #fff; text-shadow: 0 0 14px rgba(230,112,255,.7); }
-        .hub-task-area { display: grid; grid-template-columns: minmax(0,310px) minmax(130px,1fr); gap: 10px; }.hub-task-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }.task-card { min-height: 62px; padding: 10px; border: 1px solid rgba(255,255,255,.08); border-radius: 8px; background: #282828; transition: .2s; }.task-card.completed { grid-column: span 2; }.task-card:hover { border-color: #9501d8; box-shadow: 0 0 16px rgba(149,1,216,.38); }.task-card strong { display: block; font-size: .61rem; }.task-card b { display: block; margin-top: 5px; text-align: center; font-size: 1.35rem; font-weight: 500; }
+        .hub-dashboard-left { display: grid; grid-template-rows: 180px 1fr; gap: 13px; }.hub-welcome { border: 1px solid rgba(12,140,233,.45); border-radius: 12px; padding: 20px; background: linear-gradient(180deg, rgba(12,140,233,.26), rgba(20,20,20,.92) 55%); box-shadow: inset 0 1px rgba(255,255,255,.08); }.hub-welcome small { color: #d5eafa; }.hub-welcome h2 { margin-top: 44px; font-size: clamp(1.35rem,2.2vw,2.2rem); letter-spacing: -.05em; }.hub-welcome h2 span { color: #fff; text-shadow: 0 0 14px rgba(12,140,233,.55); }
+        .hub-task-area { display: grid; grid-template-columns: minmax(0,310px) minmax(130px,1fr); gap: 10px; }.hub-task-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }.task-card { min-height: 62px; padding: 10px; border: 1px solid rgba(255,255,255,.08); border-radius: 8px; background: #282828; transition: .2s; }.task-card.completed { grid-column: span 2; }.task-card:hover { border-color: #0c8ce9; box-shadow: 0 0 16px rgba(12,140,233,.38); }.task-card strong { display: block; font-size: .61rem; }.task-card b { display: block; margin-top: 5px; text-align: center; font-size: 1.35rem; font-weight: 500; }
         .hub-focus-panel { display: flex; flex-direction: column; justify-content: space-between; padding: 12px; border: 1px solid rgba(255,255,255,.1); border-radius: 8px; background: #222; }.hub-focus-panel h4 { font-size: .66rem; }.hub-focus-panel p { margin-top: 7px; color: #abb1ba; font-size: .64rem; line-height: 1.45; }.hub-focus-actions { display: flex; gap: 5px; margin-top: 8px; }.hub-focus-actions span { padding: 4px 5px; border: 1px solid rgba(255,255,255,.12); border-radius: 4px; color: #d9d9df; font-size: .54rem; }
         .hub-notes { padding: 14px; border: 1px solid rgba(255,255,255,.12); border-radius: 12px; background: #282828; }.hub-notes h4 { font-size: .8rem; font-weight: 600; }.hub-notes select { width: 100%; height: 28px; margin: 9px 0 6px; padding: 0 8px; border: 0; border-radius: 4px; color: #e6e6e6; background: #202020; font: inherit; font-size: .69rem; }.notes-surface { height: 108px; border: 1px solid rgba(255,255,255,.06); border-radius: 3px; background: #222; }
         .hub-lower-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }.hub-wide-panel { min-height: 115px; padding: 15px; border: 1px solid rgba(255,255,255,.12); border-radius: 12px; background: #282828; }.hub-wide-panel h4 { font-size: .82rem; }.hub-wide-panel p { margin-top: 10px; color: #b5bbc6; font-size: .7rem; }.milestone-track { display: grid; grid-template-columns: repeat(5,1fr); gap: 4px; margin-top: 22px; }.milestone-track i { height: 4px; background: #6f6f6f; }.milestone-track i:first-child { background: #fff; }.hub-statusbar { display: flex; justify-content: center; gap: 16px; color: #aaa; font: 600 .58rem 'JetBrains Mono', monospace; }.hub-statusbar .online-dot { display: inline-block; width: 6px; height: 6px; margin-right: 4px; border-radius: 50%; background: #70f7af; }
@@ -458,7 +444,7 @@
         }
         .app-chip i { color: var(--primary); font-style: normal; }
         .app-chip small { grid-column: 2; color: var(--text-muted); font-size: 0.6rem; line-height: 1.2; }
-        .app-chip:hover { color: var(--text-main); border-color: var(--primary); background: rgba(149,1,216,0.1); }
+        .app-chip:hover { color: var(--text-main); border-color: var(--primary); background: rgba(12,140,233,0.1); }
 
         .tool-split {
             margin-top: 25px; min-height: 190px; display: flex; overflow: hidden;
@@ -472,7 +458,7 @@
         .tool-pane h4 { font-size: 1.15rem; margin-bottom: 6px; }
         .tool-pane span { color: var(--text-muted); font-size: 0.78rem; line-height: 1.35; }
         .tool-pane.docs { background: linear-gradient(145deg, rgba(0, 234, 255, 0.15), transparent 70%); }
-        .tool-pane.tasks { background: linear-gradient(145deg, rgba(149, 1, 216, 0.18), transparent 70%); }
+        .tool-pane.tasks { background: linear-gradient(145deg, rgba(12, 140, 233, 0.18), transparent 70%); }
         .tool-split:hover .tool-pane { flex: 0.75; }
         .tool-split .tool-pane:hover { flex: 1.65; }
 
@@ -534,7 +520,7 @@
             border-color: var(--primary);
             box-shadow: 0 20px 50px var(--primary-glow);
             transform: scale(1.05); /* Ligeiramente maior que os outros */
-            background: linear-gradient(180deg, var(--bg-card) 0%, rgba(149, 1, 216, 0.06) 100%);
+            background: linear-gradient(180deg, var(--bg-card) 0%, rgba(12, 140, 233, 0.06) 100%);
         }
         
         /* Ajuste do destaque para o Modo Claro */
@@ -663,34 +649,34 @@
         .document-lines i { display: block; height: 8px; border-radius: 10px; background: var(--border); }
         .document-lines i:nth-child(2) { width: 76%; }
         .document-lines i:nth-child(3) { width: 58%; }
-        .publication-sheet.public { border-color: rgba(149,1,216,0.55); background: linear-gradient(145deg, rgba(149,1,216,0.14), var(--bg-card) 65%); }
-        .public-url { display: inline-block; border-radius: 20px; padding: 6px 9px; color: #dba2ff; background: rgba(149,1,216,0.14); font-size: 0.68rem; text-decoration: none; }
-        .public-url:hover { background: rgba(149,1,216,0.26); }
+        .publication-sheet.public { border-color: rgba(12,140,233,0.55); background: linear-gradient(145deg, rgba(12,140,233,0.14), var(--bg-card) 65%); }
+        .public-url { display: inline-block; border-radius: 20px; padding: 6px 9px; color: #8fcfff; background: rgba(12,140,233,0.14); font-size: 0.68rem; text-decoration: none; }
+        .public-url:hover { background: rgba(12,140,233,0.26); }
         .publication-arrow { color: var(--primary); font-size: 1.8rem; }
-        .publish-state { color: #dba2ff; font-size: 0.75rem; font-weight: 700; }
+        .publish-state { color: #8fcfff; font-size: 0.75rem; font-weight: 700; }
 
         .download-section {
             max-width: 1100px; margin: 0 auto; padding: 20px 5% 70px; position: relative; z-index: 10;
         }
         .download-panel {
-            padding: 42px; border: 1px solid rgba(149,1,216,0.45); border-radius: 24px;
-            background: radial-gradient(circle at 80% 20%, rgba(149,1,216,0.2), transparent 38%), var(--bg-card);
+            padding: 42px; border: 1px solid rgba(12,140,233,0.45); border-radius: 24px;
+            background: radial-gradient(circle at 80% 20%, rgba(12,140,233,0.2), transparent 38%), var(--bg-card);
             box-shadow: var(--shadow-soft); text-align: center;
         }
         .download-panel h2 { font-size: 2.4rem; letter-spacing: -1px; }
         .download-panel p { max-width: 600px; margin: 14px auto 28px; color: var(--text-muted); line-height: 1.5; }
         .platform-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; max-width: 520px; margin: 0 auto; }
         .platform-option { padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: rgba(255,255,255,0.03); text-align: left; text-decoration: none; color: var(--text-main); transition: 0.25s; }
-        .platform-option:hover { border-color: var(--primary); background: rgba(149,1,216,0.12); transform: translateY(-2px); }
-        .platform-option.recommended { border-color: rgba(149,1,216,0.8); background: rgba(149,1,216,0.12); }
-        .platform-option.recommended b::after { content: 'Recomendado'; display: inline-block; margin-left: 7px; color: #e4b3ff; font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+        .platform-option:hover { border-color: var(--primary); background: rgba(12,140,233,0.12); transform: translateY(-2px); }
+        .platform-option.recommended { border-color: rgba(12,140,233,0.8); background: rgba(12,140,233,0.12); }
+        .platform-option.recommended b::after { content: 'Recomendado'; display: inline-block; margin-left: 7px; color: #8fcfff; font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
         .platform-option b, .platform-option small { display: block; }
         .platform-option b { font-size: 0.9rem; }
         .platform-option small { color: var(--text-muted); margin-top: 4px; font-size: 0.7rem; }
 
         .changelog-section { margin: 10px auto 0; max-width: 720px; }
         .release-card { display: flex; align-items: baseline; gap: 10px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px; background: rgba(255,255,255,0.025); }
-        .release-version { color: #e4b3ff; font-size: 0.7rem; font-weight: 800; white-space: nowrap; }
+        .release-version { color: #8fcfff; font-size: 0.7rem; font-weight: 800; white-space: nowrap; }
         .release-copy { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
         .release-copy small { color: var(--primary); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.6rem; white-space: nowrap; }
         .release-copy h3 { display: none; }
@@ -701,7 +687,7 @@
         .faq-section .section-header h2 { font-size: 2.3rem; }
         .faq-list { display: grid; gap: 10px; }
         .faq-list details { border: 1px solid var(--border); border-radius: 12px; background: var(--bg-card); transition: 0.25s; }
-        .faq-list details[open] { border-color: rgba(149,1,216,0.6); background: rgba(149,1,216,0.07); }
+        .faq-list details[open] { border-color: rgba(12,140,233,0.6); background: rgba(12,140,233,0.07); }
         .faq-list summary { padding: 17px 20px; cursor: pointer; font-weight: 700; list-style: none; display: flex; justify-content: space-between; gap: 20px; }
         .faq-list summary::-webkit-details-marker { display: none; }
         .faq-list summary::after { content: '+'; color: var(--primary); font-size: 1.2rem; line-height: 0.9; }
@@ -813,6 +799,93 @@
             html { scroll-behavior: auto; }
             *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
         }
+
+        .tool-selector { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin:0 auto 34px; max-width:100%; }
+        .tool-selector-button { min-width:88px; padding:10px 16px; border:1px solid var(--border); border-radius:999px; background:var(--bg-card); color:var(--text-muted); font:600 .88rem 'Inter',sans-serif; cursor:pointer; transition:background .2s,border-color .2s,color .2s,transform .2s; }
+        .tool-selector-button:hover { color:var(--text-main); border-color:var(--primary); transform:translateY(-1px); }
+        .tool-selector-button.is-active { color:#fff; background:var(--primary); border-color:var(--primary); box-shadow:0 5px 18px var(--primary-glow); }
+        .tool-selector-button:focus-visible { outline:3px solid var(--primary); outline-offset:3px; }
+        .mockup-content { min-height:0; grid-template-rows:minmax(0,1fr); gap:0; padding:18px; }
+        .product-demo { min-height:0; height:100%; display:grid; grid-template-rows:auto minmax(0,1fr); gap:14px; color:#f4f6f8; }
+        .demo-topbar { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:0 2px 12px; border-bottom:1px solid rgba(255,255,255,.1); }
+        .demo-topbar small,.demo-label { color:#98a3af; font-size:.58rem; font-weight:750; letter-spacing:.12em; text-transform:uppercase; }
+        .demo-topbar h2 { margin-top:5px; font-size:1.1rem; letter-spacing:-.03em; }
+        .demo-status { color:#9ca9b6; font-size:.62rem; white-space:nowrap; }
+        .demo-status::before { content:''; display:inline-block; width:7px; height:7px; margin-right:6px; border-radius:50%; background:var(--primary); }
+        .demo-layout { display:grid; grid-template-columns:minmax(0,1fr) minmax(155px,25%); gap:14px; min-height:0; }
+        .demo-main-panel,.demo-inspector,.demo-stat,.demo-mini-card { border:1px solid rgba(255,255,255,.1); border-radius:10px; background:#191d22; }
+        .demo-main-panel { min-width:0; min-height:0; padding:14px; overflow:hidden; }
+        .demo-inspector { padding:13px; color:#aab4bf; font-size:.65rem; line-height:1.55; }
+        .demo-inspector h3 { margin:8px 0 7px; color:#f1f3f5; font-size:.75rem; }
+        .demo-inspector p { max-width:none; margin:6px 0; font-size:.65rem; line-height:1.55; }
+        .demo-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; margin-bottom:12px; }
+        .demo-stat { padding:11px; color:#98a3af; font-size:.58rem; }
+        .demo-stat strong { display:block; margin-bottom:6px; color:#f4f6f8; font-size:1.15rem; }
+        .demo-list { display:grid; gap:7px; }
+        .demo-row { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:36px; padding:8px 10px; border:1px solid rgba(255,255,255,.07); border-radius:7px; background:#20252b; color:#dfe4e9; font-size:.66rem; }
+        .demo-row small,.demo-muted { color:#8d99a6; font-size:.58rem; }
+        .demo-document { height:100%; min-height:0; padding:20px clamp(16px,4vw,42px); overflow:hidden; border:1px solid rgba(255,255,255,.12); border-radius:7px; background:#f3f0e9; color:#24272a; }
+        .demo-document h3 { margin:11px 0 10px; font-size:1.08rem; }
+        .demo-document p { margin:8px 0; color:#62676c; font-size:.65rem; line-height:1.6; }
+        .demo-document .demo-highlight { width:82%; height:7px; margin:12px 0; border-radius:10px; background:#d6d9dc; }
+        .demo-kanban { height:100%; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+        .demo-column { min-width:0; padding:8px; border-radius:7px; background:#20242a; }
+        .demo-column h4 { margin-bottom:8px; color:#c5cbd2; font-size:.61rem; }
+        .demo-task { margin:6px 0; padding:8px; border:1px solid rgba(255,255,255,.08); border-radius:6px; background:#2b3037; color:#e9edf1; font-size:.59rem; }
+        .demo-canvas { position:relative; height:100%; min-height:190px; overflow:hidden; border:1px solid rgba(255,255,255,.08); border-radius:7px; background-color:#20252b; background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px); background-size:22px 22px; }
+        .demo-canvas-shape { position:absolute; width:34%; aspect-ratio:1; top:26%; left:30%; border:2px solid #68b8f2; border-radius:35% 58% 42% 65%; background:linear-gradient(145deg,rgba(12,140,233,.7),rgba(12,140,233,.08)); transform:rotate(-16deg); box-shadow:0 0 38px rgba(12,140,233,.22); }
+        .demo-waveforms { display:grid; gap:11px; margin-top:18px; }
+        .demo-track { display:grid; grid-template-columns:74px minmax(0,1fr); align-items:center; gap:8px; color:#cbd2d9; font-size:.58rem; }
+        .demo-wave { display:flex; align-items:center; gap:2px; height:30px; padding:3px 5px; border-radius:4px; background:#20252b; }
+        .demo-wave i { flex:1; min-width:2px; border-radius:3px; background:#3ca7f4; opacity:.82; }
+        .demo-map { height:100%; min-height:190px; display:grid; grid-template-columns:repeat(12,1fr); grid-template-rows:repeat(7,1fr); gap:2px; padding:8px; border-radius:7px; background:#20252b; }
+        .demo-map i { border-radius:3px; background:#315f54; }
+        .demo-map i:nth-child(7n),.demo-map i:nth-child(11n+2) { background:#537b50; }
+        .demo-map i:nth-child(5n+1) { background:#47749a; }
+        .demo-map i:nth-child(13n+5) { background:#a59059; }
+        .tool-feature-grid,.tool-journey-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; max-width:1100px; margin:0 auto; }
+        .tool-feature-card,.tool-journey-grid article { min-height:210px; padding:25px; border:1px solid var(--border); border-radius:16px; background:var(--bg-card); box-shadow:var(--shadow-soft); }
+        .tool-feature-number,.tool-journey-grid article>span { color:var(--primary); font-size:.67rem; font-weight:800; letter-spacing:.12em; }
+        .tool-feature-card h3,.tool-journey-grid h3 { margin:23px 0 10px; font-size:1.16rem; letter-spacing:-.025em; }
+        .tool-feature-card p,.tool-journey-grid p { color:var(--text-muted); font-size:.9rem; line-height:1.6; }
+        .tool-workflow-grid { display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr); align-items:center; gap:18px; max-width:1080px; margin:0 auto; }
+        .tool-workflow-grid article { min-height:180px; padding:24px; border:1px solid var(--border); border-radius:15px; background:var(--bg-card); }
+        .tool-workflow-grid article>span { color:var(--primary); font-size:.65rem; font-weight:800; letter-spacing:.12em; }
+        .tool-workflow-grid h3 { margin:20px 0 10px; font-size:1.12rem; }
+        .tool-workflow-grid p { color:var(--text-muted); font-size:.85rem; line-height:1.55; }
+        .tool-workflow-arrow { color:var(--primary); font-size:1.6rem; }
+        .tool-journey-grid article.is-highlighted { border-color:var(--primary); box-shadow:0 12px 35px var(--primary-glow); }
+        .product-demo.is-changing { animation:tool-preview-in .22s ease-out; }
+        @keyframes tool-preview-in { from { opacity:.5; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
+        @media (max-width:900px) {
+            .tool-selector { flex-wrap:nowrap; justify-content:flex-start; width:100%; overflow-x:auto; padding:2px 5px 10px; scrollbar-width:thin; }
+            .tool-selector-button { flex:0 0 auto; }
+            .hero-mockup-container { margin-top:4px; }
+            .demo-layout { grid-template-columns:minmax(0,1fr) 155px; }
+            .tool-feature-grid,.tool-journey-grid { grid-template-columns:1fr; }
+            .tool-feature-card,.tool-journey-grid article { min-height:0; }
+            .tool-workflow-grid { grid-template-columns:1fr; }
+            .tool-workflow-arrow { transform:rotate(90deg); text-align:center; }
+        }
+        @media (max-width:560px) {
+            .tool-selector { margin-bottom:25px; }
+            .tool-selector-button { min-width:76px; padding:9px 13px; }
+            .mockup-window { height:425px; }
+            .mockup-body { grid-template-columns:44px minmax(0,1fr); }
+            .mockup-sidebar { gap:7px; padding:9px 5px; }
+            .hub-avatar { width:30px; height:30px; }
+            .hub-nav-button { width:30px; height:30px; font-size:.63rem; }
+            .hub-project-space { min-height:22px; }
+            .mockup-content { padding:10px; }
+            .demo-layout { grid-template-columns:minmax(0,1fr); }
+            .demo-inspector { display:none; }
+            .demo-main-panel { padding:9px; }
+            .demo-stats { gap:5px; }
+            .demo-stat { padding:7px; }
+            .demo-kanban { gap:4px; }
+            .demo-column { padding:5px; }
+            .demo-task { padding:6px; }
+        }
     </style>
 </head>
 <body>
@@ -821,8 +894,8 @@
         <div class="brand"><img src="assets/icons/logo.svg" alt="">HeartSpace</div>
         <div class="nav-links" id="primaryNav">
             <a href="#ecosystem">Ecossistema</a>
-            <a href="#publications">Publicações</a>
-            <a href="#plans">Planos</a>
+            <a href="#publications">Fluxo</a>
+            <a href="#plans">Como funciona</a>
             <a class="mobile-account-link" id="mobileAccountLink" href="account/">Entrar ou criar conta</a>
         </div>
         <div class="nav-actions">
@@ -834,8 +907,6 @@
     </nav>
 
     <section class="hero">
-        <div class="hero-glow"></div>
-
         <div class="floating-shapes">
             <div class="shape shape-1"></div>
             
@@ -857,142 +928,78 @@
             <div class="shape shape-6   "></div>
         </div>
 
-        <h1><span class="text-gradient">Seu estúdio, conectado.</span></h1>
+        <h1><span data-tool-hero-title>Seu estúdio, conectado.</span></h1>
         
-        <p>O HeartSpace reúne Core e Hub para você organizar seu estúdio, seus projetos e apps especializados. Crie localmente, sincronize quando houver rede e mantenha seus arquivos sempre seus.</p>
+        <p data-tool-hero-copy>O Hub mantém seu estúdio, seus projetos e a equipe no mesmo contexto. Abra cada ferramenta no projeto certo e acompanhe a produção sem perder o fio do trabalho.</p>
         
         <div class="hero-cta-group">
             <a id="primaryDownload" href="#download" class="btn-primary btn-large">Baixar HeartSpace</a>
             <a href="#ecosystem" class="btn-primary btn-outline btn-large">Explorar o ecossistema</a>
         </div>
 
+        <div class="tool-selector" role="group" aria-label="Escolher ferramenta HeartSpace">
+            <button type="button" class="tool-selector-button is-active" data-tool-select="hub" aria-pressed="true">Hub</button>
+            <button type="button" class="tool-selector-button" data-tool-select="docs" aria-pressed="false">Docs</button>
+            <button type="button" class="tool-selector-button" data-tool-select="tasks" aria-pressed="false">Tasks</button>
+            <button type="button" class="tool-selector-button" data-tool-select="canvas" aria-pressed="false">Canvas</button>
+            <button type="button" class="tool-selector-button" data-tool-select="beats" aria-pressed="false">Beats</button>
+            <button type="button" class="tool-selector-button" data-tool-select="travels" aria-pressed="false">Travels</button>
+        </div>
+
         <div class="hero-mockup-container">
             <div class="mockup-window">
-                <div class="mockup-header">
+                <div class="mockup-header" data-mockup-header="HUB — HEARTSPACE">
                     <div class="mockup-controls"><i class="mockup-dot"></i><i class="mockup-dot"></i><i class="mockup-dot"></i></div>
                 </div>
                 <div class="mockup-body">
                     <aside class="mockup-sidebar">
-                        <div class="hub-avatar">H</div>
+                        <div class="hub-avatar" aria-hidden="true">H</div>
                         <span class="hub-project-space" aria-hidden="true"></span>
-                        <span class="hub-nav-button"><img src="assets/icons/media_play.svg" alt="Apps"></span>
-                        <span class="hub-nav-button"><img src="assets/icons/docs.svg" alt="Documents"></span>
-                        <span class="hub-nav-button"><img src="assets/icons/apps_icon.svg" alt="Apps"></span>
-                        <span class="hub-nav-button active"><i class="hub-home-icon" aria-label="Dashboard"></i></span>
+                        <span class="hub-nav-button active" data-mock-nav="hub" aria-hidden="true">H</span>
+                        <span class="hub-nav-button" data-mock-nav="docs" aria-hidden="true">D</span>
+                        <span class="hub-nav-button" data-mock-nav="tasks" aria-hidden="true">T</span>
+                        <span class="hub-nav-button" data-mock-nav="canvas" aria-hidden="true">C</span>
+                        <span class="hub-nav-button" data-mock-nav="beats" aria-hidden="true">B</span>
+                        <span class="hub-nav-button" data-mock-nav="travels" aria-hidden="true">↗</span>
                     </aside>
-                    <div class="mockup-content">
-                        <div class="hub-toolbar">
-                            <div><h3>HEARTSPACE</h3><small>CREATIVE WORKSPACE</small></div>
-                            <div class="hub-utilities"><span class="hub-utility profile"></span><span class="hub-utility"><img src="assets/icons/notifications_section.svg" alt="Notifications"></span><span class="hub-utility"><img src="assets/icons/settings_icon.svg" alt="Settings"></span></div>
-                        </div>
-                        <div class="hub-dashboard">
-                            <div class="hub-dashboard-left">
-                                <div class="hub-welcome"><small>WORKSPACE OVERVIEW</small><h2>Welcome<br><span>back.</span></h2></div>
-                                <div class="hub-task-area"><div class="hub-task-cards"><article class="task-card"><strong>TASKS — TOTAL</strong><b>0</b></article><article class="task-card"><strong>IN PROGRESS</strong><b>0</b></article><article class="task-card completed"><strong>COMPLETED</strong><b>0</b></article></div><aside class="hub-focus-panel"><div><h4>GET STARTED</h4><p>CREATE TASKS, CAPTURE NOTES, AND KEEP YOUR WORKFLOW CONNECTED.</p></div><div class="hub-focus-actions"><span>CREATE</span><span>INVITE</span></div></aside></div>
-                            </div>
-                            <aside class="hub-notes"><h4>QUICK NOTES</h4><select aria-label="Note visibility"><option>Private</option></select><div class="notes-surface"></div></aside>
-                        </div>
-                        <div class="hub-lower-grid">
-                            <article class="hub-wide-panel"><h4>PROJECT MILESTONES</h4><p>YOUR ROADMAP IS READY TO TAKE SHAPE.</p><div class="milestone-track"><i></i><i></i><i></i><i></i><i></i></div></article>
-                            <article class="hub-wide-panel"><h4>UPCOMING TASKS</h4><p>NOTHING SCHEDULED YET.</p></article>
-                        </div>
-                        <div class="hub-statusbar"><span><b class="online-dot"></b> ONLINE</span><span>SYNCED</span><span>PLAN: FREE</span></div>
-                    </div>
+                    <div class="mockup-content" id="productScreen"></div>
                 </div>
-                <span class="hub-chat-button"><img src="assets/icons/message_icon.svg" alt="Chat"></span>
             </div>
         </div>
     </section>
 
     <section id="ecosystem" class="features-section">
         <div class="section-header">
-            <h2>O fim do caos na produção.</h2>
-            <p>O Hub mantém o contexto do estúdio. Cada app se aprofunda no que faz melhor e publica artefatos que o restante do projeto entende.</p>
+            <h2 data-tool-features-title>Seu estúdio, conectado.</h2>
+            <p data-tool-features-copy>O Hub reúne projetos, equipe e ferramentas para que o trabalho continue organizado num só lugar.</p>
         </div>
 
-        <div class="bento-grid">
-            
-            <div class="bento-card col-2">
-                <h3>HeartSpace Hub</h3>
-                <p>Conta, estúdio, membros, projetos, apps instalados, busca, notificações e sincronização. Abra cada ferramenta já no contexto certo do projeto.</p>
-                <div class="bento-art mini-kanban">
-                    <div class="mini-col"><div class="mini-task"></div><div class="mini-task" style="width:60%"></div></div>
-                    <div class="mini-col"><div class="mini-task" style="width:90%"></div></div>
-                    <div class="mini-col"><div class="mini-task done"></div><div class="mini-task done" style="width:50%"></div></div>
-                </div>
-            </div>
-
-            <div class="bento-card row-2">
-                <h3>Decida e produza</h3>
-                <p>Docs e Tasks unem GDDs, decisões, backlog, sprints, bugs e playtests — com referências em vez de cópias perdidas entre ferramentas.</p>
-                <div class="tool-split" aria-label="Docs e Tasks">
-                    <div class="tool-pane docs">
-                        <h4>Docs</h4>
-                        <span>Decisões, GDDs e referências vivas.</span>
-                    </div>
-                    <div class="tool-pane tasks">
-                        <h4>Tasks</h4>
-                        <span>Backlog, sprints, bugs e playtests.</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bento-card">
-                <h3>Apps especializados</h3>
-                <p>Canvas, Beats, States, Dialogues, Polygons e Designs. Cada app resolve uma parte profunda do seu estúdio.</p>
-                <div class="app-chips" aria-label="Apps HeartSpace">
-                    <span class="app-chip"><i>◒</i> Canvas<small>Arte 2D e animação</small></span>
-                    <span class="app-chip"><i>⌁</i> Beats<small>Áudio adaptativo</small></span>
-                    <span class="app-chip"><i>◇</i> States<small>Lógica visual</small></span>
-                    <span class="app-chip"><i>▤</i> Dialogues<small>Narrativa interativa</small></span>
-                    <span class="app-chip"><i>⬡</i> Polygons<small>Arte 3D low poly</small></span>
-                    <span class="app-chip"><i>✦</i> Designs<small>UI e UX</small></span>
-                </div>
-            </div>
-
-            <div class="bento-card">
-                <h3>Arquivos que continuam seus</h3>
-                <p>Trabalhe offline, exporte em formatos documentados e sincronize com segurança. A assinatura paga colaboração e infraestrutura, nunca a posse do seu trabalho.</p>
-                <div class="bento-art mini-chart">
-                    <div class="bar low"></div><div class="bar med"></div><div class="bar high"></div><div class="bar med"></div>
-                </div>
-            </div>
-
+        <div class="tool-feature-grid">
+            <article class="tool-feature-card"><span class="tool-feature-number">01</span><h3 data-tool-feature-title="0">Um lugar para começar</h3><p data-tool-feature-copy="0"></p></article>
+            <article class="tool-feature-card"><span class="tool-feature-number">02</span><h3 data-tool-feature-title="1"></h3><p data-tool-feature-copy="1"></p></article>
+            <article class="tool-feature-card"><span class="tool-feature-number">03</span><h3 data-tool-feature-title="2"></h3><p data-tool-feature-copy="2"></p></article>
         </div>
     </section>
 
     <section id="publications" class="social-proof-section">
         <div class="section-header">
-            <h2>Seu projeto também pode falar com o mundo.</h2>
-            <p>Publique uma revisão aprovada dos documentos criados no HeartSpace Docs. Transforme conhecimento de produção em uma página clara para cada público.</p>
+            <h2 data-tool-workflow-title>Do contexto à ação.</h2>
+            <p data-tool-workflow-copy>Veja como o Hub conecta as etapas de trabalho do estúdio.</p>
         </div>
 
-        <div class="publication-flow" aria-label="Fluxo de publicação">
-            <div class="publication-sheet">
-                <div class="eyebrow">HeartSpace Docs</div>
-                <h3>Press kit — Aurora Vale</h3>
-                <div class="document-lines"><i></i><i></i><i></i></div>
-            </div>
-            <div class="publication-arrow" aria-hidden="true">→</div>
-            <div class="publication-sheet public">
-                <div class="eyebrow">Publicação aprovada</div>
-                <h3>Press kit</h3>
-                <a class="public-url" href="p/luma-studio/aurora-vale/press-kit/">/p/luma-studio/aurora-vale/press-kit</a>
-                <p class="publish-state" style="margin-top: 22px;">● Público e versionado</p>
-            </div>
-        </div>
-
-        <div class="testimonials-grid">
-            <div class="testimonial-card"><div class="author-avatar">▣</div><h3>Press kit</h3><p class="testimonial-text">Informações oficiais, imagens aprovadas e links do jogo para imprensa e parceiros.</p></div>
-            <div class="testimonial-card"><div class="author-avatar">⌁</div><h3>Roadmap público</h3><p class="testimonial-text">Uma visão publicada do que vem a seguir, sem expor o planejamento interno do estúdio.</p></div>
-            <div class="testimonial-card"><div class="author-avatar">✧</div><h3>Lore e documentação</h3><p class="testimonial-text">Material navegável para fandom, modders, investidores ou a comunidade do seu projeto.</p></div>
+        <div class="tool-workflow-grid">
+            <article><span>COMEÇO</span><h3 data-tool-step-title="0"></h3><p data-tool-step-copy="0"></p></article>
+            <div class="tool-workflow-arrow" aria-hidden="true">→</div>
+            <article><span>PROCESSO</span><h3 data-tool-step-title="1"></h3><p data-tool-step-copy="1"></p></article>
+            <div class="tool-workflow-arrow" aria-hidden="true">→</div>
+            <article><span>RESULTADO</span><h3 data-tool-step-title="2"></h3><p data-tool-step-copy="2"></p></article>
         </div>
     </section>
 
     <section id="download" class="download-section">
         <div class="download-panel">
-            <h2>HeartSpace para Linux.</h2>
-            <p>Baixe o HeartSpace Desktop: Core + Hub em um pacote portátil. Esta prévia alpha está disponível para Linux x86_64.</p>
+            <h2 data-tool-download-title>Comece com o HeartSpace Hub.</h2>
+            <p data-tool-download-copy>Você está conhecendo o Hub. A prévia alpha do HeartSpace Desktop para Linux reúne Core + Hub no mesmo pacote.</p>
             <div class="platform-grid" aria-label="Download do HeartSpace para Linux" id="heartspaceDownloads">
                 <a class="platform-option recommended" data-platform="linux-x86_64" href="https://github.com/heartkeystudio/heartspace-releases/releases/download/desktop-v0.1.0-alpha.1/HeartSpace-0.1.0-alpha.1-linux-x86_64.tar.gz"><b>Linux</b><small>x86_64 · Alpha 0.1.0 · 71 MB</small></a>
             </div>
@@ -1012,51 +1019,32 @@
 
     <section id="plans" class="pricing-section">
         <div class="section-header">
-            <h2>Planos sem pegadinha.</h2>
-            <p>Planos serão definidos com limites claros para nuvem, colaboração e consumo — não para seus arquivos, sua leitura local ou sua exportação.</p>
+            <h2 data-tool-journey-title>Seu trabalho continua sendo seu.</h2>
+            <p data-tool-journey-copy>O HeartSpace foi pensado para trabalho local e para manter o projeto sob seu controle.</p>
         </div>
-        <div class="pricing-grid">
-            <div class="pricing-card">
-                <div class="plan-name">Free — Solo</div>
-                <div class="plan-price">Grátis<span>/ para sempre</span></div>
-                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 25px; min-height: 40px;">Crie, trabalhe offline e exporte sem perder a propriedade dos seus arquivos.</p>
-                <ul class="plan-features"><li><i>✓</i> Uso local completo</li><li><i>✓</i> Exportação sem marca d'água</li><li><i>✓</i> Projetos e sync com limites saudáveis</li></ul>
-                <a href="account/" class="btn-plan btn-plan-outline">Criar conta grátis</a>
+        <div class="tool-journey-grid">
+            <article><span>LOCAL</span><h3 data-tool-journey-stage="0"></h3><p data-tool-journey-copy="0"></p></article>
+            <article class="is-highlighted"><span>PROJETO</span><h3 data-tool-journey-stage="1"></h3><p data-tool-journey-copy="1"></p></article>
+            <article><span>CONTINUIDADE</span><h3 data-tool-journey-stage="2"></h3><p data-tool-journey-copy="2"></p></article>
             </div>
-            <div class="pricing-card popular">
-                <div class="popular-badge">Em breve</div>
-                <div class="plan-name">Indie — Studio</div>
-                <div class="plan-price">Em breve<span>/ para equipes pequenas</span></div>
-                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 25px; min-height: 40px;">Colaboração e infraestrutura para quem já está construindo junto.</p>
-                <ul class="plan-features"><li><i>✓</i> Projetos privados e membros</li><li><i>✓</i> Histórico e mais armazenamento</li><li><i>✓</i> Integrações e colaboração</li></ul>
-                <a href="account/?plan=indie" class="btn-plan btn-plan-solid">Criar conta e acompanhar</a>
-            </div>
-            <div class="pricing-card">
-                <div class="plan-name">Studio</div>
-                <div class="plan-price">Em breve<span>/ para produção contínua</span></div>
-                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 25px; min-height: 40px;">Permissões, playtests e fluxos de produção para estúdios em crescimento.</p>
-                <ul class="plan-features"><li><i>✓</i> Permissões avançadas</li><li><i>✓</i> Builds e playtests</li><li><i>✓</i> Sync prioritário</li></ul>
-                <a href="account/?plan=studio" class="btn-plan btn-plan-outline">Falar com a gente</a>
-            </div>
-        </div>
     </section>
 
     <section class="faq-section" aria-labelledby="faq-title">
         <div class="section-header">
-            <h2 id="faq-title">Perguntas honestas.</h2>
+            <h2 id="faq-title" data-tool-faq-heading>Perguntas sobre o Hub.</h2>
         </div>
         <div class="faq-list">
             <details>
-                <summary>Posso trabalhar sem internet?</summary>
-                <p>Sim. O HeartSpace é local-first: projetos já acessados continuam disponíveis para criar, editar e exportar. Quando a conexão voltar, as alterações entram na fila de sincronização.</p>
+                <summary data-tool-faq-question="0"></summary>
+                <p data-tool-faq-answer="0"></p>
             </details>
             <details>
-                <summary>O que acontece com meus arquivos se eu cancelar?</summary>
-                <p>Você mantém leitura, edição local e exportação. A assinatura existe para pagar colaboração, nuvem, histórico, armazenamento e outros recursos de infraestrutura — não para prender seu trabalho.</p>
+                <summary data-tool-faq-question="1"></summary>
+                <p data-tool-faq-answer="1"></p>
             </details>
             <details>
-                <summary>Como funcionam as Publicações?</summary>
-                <p>Você escolhe uma revisão aprovada de um documento no HeartSpace Docs e a publica como uma página somente leitura. Alterações internas não entram no ar até uma nova publicação.</p>
+                <summary data-tool-faq-question="2"></summary>
+                <p data-tool-faq-answer="2"></p>
             </details>
         </div>
     </section>
@@ -1073,8 +1061,8 @@
                 <h4>Produto</h4>
                 <ul>
                     <li><a href="#ecosystem">Ecossistema</a></li>
-                    <li><a href="#publications">Publicações</a></li>
-                    <li><a href="#plans">Planos</a></li>
+                    <li><a href="#publications">Fluxo</a></li>
+                    <li><a href="#plans">Como funciona</a></li>
                     <li><a href="account/">Conta</a></li>
                     <li><a href="#changelog">Changelog</a></li>
                 </ul>
@@ -1119,6 +1107,157 @@
         const navbar = document.querySelector('.navbar');
         const body = document.body;
         const THEME_STORAGE_KEY = 'heartspace-theme';
+
+        const toolPresentations = {
+            hub: {
+                name: 'Hub', pageTitle: 'HeartSpace Hub | Seu estúdio, conectado.',
+                heroTitle: 'Seu estúdio, conectado.',
+                heroCopy: 'O Hub reúne projetos, equipe e ferramentas no mesmo contexto. Abra cada app no projeto certo e acompanhe a produção sem perder o fio do trabalho.',
+                featuresTitle: 'Tudo do estúdio parte daqui.',
+                featuresCopy: 'O Hub organiza o contexto compartilhado e conecta as ferramentas ao projeto em que a equipe está trabalhando.',
+                features: [
+                    ['Projetos no centro', 'Acesse membros, documentos e ferramentas a partir do projeto em que o trabalho acontece.'],
+                    ['Um espaço para a equipe', 'Reúna o contexto do estúdio e mantenha cada pessoa ligada ao trabalho compartilhado.'],
+                    ['Ferramentas conectadas', 'Abra os apps do HeartSpace sem perder o contexto do seu projeto.']
+                ],
+                workflowTitle: 'Do estúdio ao trabalho do dia.', workflowCopy: 'O Hub dá à equipe um ponto de partida comum para organizar e acompanhar a produção.',
+                steps: [['Escolha um projeto', 'Entre no espaço de trabalho que reúne o contexto da produção.'], ['Abra uma ferramenta', 'Use Docs, Tasks e os apps especializados no projeto certo.'], ['Siga o andamento', 'Volte ao Hub para encontrar as pessoas, os recursos e o trabalho em curso.']],
+                downloadTitle: 'Comece pelo HeartSpace Hub.',
+                downloadCopy: 'Você está conhecendo o Hub. A prévia alpha do HeartSpace Desktop para Linux reúne Core + Hub no mesmo pacote.',
+                journeyTitle: 'Seu trabalho continua sendo seu.',
+                journeyCopy: 'O HeartSpace mantém os arquivos do projeto no seu espaço de trabalho e conecta a equipe quando você precisar.',
+                journey: [['Organize', 'Reúna projetos e equipe no Hub.'], ['Conecte', 'Abra as ferramentas no contexto compartilhado.'], ['Continue', 'Retome o fluxo do projeto sempre que voltar.']],
+                faqTitle: 'Perguntas sobre o Hub.',
+                faq: [['O Hub é uma ferramenta ou um launcher?', 'O Hub é a interface de trabalho do HeartSpace: organiza estúdios e projetos e dá acesso às ferramentas conectadas.'], ['Preciso escolher cada app?', 'Não. O Hub é o ponto de partida do ecossistema; a disponibilidade das ferramentas varia por produto e plataforma.'], ['O trabalho fica preso à nuvem?', 'O HeartSpace foi concebido para um fluxo local-first. A disponibilidade de recursos compartilhados depende da conexão.']],
+                screen: `<div class="product-demo"><div class="demo-topbar"><div><small>HEARTSPACE / ESTÚDIO</small><h2>Visão geral do espaço</h2></div><span class="demo-status">Prévia ilustrativa</span></div><div class="demo-layout"><main class="demo-main-panel"><span class="demo-label">VISÃO GERAL</span><div class="demo-stats"><div class="demo-stat"><strong>04</strong>PROJETOS</div><div class="demo-stat"><strong>12</strong>PESSOAS</div><div class="demo-stat"><strong>08</strong>APPS</div></div><span class="demo-label">PROJETOS RECENTES</span><div class="demo-list"><div class="demo-row"><span>Aurora Vale</span><small>Docs · Tasks · Canvas</small></div><div class="demo-row"><span>Maré de Vidro</span><small>Docs · Beats</small></div><div class="demo-row"><span>Jardim de Cinzas</span><small>Travels · Canvas</small></div></div></main><aside class="demo-inspector"><span class="demo-label">PROJETO ATIVO</span><h3>Aurora Vale</h3><p>Equipe e ferramentas conectadas a este espaço.</p><div class="demo-row">Atividade recente <small>Hoje</small></div></aside></div></div>`
+            },
+            docs: {
+                name: 'Docs', pageTitle: 'HeartSpace Docs | Conhecimento do projeto',
+                heroTitle: 'As ideias do projeto, bem documentadas.',
+                heroCopy: 'Crie GDDs, registre decisões e mantenha referências vivas junto do seu projeto. Leia e organize documentos que acompanham a produção.',
+                featuresTitle: 'Do rascunho à referência da equipe.',
+                featuresCopy: 'Docs aproxima a escrita do trabalho: estrutura documentos, preserva revisões e permite publicar versões aprovadas na Wiki.',
+                features: [['Escreva com estrutura', 'Organize documentos de projeto com títulos, listas, imagens, callouts e outros blocos ricos.'], ['Revise em contexto', 'Peça revisão em trechos específicos e acompanhe mudanças e comentários no próprio documento.'], ['Publique o que foi aprovado', 'Leve a versão escolhida para a Wiki pública sem expor o rascunho em andamento.']],
+                workflowTitle: 'Um documento que evolui com o projeto.', workflowCopy: 'Mantenha decisões e referências úteis desde a primeira ideia até a publicação.',
+                steps: [['Registre a ideia', 'Comece um GDD, uma nota de decisão ou uma referência de produção.'], ['Peça uma revisão', 'Marque o trecho que precisa de atenção e reúna comentários no documento.'], ['Compartilhe a versão', 'Publique na Wiki quando o conteúdo estiver pronto para leitores.']],
+                downloadTitle: 'Leve o Docs para o seu fluxo.', downloadCopy: 'Você está conhecendo o Docs. A prévia alpha do HeartSpace Desktop para Linux reúne Core + Hub no mesmo pacote.',
+                journeyTitle: 'Conhecimento acessível e sob controle.', journeyCopy: 'Escreva perto do projeto, mantenha revisões organizadas e escolha o que sai do espaço interno.',
+                journey: [['Rascunhe', 'Estruture conhecimento enquanto o projeto toma forma.'], ['Revise', 'Convide a equipe a comentar pontos específicos.'], ['Publique', 'Escolha a versão aprovada para a Wiki.']],
+                faqTitle: 'Perguntas sobre o Docs.',
+                faq: [['Posso publicar um documento?', 'Sim. Você pode publicar uma versão aprovada na Wiki pública do HeartSpace.'], ['O Docs serve só para texto simples?', 'Não. Os documentos podem incluir recursos de formatação e blocos como imagens, listas, checklists e callouts.'], ['A equipe pode pedir revisão de um trecho?', 'Sim. Selecione uma parte do texto e solicite revisão para direcionar o comentário.']],
+                screen: `<div class="product-demo"><div class="demo-topbar"><div><small>AURORA VALE / DOCS</small><h2>GDD — A travessia</h2></div><span class="demo-status">Prévia ilustrativa</span></div><div class="demo-layout"><main class="demo-main-panel"><div class="demo-document"><span class="demo-label">DOCUMENTO DE DESIGN</span><h3>Uma cidade entre marés</h3><p>Visão geral · O jogador explora uma cidade costeira que muda conforme a maré e as escolhas da equipe.</p><div class="demo-highlight"></div><div class="demo-highlight" style="width:66%"></div><p><strong>Objetivo da experiência</strong></p><p>Descobrir rotas, registrar pistas e compreender como cada região se conecta ao mundo.</p></div></main><aside class="demo-inspector"><span class="demo-label">DOCUMENTO</span><h3>Em revisão</h3><p>3 seções · 2 revisores</p><div class="demo-row">Visão geral <small>✓</small></div><div class="demo-row">Mundo e regiões <small>2 notas</small></div><div class="demo-row">Personagens <small>Rascunho</small></div></aside></div></div>`
+            },
+            tasks: {
+                name: 'Tasks', pageTitle: 'HeartSpace Tasks | Planeje e acompanhe',
+                heroTitle: 'O próximo passo fica claro.',
+                heroCopy: 'Organize o trabalho em tarefas, backlog e sprints. Acompanhe responsáveis e critérios de aceite até a revisão e aprovação.',
+                featuresTitle: 'Planejamento que chega à conclusão.',
+                featuresCopy: 'Tasks transforma objetivos de projeto em trabalho visível para a equipe, com critérios claros antes de marcar como concluído.',
+                features: [['Organize o backlog', 'Registre tarefas com contexto, prioridade, responsável e prazo.'], ['Trabalhe em sprints', 'Agrupe o que a equipe pretende concluir e acompanhe o quadro por etapa.'], ['Revise critérios de aceite', 'Defina o que precisa ser aprovado para que uma tarefa seja concluída.']],
+                workflowTitle: 'Da tarefa à aprovação.', workflowCopy: 'Acompanhe cada item pelo fluxo que a equipe definiu para o projeto.',
+                steps: [['Planeje', 'Descreva o trabalho e os critérios de aceite esperados.'], ['Execute', 'Atribua uma pessoa e mova a tarefa pelo quadro.'], ['Revise e conclua', 'A gestão aprova os critérios antes da conclusão.']],
+                downloadTitle: 'Organize o trabalho com Tasks.', downloadCopy: 'Você está conhecendo Tasks. A prévia alpha do HeartSpace Desktop para Linux reúne Core + Hub no mesmo pacote.',
+                journeyTitle: 'Visibilidade para quem faz e quem acompanha.', journeyCopy: 'Deixe a equipe saber o que vem a seguir e o que ainda precisa passar por revisão.',
+                journey: [['Defina', 'Transforme o objetivo em tarefas compreensíveis.'], ['Acompanhe', 'Veja o estado do trabalho no quadro e na sprint.'], ['Aprove', 'Confirme os critérios antes de encerrar a tarefa.']],
+                faqTitle: 'Perguntas sobre Tasks.',
+                faq: [['Uma tarefa pode ser concluída sem revisão?', 'Quando há critérios de aceite, a conclusão depende da aprovação da pessoa responsável pela gestão.'], ['Posso organizar tarefas em sprints?', 'Sim. Tasks oferece backlog, sprints e quadro de andamento.'], ['As tarefas têm responsável e prazo?', 'Você pode atribuir responsáveis e definir datas para organizar o trabalho.']],
+                screen: `<div class="product-demo"><div class="demo-topbar"><div><small>AURORA VALE / TASKS</small><h2>Sprint 04 · Quadro ativo</h2></div><span class="demo-status">Prévia ilustrativa</span></div><div class="demo-layout"><main class="demo-main-panel"><div class="demo-kanban"><section class="demo-column"><h4>A FAZER · 4</h4><div class="demo-task">Rascunhar mapa do porto</div><div class="demo-task">Definir fluxo da maré</div></section><section class="demo-column"><h4>EM ANDAMENTO · 3</h4><div class="demo-task">Prototipar rota costeira</div><div class="demo-task">Revisar tutorial</div></section><section class="demo-column"><h4>EM REVISÃO · 2</h4><div class="demo-task">Critérios de aceite <small>2/3</small></div></section></div></main><aside class="demo-inspector"><span class="demo-label">TAREFA SELECIONADA</span><h3>Prototipar rota costeira</h3><p>Responsável · Marina</p><p>Prazo · 18 nov</p><div class="demo-row">Critérios aprovados <small>1/3</small></div></aside></div></div>`
+            },
+            canvas: {
+                name: 'Canvas', pageTitle: 'HeartSpace Canvas | Crie arte 2D',
+                heroTitle: 'Dê forma ao mundo do jogo.',
+                heroCopy: 'Crie arte 2D e animações com os recursos do Canvas. Mantenha as fontes editáveis e os artefatos ligados ao projeto.',
+                featuresTitle: 'Criação visual ligada à produção.',
+                featuresCopy: 'Canvas reúne ferramentas de arte e animação para construir recursos visuais que continuam conectados ao projeto.',
+                features: [['Desenhe em contexto', 'Trabalhe com documentos visuais dentro do espaço de trabalho do jogo.'], ['Anime personagens', 'Organize quadros e estados para dar movimento à arte 2D.'], ['Preserve as fontes', 'Mantenha os arquivos editáveis e publique artefatos para integração com o projeto.']],
+                workflowTitle: 'Da primeira forma ao recurso do jogo.', workflowCopy: 'Desenvolva, revise e prepare materiais visuais sem perder o vínculo com o projeto.',
+                steps: [['Crie', 'Comece uma arte ou documento visual do projeto.'], ['Ajuste', 'Refine o desenho e prepare os estados de animação.'], ['Integre', 'Exporte os artefatos e mantenha a fonte editável.']],
+                downloadTitle: 'Crie com o Canvas.', downloadCopy: 'Você está conhecendo Canvas. A prévia alpha do HeartSpace Desktop para Linux reúne Core + Hub no mesmo pacote.',
+                journeyTitle: 'Da fonte editável à integração.', journeyCopy: 'Construa recursos visuais com espaço para revisão e continuidade no projeto.',
+                journey: [['Desenhe', 'Crie e organize fontes visuais do projeto.'], ['Anime', 'Prepare quadros e estados para a experiência.'], ['Integre', 'Exporte artefatos e preserve os documentos de origem.']],
+                faqTitle: 'Perguntas sobre Canvas.',
+                faq: [['O Canvas é um editor de imagem?', 'Canvas é uma ferramenta do HeartSpace para arte 2D e animação vinculada aos projetos.'], ['As fontes ficam editáveis?', 'Os formatos nativos do Canvas preservam documentos-fonte editáveis.'], ['Posso integrar o trabalho ao jogo?', 'O Canvas publica artefatos e mantém referências para integração no projeto.']],
+                screen: `<div class="product-demo"><div class="demo-topbar"><div><small>AURORA VALE / CANVAS</small><h2>Farol · Desenho 2D</h2></div><span class="demo-status">Prévia ilustrativa</span></div><div class="demo-layout"><main class="demo-main-panel"><span class="demo-label">CANVAS · 2D</span><div class="demo-canvas"><div class="demo-canvas-shape"></div></div></main><aside class="demo-inspector"><span class="demo-label">CAMADAS</span><div class="demo-row">Silhueta <small>visível</small></div><div class="demo-row">Luzes <small>visível</small></div><div class="demo-row">Contorno <small>visível</small></div><h3>Animação</h3><p>Parado · 8 quadros</p><div class="demo-row">Prévia <small>▶</small></div></aside></div></div>`
+            },
+            beats: {
+                name: 'Beats', pageTitle: 'HeartSpace Beats | Áudio para jogos',
+                heroTitle: 'Áudio que responde ao jogo.',
+                heroCopy: 'Organize bancos de áudio, eventos e estados para integrar música e efeitos à experiência do jogo.',
+                featuresTitle: 'Música e efeitos com intenção.',
+                featuresCopy: 'Beats organiza os elementos de áudio do projeto e os prepara para responder aos eventos e estados do jogo.',
+                features: [['Organize os eventos', 'Estruture os sons que o jogo pode acionar e mantenha seus IDs estáveis.'], ['Defina estados e variações', 'Conecte camadas e parâmetros à experiência que você quer construir.'], ['Prepare a integração', 'Exporte bancos e referências para o runtime do projeto.']],
+                workflowTitle: 'Do evento ao áudio em jogo.', workflowCopy: 'Modele os elementos de áudio e conecte-os ao que acontece durante a experiência.',
+                steps: [['Crie eventos', 'Cadastre os sons que podem ser acionados pelo jogo.'], ['Conecte a experiência', 'Vincule eventos a estados, marcadores e ações.'], ['Exporte o banco', 'Prepare os artefatos para execução no projeto.']],
+                downloadTitle: 'Crie o áudio do seu jogo com Beats.', downloadCopy: 'Você está conhecendo Beats. A prévia alpha do HeartSpace Desktop para Linux reúne Core + Hub no mesmo pacote.',
+                journeyTitle: 'Uma trilha preparada para a experiência.', journeyCopy: 'Mantenha organização editorial e referências de áudio disponíveis para o fluxo do projeto.',
+                journey: [['Catalogar', 'Registre eventos e recursos de áudio.'], ['Conecte', 'Relacione sons a marcadores e estados do jogo.'], ['Prepare', 'Exporte um banco para o runtime.']],
+                faqTitle: 'Perguntas sobre Beats.',
+                faq: [['O Beats é um middleware de áudio?', 'Sim. Beats organiza áudio e eventos para integração com jogos feitos no Godot.'], ['Como o jogo aciona um som?', 'O runtime do Beats carrega um banco e pode acionar eventos pelo código do projeto.'], ['Posso ligar áudio a eventos do Canvas?', 'O ecossistema possui vínculos entre eventos de gameplay e eventos de áudio.']],
+                screen: `<div class="product-demo"><div class="demo-topbar"><div><small>AURORA VALE / BEATS</small><h2>Banco principal · Eventos</h2></div><span class="demo-status">Prévia ilustrativa</span></div><div class="demo-layout"><main class="demo-main-panel"><span class="demo-label">EVENTOS DE ÁUDIO</span><div class="demo-waveforms"><div class="demo-track"><span>Ambiente porto</span><div class="demo-wave">${[10,18,12,24,17,9,20,26,12,18,8,15,23,12,17,7,21,13,18,11,6,16,22,13].map(h=>`<i style="height:${h}px"></i>`).join('')}</div></div><div class="demo-track"><span>Passos madeira</span><div class="demo-wave">${[8,14,20,11,7,19,25,13,8,18,22,10,15,24,9,17,12,20,7,15,23,11,17,8].map(h=>`<i style="height:${h}px"></i>`).join('')}</div></div><div class="demo-track"><span>Alerta maré</span><div class="demo-wave">${[7,10,16,23,12,9,17,25,14,8,19,11,7,18,26,12,9,20,15,8,18,12,22,9].map(h=>`<i style="height:${h}px"></i>`).join('')}</div></div></div></main><aside class="demo-inspector"><span class="demo-label">EVENTO</span><h3>Ambiente porto</h3><p>Tipo · 2D espacial</p><p>Grupo · Ambiência</p><div class="demo-row">Loop <small>Ativo</small></div></aside></div></div>`
+            },
+            travels: {
+                name: 'Travels', pageTitle: 'HeartSpace Travels | Crie mundos e níveis',
+                heroTitle: 'Construa mundos que convidam à exploração.',
+                heroCopy: 'Desenhe mapas, organize levels e configure terrenos, objetos e eventos para dar forma aos espaços do seu jogo.',
+                featuresTitle: 'O mundo do jogo toma forma.',
+                featuresCopy: 'Travels oferece um espaço para desenhar mapas e estruturar os elementos que compõem cada level.',
+                features: [['Desenhe mapas', 'Construa espaços em grade e organize regiões da experiência.'], ['Estruture os levels', 'Separe o mundo em níveis e camadas que ajudam a equipe a trabalhar.'], ['Prepare os elementos', 'Organize terrenos, objetos e eventos para exportar ao projeto.']],
+                workflowTitle: 'Do mapa à exploração.', workflowCopy: 'Construa os lugares do jogo em etapas claras, com espaço para detalhe e integração.',
+                steps: [['Modele o espaço', 'Crie um mapa e defina as regiões que o jogador poderá explorar.'], ['Adicione estrutura', 'Organize layers, terrenos, objetos e eventos do level.'], ['Exporte', 'Prepare os dados do mapa para uso pelo projeto.']],
+                downloadTitle: 'Desenhe mundos com Travels.', downloadCopy: 'Você está conhecendo Travels. A prévia alpha do HeartSpace Desktop para Linux reúne Core + Hub no mesmo pacote.',
+                journeyTitle: 'Um mapa pronto para crescer.', journeyCopy: 'Organize o espaço, os recursos e os dados de cada level junto do projeto.',
+                journey: [['Mapeie', 'Esboce as regiões e as rotas do level.'], ['Construa', 'Combine camadas, terrenos, objetos e eventos.'], ['Integre', 'Exporte os dados de mapa para o jogo.']],
+                faqTitle: 'Perguntas sobre Travels.',
+                faq: [['O que posso criar com Travels?', 'Travels é um editor para mapas e levels de jogos, com terrenos, layers, objetos e eventos.'], ['Como organizo um mundo maior?', 'Estruture o mapa em levels e camadas para manter as partes do mundo organizadas.'], ['Posso usar meus mapas no projeto?', 'Travels exporta dados do mapa e publica referências de artefatos para integração.']],
+                screen: `<div class="product-demo"><div class="demo-topbar"><div><small>AURORA VALE / TRAVELS</small><h2>Porto antigo · Fase 01</h2></div><span class="demo-status">Prévia ilustrativa</span></div><div class="demo-layout"><main class="demo-main-panel"><span class="demo-label">MAPA · 32 PX</span><div class="demo-map">${Array.from({length:84},(_,i)=>`<i style="grid-column:${i%12+1};grid-row:${Math.floor(i/12)+1}"></i>`).join('')}</div></main><aside class="demo-inspector"><span class="demo-label">CAMADAS</span><div class="demo-row">Terreno <small>visível</small></div><div class="demo-row">Construções <small>visível</small></div><div class="demo-row">Objetos <small>visível</small></div><h3>Fase</h3><p>Porto antigo · 48 × 28 blocos</p></aside></div></div>`
+            }
+        };
+
+        function renderToolPresentation(toolId) {
+            const tool = toolPresentations[toolId] || toolPresentations.hub;
+            const text = (selector, value) => { const node = document.querySelector(selector); if (node) node.textContent = value; };
+            body.dataset.activeTool = toolId;
+            document.title = tool.pageTitle;
+            const description = document.querySelector('meta[name="description"]');
+            if (description) description.content = tool.heroCopy;
+            text('[data-tool-hero-title]', tool.heroTitle);
+            text('[data-tool-hero-copy]', tool.heroCopy);
+            text('[data-tool-features-title]', tool.featuresTitle);
+            text('[data-tool-features-copy]', tool.featuresCopy);
+            text('[data-tool-workflow-title]', tool.workflowTitle);
+            text('[data-tool-workflow-copy]', tool.workflowCopy);
+            text('[data-tool-download-title]', tool.downloadTitle);
+            text('[data-tool-download-copy]', tool.downloadCopy);
+            text('[data-tool-journey-title]', tool.journeyTitle);
+            text('[data-tool-journey-copy]', tool.journeyCopy);
+            text('[data-tool-faq-heading]', tool.faqTitle);
+            tool.features.forEach((item, i) => { text(`[data-tool-feature-title="${i}"]`, item[0]); text(`[data-tool-feature-copy="${i}"]`, item[1]); });
+            tool.steps.forEach((item, i) => { text(`[data-tool-step-title="${i}"]`, item[0]); text(`[data-tool-step-copy="${i}"]`, item[1]); });
+            tool.journey.forEach((item, i) => { text(`[data-tool-journey-stage="${i}"]`, item[0]); text(`[data-tool-journey-copy="${i}"]`, item[1]); });
+            tool.faq.forEach((item, i) => { text(`[data-tool-faq-question="${i}"]`, item[0]); text(`[data-tool-faq-answer="${i}"]`, item[1]); });
+            const header = document.querySelector('[data-mockup-header]');
+            if (header) header.dataset.label = `${tool.name.toUpperCase()} — HEARTSPACE`;
+            const screen = document.getElementById('productScreen');
+            if (screen) { screen.innerHTML = tool.screen; screen.setAttribute('aria-label', `Prévia ilustrativa do ${tool.name}`); screen.classList.remove('is-changing'); void screen.offsetWidth; screen.classList.add('is-changing'); }
+            document.querySelectorAll('[data-mock-nav]').forEach((item) => item.classList.toggle('active', item.dataset.mockNav === toolId));
+            document.querySelectorAll('[data-tool-select]').forEach((button) => {
+                const active = button.dataset.toolSelect === toolId;
+                button.classList.toggle('is-active', active);
+                button.setAttribute('aria-pressed', String(active));
+            });
+        }
+
+        document.querySelectorAll('[data-tool-select]').forEach((button) => button.addEventListener('click', () => renderToolPresentation(button.dataset.toolSelect)));
+        document.querySelector('.tool-selector')?.addEventListener('keydown', (event) => {
+            const buttons = [...document.querySelectorAll('[data-tool-select]')];
+            const currentIndex = buttons.indexOf(document.activeElement);
+            if (currentIndex < 0 || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+            event.preventDefault();
+            const nextIndex = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1 : (currentIndex + (event.key === 'ArrowRight' ? 1 : buttons.length - 1)) % buttons.length;
+            buttons[nextIndex].focus();
+            buttons[nextIndex].click();
+        });
+        renderToolPresentation('hub');
 
         const accountConfig = window.HEARTSPACE_ACCOUNT_CONFIG || {};
         const accountKey = (name) => 'heartspace-account-' + name;
