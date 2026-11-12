@@ -5,7 +5,6 @@
     const status = document.getElementById("readerStatus");
     const list = document.getElementById("readerDocumentList");
     const main = document.getElementById("readerMain");
-    const editorLink = document.getElementById("readerEditorLink");
     const dialog = document.getElementById("readerPublishDialog");
     const publishForm = document.getElementById("readerPublishForm");
     const publishStatus = document.getElementById("readerPublishStatus");
@@ -30,19 +29,6 @@
     const marginSpecs = { narrow: [48, 48], normal: [76, 72], wide: [104, 96] };
     let mermaidLibraryPromise = null;
     let mermaidRenderSequence = 0;
-
-    if (editorLink) {
-        editorLink.addEventListener("click", function (event) {
-            if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-            event.preventDefault();
-            const destination = new URL(context.docsUrl, window.location.href);
-            destination.searchParams.set("source", "dashboard");
-            const projectId = context.getProjectId();
-            if (projectId) destination.searchParams.set("project_id", projectId);
-            const docsWindow = window.open(destination.toString(), "_blank");
-            if (!docsWindow) setStatus("O navegador bloqueou a nova aba. Permita pop-ups para abrir o Docs.", "error");
-        });
-    }
 
     function setStatus(message, state) { status.textContent = message; status.className = "form-status" + (state ? " is-" + state : ""); }
     function setPublishStatus(message, state) { publishStatus.textContent = message; publishStatus.className = "form-status" + (state ? " is-" + state : ""); }
@@ -187,17 +173,38 @@
             button.append(title, detail); list.append(button);
         });
     }
-    function emptyMain(title, copy) { main.innerHTML = ""; const box = document.createElement("div"); box.className = "reader-empty"; const symbol = document.createElement("span"); symbol.textContent = "▤"; const heading = document.createElement("h2"); heading.textContent = title; const text = document.createElement("p"); text.textContent = copy; box.append(symbol, heading, text); main.append(box); }
+    function docsLaunchUrl() {
+        const destination = new URL(context.docsUrl, window.location.href);
+        destination.searchParams.set("source", "dashboard");
+        const projectId = context.getProjectId();
+        if (projectId) destination.searchParams.set("project_id", projectId);
+        return destination.toString();
+    }
+    function createDocsLink(label) {
+        const link = document.createElement("a");
+        link.className = "row-button reader-docs-button";
+        link.textContent = label;
+        link.href = docsLaunchUrl();
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        return link;
+    }
+    function emptyMain(title, copy) {
+        main.innerHTML = "";
+        const box = document.createElement("div"); box.className = "reader-empty";
+        const symbol = document.createElement("span"); symbol.textContent = "▤";
+        const heading = document.createElement("h2"); heading.textContent = title;
+        const text = document.createElement("p"); text.textContent = copy;
+        const docsLink = createDocsLink("Abrir o Docs para criar documentos ↗"); docsLink.classList.add("reader-empty-docs-button");
+        box.append(symbol, heading, text, docsLink); main.append(box);
+    }
     function renderReader(doc) {
         activeDocument = doc; approvedRevision = null; selectedQuote = ""; renderList();
         const content = doc.readerContent;
         main.innerHTML = "";
         const toolbar = document.createElement("div"); toolbar.className = "reader-toolbar";
         const format = document.createElement("span"); format.className = "reader-format-tag"; format.textContent = content.layout === "canvas" ? "PRANCHETA" : "LIVRO";
-        const docsButton = document.createElement("a"); docsButton.className = "row-button reader-docs-button"; docsButton.textContent = "Abrir no Docs ↗"; docsButton.href = context.docsUrl; docsButton.target = "_blank"; docsButton.rel = "noopener noreferrer";
-        const docsDestination = new URL(context.docsUrl, window.location.href); docsDestination.searchParams.set("source", "dashboard");
-        const projectId = context.getProjectId(); if (projectId) docsDestination.searchParams.set("project_id", projectId);
-        docsButton.href = docsDestination.toString();
+        const docsButton = createDocsLink("Abrir no Docs ↗");
         currentPublication = publications.find(function (publication) { return publication.source_document_id === doc.id; }) || null;
         const publishButton = document.createElement("button"); publishButton.type = "button"; publishButton.className = "portal-button"; publishButton.dataset.readerAction = "publish"; publishButton.textContent = currentPublication ? (currentPublication.status === "withdrawn" ? "Republicar na Wiki" : "Atualizar Wiki") : "Publicar na Wiki";
         const fullscreenButton = document.createElement("button"); fullscreenButton.type = "button"; fullscreenButton.className = "row-button reader-fullscreen-button"; fullscreenButton.dataset.readerAction = "fullscreen"; fullscreenButton.textContent = "Tela cheia"; fullscreenButton.setAttribute("aria-label", "Abrir leitura em tela cheia");
@@ -437,12 +444,6 @@
             if (context.getProjectId() !== projectId) return;
             documents = rows.map(function (row) { const readerContent = parseContent(row.content); return Object.assign({}, row, { readerContent: readerContent }); }).filter(function (row) { return row.readerContent.format === "heartspace-html-v1" && !row.readerContent.trash?.deleted_at; });
             setStatus(documents.length + (documents.length === 1 ? " documento disponível." : " documentos disponíveis."));
-            if (editorLink) {
-                const destination = new URL(context.docsUrl, window.location.href);
-                destination.searchParams.set("source", "dashboard");
-                destination.searchParams.set("project_id", projectId);
-                editorLink.href = destination.toString();
-            }
             renderList();
             if (documents.length) renderReader(documents[0]); else { activeDocument = null; emptyMain("Nenhum documento encontrado", "Crie ou compartilhe um documento do Docs neste projeto."); }
         } catch (error) { documents = []; activeDocument = null; renderList(); emptyMain("Não foi possível carregar", error.message || "Verifique sua conexão e tente novamente."); setStatus(error.message || "Falha ao carregar documentos.", "error"); }

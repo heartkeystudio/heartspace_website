@@ -1684,7 +1684,7 @@
         const nameInput = document.createElement("input"); nameInput.type = "text"; nameInput.value = role.label || ""; nameInput.maxLength = 48; nameInput.dataset.roleLabel = ""; nameInput.placeholder = "Ex.: Artista"; nameInput.disabled = !canManage;
         nameLabel.append(nameInput);
         const colorLabel = document.createElement("label"); colorLabel.textContent = "Cor";
-        const colorInput = document.createElement("input"); colorInput.type = "color"; colorInput.value = /^#[0-9a-f]{6}$/i.test(role.color || "") ? role.color : "#9501d8"; colorInput.dataset.roleColor = ""; colorInput.disabled = !canManage;
+        const colorInput = document.createElement("input"); colorInput.type = "color"; colorInput.value = /^#[0-9a-f]{6}$/i.test(role.color || "") ? role.color : "#0c8ce9"; colorInput.dataset.roleColor = ""; colorInput.disabled = !canManage;
         colorLabel.append(colorInput); fields.append(keyLabel, nameLabel, colorLabel); card.append(fields);
         const permissionList = document.createElement("div"); permissionList.className = "role-permission-checks";
         Object.keys(projectPermissionLabels).forEach(function (permission) {
@@ -1818,7 +1818,7 @@
     });
 
     addProjectRole.addEventListener("click", function () {
-        appendRoleEditor({ key: "", label: "", color: "#9501d8", permissions: [] }, true);
+        appendRoleEditor({ key: "", label: "", color: "#0c8ce9", permissions: [] }, true);
         const input = roleCatalogEditor.lastElementChild && roleCatalogEditor.lastElementChild.querySelector("[data-role-key]"); if (input) input.focus();
     });
 

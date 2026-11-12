@@ -803,6 +803,9 @@
         .tool-selector { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin:0 auto 34px; max-width:100%; }
         .tool-selector-button { min-width:88px; padding:10px 16px; border:1px solid var(--border); border-radius:999px; background:var(--bg-card); color:var(--text-muted); font:600 .88rem 'Inter',sans-serif; cursor:pointer; transition:background .2s,border-color .2s,color .2s,transform .2s; }
         .tool-selector-button:hover { color:var(--text-main); border-color:var(--primary); transform:translateY(-1px); }
+        .tool-selector-button:disabled { display:inline-flex; align-items:center; gap:7px; color:var(--text-muted); border-color:var(--border); cursor:not-allowed; opacity:.72; }
+        .tool-selector-button:disabled:hover { color:var(--text-muted); border-color:var(--border); transform:none; }
+        .tool-selector-button .coming-soon { color:var(--text-muted); font-size:.62rem; font-weight:700; letter-spacing:.01em; }
         .tool-selector-button.is-active { color:#fff; background:var(--primary); border-color:var(--primary); box-shadow:0 5px 18px var(--primary-glow); }
         .tool-selector-button:focus-visible { outline:3px solid var(--primary); outline-offset:3px; }
         .mockup-content { min-height:0; grid-template-rows:minmax(0,1fr); gap:0; padding:18px; }
@@ -940,10 +943,10 @@
         <div class="tool-selector" role="group" aria-label="Escolher ferramenta HeartSpace">
             <button type="button" class="tool-selector-button is-active" data-tool-select="hub" aria-pressed="true">Hub</button>
             <button type="button" class="tool-selector-button" data-tool-select="docs" aria-pressed="false">Docs</button>
-            <button type="button" class="tool-selector-button" data-tool-select="tasks" aria-pressed="false">Tasks</button>
-            <button type="button" class="tool-selector-button" data-tool-select="canvas" aria-pressed="false">Canvas</button>
-            <button type="button" class="tool-selector-button" data-tool-select="beats" aria-pressed="false">Beats</button>
-            <button type="button" class="tool-selector-button" data-tool-select="travels" aria-pressed="false">Travels</button>
+            <button type="button" class="tool-selector-button" data-tool-select="tasks" disabled aria-label="Tasks, em breve"><span>Tasks</span><span class="coming-soon">Em breve</span></button>
+            <button type="button" class="tool-selector-button" data-tool-select="canvas" disabled aria-label="Canvas, em breve"><span>Canvas</span><span class="coming-soon">Em breve</span></button>
+            <button type="button" class="tool-selector-button" data-tool-select="beats" disabled aria-label="Beats, em breve"><span>Beats</span><span class="coming-soon">Em breve</span></button>
+            <button type="button" class="tool-selector-button" data-tool-select="travels" disabled aria-label="Travels, em breve"><span>Travels</span><span class="coming-soon">Em breve</span></button>
         </div>
 
         <div class="hero-mockup-container">
@@ -1240,16 +1243,16 @@
             const screen = document.getElementById('productScreen');
             if (screen) { screen.innerHTML = tool.screen; screen.setAttribute('aria-label', `Prévia ilustrativa do ${tool.name}`); screen.classList.remove('is-changing'); void screen.offsetWidth; screen.classList.add('is-changing'); }
             document.querySelectorAll('[data-mock-nav]').forEach((item) => item.classList.toggle('active', item.dataset.mockNav === toolId));
-            document.querySelectorAll('[data-tool-select]').forEach((button) => {
+            document.querySelectorAll('[data-tool-select]:not(:disabled)').forEach((button) => {
                 const active = button.dataset.toolSelect === toolId;
                 button.classList.toggle('is-active', active);
                 button.setAttribute('aria-pressed', String(active));
             });
         }
 
-        document.querySelectorAll('[data-tool-select]').forEach((button) => button.addEventListener('click', () => renderToolPresentation(button.dataset.toolSelect)));
+        document.querySelectorAll('[data-tool-select]:not(:disabled)').forEach((button) => button.addEventListener('click', () => renderToolPresentation(button.dataset.toolSelect)));
         document.querySelector('.tool-selector')?.addEventListener('keydown', (event) => {
-            const buttons = [...document.querySelectorAll('[data-tool-select]')];
+            const buttons = [...document.querySelectorAll('[data-tool-select]:not(:disabled)')];
             const currentIndex = buttons.indexOf(document.activeElement);
             if (currentIndex < 0 || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
             event.preventDefault();
