@@ -364,7 +364,7 @@
             headers: { "apikey": config.supabaseAnonKey, "Content-Type": "application/json" },
             body: JSON.stringify({ refresh_token: refreshToken })
         });
-        if (!response.ok) throw new Error("Não foi possível renovar a sessão.");
+        if (!response.ok) { clearSession(); return null; }
         const session = await response.json();
         saveSession(session.access_token, session.refresh_token, session.expires_at);
         return session.access_token;
@@ -387,7 +387,6 @@
             requester.postMessage({
                 type: "heartspace-docs-session",
                 accessToken: accessToken || "",
-                refreshToken: localStorage.getItem(sessionKey("refresh-token")) || "",
                 expiresAt: localStorage.getItem(sessionKey("expires-at")) || ""
             }, docsOrigin);
         }).catch(function () {

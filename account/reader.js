@@ -186,7 +186,7 @@
         link.textContent = label;
         link.href = docsLaunchUrl();
         link.target = "_blank";
-        link.rel = "noopener noreferrer";
+        link.rel = "opener";
         return link;
     }
     function emptyMain(title, copy) {
