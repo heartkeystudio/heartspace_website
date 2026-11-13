@@ -1,0 +1,7 @@
+/login/desktop-callback
+  Cache-Control: no-store
+  Referrer-Policy: no-referrer
+
+/login/desktop-callback/*
+  Cache-Control: no-store
+  Referrer-Policy: no-referrer

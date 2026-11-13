@@ -10,12 +10,9 @@ Não redirecione visitantes automaticamente entre os domínios. A escolha explí
 
 ## Hospedagem e DNS
 
-O arquivo `CNAME` deste repositório contém somente `www.heartspace.tools`. Isso é normal: GitHub Pages permite apenas um domínio principal por repositório.
+A migração para Cloudflare Pages está preparada em [`CLOUDFLARE_PAGES_MIGRATION.md`](../CLOUDFLARE_PAGES_MIGRATION.md). Associe `www.heartspace.tools` e `www.heartspace.com.br` ao mesmo projeto Pages e redirecione cada domínio raiz para seu `www` correspondente. Não redirecione brasileiros automaticamente para o domínio internacional.
 
-1. Mantenha `www.heartspace.tools` como domínio principal do host atual.
-2. No provedor do domínio `.com.br`, crie `www.heartspace.com.br` como alias/proxy para o mesmo host de produção. Se usar Cloudflare, prefira um **CNAME flattening** ou uma regra de proxy; se o host oferecer “custom domain alias”, cadastre-o nele.
-3. Crie redirecionamentos de ápice: `heartspace.com.br` → `www.heartspace.com.br` e `heartspace.tools` → `www.heartspace.tools`.
-4. Emita SSL para os quatro endereços antes de divulgar o domínio brasileiro.
+O `CNAME` legado permanece no repositório para facilitar rollback ao GitHub Pages; ele não associa domínios no Pages. Faça a troca de DNS somente após conferir a prévia e a emissão TLS no Pages.
 
 ## Supabase
 
