@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { safePublicationSnapshot } from "../_shared/publication_snapshot.ts";
+import { docsPublicationAction, publicationAsset } from "../_shared/docs_publication_api.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -142,12 +143,12 @@ async function canManageProjectPublications(admin: any, studioId: string, projec
     getMembership(admin, studioId, userId),
   ]);
   if (projectError || !project || membershipError || !membership) return { allowed: false, project: null };
-  if (project.owner_id === userId || ["owner", "admin"].includes(membership.role)) return { allowed: true, project };
+  if (project.owner_id === userId || ["owner", "admin"].includes(membership.role)) return { allowed: true, canApprove: true, project };
   const { data: member } = await admin.from("project_members").select("role, roles").eq("project_id", projectId).eq("user_id", userId).maybeSingle();
   const roles = Array.isArray(member?.roles) && member.roles.length ? member.roles : member?.role ? [member.role] : [];
   const permissions = project.role_permissions && typeof project.role_permissions === "object" ? project.role_permissions as Record<string, any> : {};
   const allowed = roles.some((role: unknown) => permissions[String(role)]?.manage_publications === true || permissions[String(role)]?.manage_workspace === true);
-  return { allowed, project };
+  return { allowed, canApprove: roles.some((role:unknown)=>permissions[String(role)]?.manage_workspace===true), project };
 }
 
 async function isProjectAppEnabled(admin: any, projectId: string, appKey: string) {
@@ -465,6 +466,8 @@ Deno.serve(async (request) => {
     return response({ ok: true }, 200, origin);
   }
 
+  if (payload.action === "get_publication_asset") return await publicationAsset(admin,payload,origin,response);
+
   if (payload.action === "get_publication") {
     const publicationId = typeof payload.publication_id === "string" ? payload.publication_id : "";
     if (!publicationId) return response({ error: "Publicação inválida." }, 400, origin);
@@ -477,7 +480,9 @@ Deno.serve(async (request) => {
       admin.from("studios").select("name, logo_url").eq("id", publication.studio_id).maybeSingle(),
     ]);
     const { studio_id: _studioId, project_id: _projectId, ...publicPublication } = publication;
-    return response({ publication: publicPublication, project: project || {}, studio: studio || {} }, 200, origin);
+    const cleanSnapshot = safePublicationSnapshot(publicPublication.snapshot_json);
+    if (!cleanSnapshot) return response({ error: "Esta página precisa ser republicada em um formato compatível." }, 409, origin);
+    return response({ publication: {...publicPublication,snapshot_json:cleanSnapshot}, project: project || {}, studio: studio || {} }, 200, origin);
   }
 
   const authorization = request.headers.get("authorization") || "";
@@ -507,6 +512,13 @@ Deno.serve(async (request) => {
       : response({ error: "Seu acesso ao beta fechado ainda não foi liberado.", code: "BETA_ACCESS_REQUIRED" }, 403, origin);
   }
   await syncProfileFromAuth(admin, authData.user);
+  // Modern Docs/Hub requests are projected from approved source on the server.
+  if (payload.action === "save_publication" && (payload.source as any)?.format === "heartspace-html-v1") payload.action = "publish_docs_revision";
+  const docsPublicationResponse = await docsPublicationAction(admin,payload,authData.user.id,origin,{
+    respond:response,access:canManageProjectPublications,enabled:isProjectAppEnabled,publicUrl:publicPublicationUrl,
+  });
+  if (docsPublicationResponse) return docsPublicationResponse;
+
 
   if (payload.action === "get_desktop_app_context") {
     const studioId = payload.studio_id as string;
@@ -953,10 +965,14 @@ Deno.serve(async (request) => {
       const revisionId = typeof source.revision_id === "string" ? source.revision_id : "";
       if (!documentId || !revisionId || source.format !== "heartspace-docs-v1") return response({ error: "Origem do Docs inválida." }, 400, origin);
       const [{ data: revision }, { data: document }] = await Promise.all([
-        admin.from("doc_revisions").select("id, doc_id, revision_number, approved_by, approved_at").eq("id", revisionId).eq("doc_id", documentId).maybeSingle(),
+        admin.from("doc_revisions").select("id, doc_id, revision_number, content, approved_by, approved_at").eq("id", revisionId).eq("doc_id", documentId).maybeSingle(),
         admin.from("docs").select("id, project_id").eq("id", documentId).maybeSingle(),
       ]);
       if (!revision || !document || document.project_id !== projectId || !revision.approved_at || Number(source.revision_number) !== revision.revision_number) return response({ error: "A revisão indicada não está aprovada para este projeto." }, 409, origin);
+      // Old producers may supply a snapshot only when it is exactly the approved
+      // legacy source. An arbitrary client snapshot is never accepted.
+      const approvedSnapshot = safePublicationSnapshot(revision.content);
+      if (!approvedSnapshot || approvedSnapshot.version !== 1 || JSON.stringify(approvedSnapshot) !== JSON.stringify(snapshot)) return response({ error: "O snapshot não corresponde à revisão aprovada. Prepare uma publicação no Docs atual." }, 409, origin);
       sourceRevision = revision;
     }
     const hasSnapshot = Boolean(source && snapshot && sourceRevision);

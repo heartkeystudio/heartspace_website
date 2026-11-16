@@ -48,7 +48,7 @@ begin
   if auth.uid() is null or public.heartspace_has_project_capability(p_project_id,'docs_edit') is not true then return jsonb_build_object('success',false,'reason','forbidden'); end if;
   suffix := case p_mime when 'image/png' then 'png' when 'image/jpeg' then 'jpg' when 'image/webp' then 'webp' when 'audio/mpeg' then 'mp3' when 'audio/ogg' then 'ogg' when 'audio/wav' then 'wav' when 'audio/webm' then 'webm' when 'audio/mp4' then 'm4a' end;
   if suffix is null or p_sha256 is null or p_sha256 !~ '^[a-f0-9]{64}$' or p_bytes is null or p_bytes < 1
-    or p_bytes > case when p_mime like 'image/%' then 4194304 else 8388608 end then return jsonb_build_object('success',false,'reason','invalid_media'); end if;
+    or p_bytes > (case when p_mime like 'image/%' then 4194304 else 8388608 end) then return jsonb_build_object('success',false,'reason','invalid_media'); end if;
   object_path := p_project_id::text || '/' || p_sha256 || '.' || suffix;
   perform pg_advisory_xact_lock(hashtextextended('docs-media:' || object_path,0));
   select s.metadata into stored from storage.objects s where s.bucket_id = 'docs-media' and s.name = object_path;

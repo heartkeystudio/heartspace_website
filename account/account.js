@@ -155,6 +155,10 @@
     const projectsTitle = document.getElementById("projectsTitle");
     const projectsCopy = document.getElementById("projectsCopy");
     const createProjectForm = document.getElementById("createProjectForm");
+    const createProjectDialog = document.getElementById("createProjectDialog");
+    const openCreateProject = document.getElementById("openCreateProject");
+    const createProjectStudioContext = document.getElementById("createProjectStudioContext");
+    const projectListStatus = document.getElementById("projectListStatus");
     const projectName = document.getElementById("projectName");
     const projectDescription = document.getElementById("projectDescription");
     const projectStatus = document.getElementById("projectStatus");
@@ -1635,10 +1639,11 @@
         const projects = Array.isArray(data.projects) ? data.projects : [];
         currentStudioProjects = projects;
         projectsTitle.textContent = projects.length ? (projects.length === 1 ? "1 projeto neste estúdio." : projects.length + " projetos neste estúdio.") : "Seu próximo projeto começa aqui.";
-        projectsCopy.textContent = projects.length ? "Os projetos e acessos da equipe ficam conectados. Abra o Docs para criar e editar documentos online neste projeto." : "Crie um projeto e abra o Docs pelo Dashboard ou pelo Hub para trabalhar com a equipe.";
+        projectsCopy.textContent = projects.length ? "Selecione um projeto na barra lateral para abrir suas configurações e ferramentas." : "Crie o primeiro projeto para organizar o trabalho da equipe neste estúdio.";
         projects.forEach(function (project) { appendListRow(projectList, project.name || "Projeto sem título", (project.status === "archived" ? "Arquivado" : "Ativo") + " · " + (project.description || "Sem descrição") + " · criado em " + formatDate(project.created_at)); });
         projectList.hidden = !projects.length;
-        createProjectForm.hidden = !canManage;
+        openCreateProject.hidden = !canManage;
+        createProjectStudioContext.textContent = "O projeto será criado no estúdio “" + (studio.name || "Estúdio ativo") + "”. Depois de criar, ele será selecionado na barra lateral.";
         if (!projects.some(function (project) { return project.id === activeProjectId; })) activeProjectId = projects.length ? projects[0].id : "";
         if (projectContextList) {
             projectContextList.replaceChildren();
@@ -2156,13 +2161,29 @@
             const token = await getValidAccessToken(); if (!token) throw new Error("Sua sessão expirou. Entre novamente.");
             const data = await studioRequest("create_project", token, { studio_id: activeStudioId, name: projectName.value, description: projectDescription.value });
             createProjectForm.reset();
-            setProjectStatus("Projeto criado. Abra o Hub para começar a trabalhar nele.", "success");
             activeProjectId = data.project && data.project.id || activeProjectId;
             if (activeProjectId) sessionStorage.setItem(sessionKey("active-project"), activeProjectId);
             await loadActiveStudio(token);
-            if (data.project) projectStatus.textContent = "Projeto criado. Abra o Hub para começar a trabalhar nele.";
+            setProjectStatus("", "");
+            projectListStatus.textContent = "Projeto criado e selecionado na barra lateral.";
+            projectListStatus.className = "form-status is-success";
+            createProjectDialog.close();
         } catch (error) { setProjectStatus(error.message || "Não foi possível criar o projeto agora.", "error"); }
         finally { button.disabled = false; }
+    });
+
+    openCreateProject.addEventListener("click", function () {
+        createProjectForm.reset();
+        setProjectStatus("", "");
+        projectListStatus.textContent = "";
+        if (createProjectDialog.showModal) createProjectDialog.showModal();
+        projectName.focus();
+    });
+    createProjectDialog.querySelectorAll("[data-close-project-modal]").forEach(function (button) {
+        button.addEventListener("click", function () { createProjectDialog.close(); });
+    });
+    createProjectDialog.addEventListener("click", function (event) {
+        if (event.target === createProjectDialog) createProjectDialog.close();
     });
 
     memberList.addEventListener("change", async function (event) {

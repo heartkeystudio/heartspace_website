@@ -904,6 +904,38 @@ body.is-light .project-switch-item.is-active { border-color: transparent; color:
 .reader-publish-dialog .admin-detail-heading { display:flex; align-items:center; justify-content:space-between; gap:16px; }
 .reader-publish-dialog .admin-detail-heading h2 { margin:0; font-size:1.25rem; }
 .reader-publish-dialog .field-note { margin:0; color:var(--muted); font-size:.78rem; line-height:1.5; }
+
+/* Project creation belongs to studio management, not the active project's settings. */
+.projects-page-heading { align-items: center; margin-bottom: 22px; }
+.projects-page-heading > div { min-width: 0; }
+.projects-page-heading .eyebrow { margin-bottom: 9px; }
+.projects-page-heading h1 { margin-bottom: 8px; font-size: clamp(1.8rem, 3vw, 2.6rem); line-height: 1.05; letter-spacing: -.045em; }
+.projects-page-heading .workspace-lead { max-width: 650px; margin: 0; }
+.projects-page-heading .portal-button { flex: 0 0 auto; margin: 0; white-space: nowrap; }
+.workspace-view[data-workspace-panel="projects"] > .empty-panel { max-width: none; margin-top: 0; padding: 22px; }
+.projects-list-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+.projects-list-heading .panel-kicker { margin-bottom: 8px; }
+.projects-list-heading h2 { margin-bottom: 7px; font-size: 1.12rem; }
+.projects-list-heading p:last-child { margin-bottom: 0; color: var(--muted); font-size: .84rem; line-height: 1.5; }
+.project-create-dialog { width: min(500px, calc(100vw - 28px)); }
+.project-create-dialog .panel-kicker { margin: 0 0 4px; }
+.project-create-dialog .tasks-modal-header h2 { font-size: 1.18rem; }
+.project-create-context { margin: 0 0 17px; padding: 10px 12px; border: 1px solid rgba(12,140,233,.22); border-radius: 7px; color: var(--muted); background: rgba(12,140,233,.07); font-size: .78rem; line-height: 1.5; }
+.project-create-dialog .tasks-modal-fields { gap: 14px; }
+.project-create-dialog .tasks-modal-fields label { gap: 7px; }
+.project-create-dialog .tasks-modal-fields label > span { color: var(--muted); font-size: .72rem; font-weight: 500; }
+.project-create-dialog .tasks-modal-fields input,
+.project-create-dialog .tasks-modal-fields textarea { width: 100%; border-radius: 8px; }
+.project-create-dialog .tasks-modal-fields textarea { min-height: 84px; resize: vertical; }
+.project-create-dialog .form-status:empty,
+#projectListStatus:empty { display: none; }
+.project-create-dialog .tasks-modal-actions { margin-top: 18px; }
+body.is-light .project-create-context { border-color: rgba(12,140,233,.24); color: #515d65; background: rgba(12,140,233,.06); }
+@media (max-width: 620px) {
+    .projects-page-heading { align-items: flex-start; flex-direction: column; }
+    .projects-page-heading .portal-button { align-self: stretch; }
+    .projects-list-heading { flex-direction: column; }
+}
 .reader-dialog-actions { display:flex; justify-content:flex-end; gap:9px; }
 .reader-dialog-actions button { min-height:40px; margin:0; }
 @media(max-width:850px) { .reader-layout { grid-template-columns:1fr; min-height:0; }.reader-library { position:static; max-height:210px; }.reader-document-list { grid-template-columns:repeat(2,minmax(0,1fr)); }.reader-canvas-stage { height:calc(100vh - 360px); } }
