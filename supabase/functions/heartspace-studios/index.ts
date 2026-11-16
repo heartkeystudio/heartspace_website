@@ -645,7 +645,7 @@ Deno.serve(async (request) => {
       ? await admin
         // A listagem precisa continuar compatível com o banco legado do Hub, onde
         // `slug` não era uma coluna obrigatória.
-        .from("studios").select("id, name, created_at").in("id", studioIds)
+        .from("studios").select("id, name, logo_url, created_at").in("id", studioIds)
       : { data: [], error: null };
     if (studiosError) {
       console.error("list_studios studios failed", {
@@ -664,7 +664,7 @@ Deno.serve(async (request) => {
     // O Hub já trata owner_id como vínculo de contingência: estúdios antigos
     // podem existir antes da associação studio_members ser sincronizada.
     const { data: ownedStudios, error: ownedStudiosError } = await admin
-      .from("studios").select("id, name, created_at").eq("owner_id", authData.user.id);
+      .from("studios").select("id, name, logo_url, created_at").eq("owner_id", authData.user.id);
     if (ownedStudiosError) {
       console.warn("list_studios owner fallback failed", {
         code: ownedStudiosError.code,

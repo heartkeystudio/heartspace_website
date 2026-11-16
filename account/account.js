@@ -1136,7 +1136,7 @@
         const memberships = await membershipsResponse.json().catch(function () { return []; });
         if (!membershipsResponse.ok || !Array.isArray(memberships)) throw new Error("A lista de estúdios não respondeu.");
         const ownedUrl = new URL(restBase + "studios");
-        ownedUrl.searchParams.set("select", "id,name,created_at");
+        ownedUrl.searchParams.set("select", "id,name,logo_url,created_at");
         if (currentUserId) ownedUrl.searchParams.set("owner_id", "eq." + currentUserId);
         const ownedResponse = currentUserId ? await fetch(ownedUrl.toString(), { headers: headers }) : null;
         const ownedStudios = ownedResponse && ownedResponse.ok ? await ownedResponse.json().catch(function () { return []; }) : [];
@@ -1144,7 +1144,7 @@
         if (!studioIds.length) return [];
         const studiosUrl = new URL(restBase + "studios");
         // `slug` é opcional na estrutura legada do Hub; a lista não depende dele.
-        studiosUrl.searchParams.set("select", "id,name,created_at");
+        studiosUrl.searchParams.set("select", "id,name,logo_url,created_at");
         studiosUrl.searchParams.set("id", "in.(" + studioIds.join(",") + ")");
         const studiosResponse = await fetch(studiosUrl.toString(), { headers: headers });
         const studios = await studiosResponse.json().catch(function () { return []; });
