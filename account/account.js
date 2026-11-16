@@ -73,12 +73,10 @@
     const studioContextMark = document.querySelector(".studio-context-mark");
     const studioContextImage = document.getElementById("studioContextImage");
     const studioContextInitials = document.getElementById("studioContextInitials");
-    const overviewStudioCount = document.getElementById("overviewStudioCount");
-    const overviewProjectCount = document.getElementById("overviewProjectCount");
-    const overviewStudioTitle = document.getElementById("overviewStudioTitle");
-    const overviewStudioCopy = document.getElementById("overviewStudioCopy");
-    const overviewGithubTitle = document.getElementById("overviewGithubTitle");
-    const overviewGithubCopy = document.getElementById("overviewGithubCopy");
+    const dashboardProjectCopy = document.getElementById("dashboardProjectCopy");
+    const dashboardStatus = document.getElementById("dashboardStatus");
+    const dashboardTaskList = document.getElementById("dashboardTaskList");
+    const dashboardDocsLink = document.getElementById("dashboardDocsLink");
     const studioSettingsPanel = document.getElementById("studioSettingsPanel");
     const studioSettingsForm = document.getElementById("studioSettingsForm");
     const activeStudioHeading = document.getElementById("activeStudioHeading");
@@ -274,6 +272,7 @@
     let activeStudioAdmin = null;
     let activeProjectAdmin = null;
     let currentStudioProjects = [];
+    let dashboardLoadSequence = 0;
     let currentProfile = null;
     let currentAccountUser = null;
     let hasManagedStudio = false;
@@ -566,6 +565,7 @@
             }
             selectWorkspaceView(button.dataset.workspaceView);
             if (button.dataset.workspaceView !== "tasks") taskApp.stopPolling();
+            if (button.dataset.workspaceView === "overview") loadDashboardData();
             if (button.dataset.workspaceView === "tasks") { taskApp.setProject(activeProjectId); taskApp.startPolling(); }
             if (button.dataset.workspaceView === "publications") loadPublications();
             if (button.dataset.workspaceView === "apps") loadProjectApps();
@@ -590,6 +590,121 @@
         if (!response.ok) throw new Error(data.message || data.details || "O Tasks não conseguiu acessar os dados deste projeto (HTTP " + response.status + ").");
         return data;
     }
+
+    async function loadDashboardData(existingToken) {
+        const requestSequence = ++dashboardLoadSequence;
+        const requestedProjectId = activeProjectId;
+        const metricIds = ["dashboardTodoCount", "dashboardProgressCount", "dashboardReviewCount", "dashboardDoneCount"];
+        const setMetric = function (id, value) { const node = document.getElementById(id); if (node) node.textContent = value; };
+        const setEmpty = function (message) {
+            dashboardTaskList.replaceChildren();
+            const empty = document.createElement("p"); empty.className = "dashboard-empty"; empty.textContent = message; dashboardTaskList.append(empty);
+        };
+        if (dashboardDocsLink) dashboardDocsLink.href = docsLaunchUrl(activeProjectId);
+        if (!activeProjectId) {
+            metricIds.forEach(function (id) { setMetric(id, "—"); });
+            document.getElementById("dashboardSprintTitle").textContent = "Nenhuma sprint ativa";
+            document.getElementById("dashboardSprintGoal").textContent = "Crie ou selecione um projeto para começar.";
+            document.getElementById("dashboardSprintDates").textContent = "—";
+            document.getElementById("dashboardSprintSummary").textContent = "—";
+            document.getElementById("dashboardSprintProgress").style.width = "0%";
+            dashboardProjectCopy.textContent = "Selecione um projeto na barra lateral para acompanhar tarefas e entregas.";
+            dashboardStatus.textContent = "";
+            setEmpty("Nenhum projeto selecionado.");
+            return;
+        }
+        const project = currentStudioProjects.find(function (item) { return String(item.id) === String(activeProjectId); });
+        dashboardProjectCopy.textContent = project ? (project.name || "Projeto") + " · Resumo de tarefas, sprint e itens que precisam de atenção." : "Resumo de tarefas e entregas do projeto selecionado.";
+        dashboardStatus.textContent = "Carregando dados do projeto…";
+        dashboardStatus.className = "form-status dashboard-status";
+        try {
+            const token = existingToken || await getValidAccessToken();
+            if (!token) throw new Error("Sua sessão expirou. Entre novamente.");
+            const [tasksResult, sprintsResult] = await Promise.all([
+                tasksRequest("tasks?select=id,title,description,status,assigned_to,sprint_id,created_at&project_id=eq." + encodeURIComponent(activeProjectId) + "&order=created_at.desc", { method: "GET" }),
+                tasksRequest("sprints?select=id,name,goal,start_date,end_date,status&project_id=eq." + encodeURIComponent(activeProjectId) + "&order=sort_order.asc,created_at.asc", { method: "GET" })
+            ]);
+            if (requestSequence !== dashboardLoadSequence || requestedProjectId !== activeProjectId) return;
+            const tasks = Array.isArray(tasksResult) ? tasksResult : [];
+            const sprints = Array.isArray(sprintsResult) ? sprintsResult : [];
+            const buckets = { todo: 0, in_progress: 0, review: 0, done: 0 };
+            const bucketFor = function (value) {
+                const status = String(value || "todo").toLowerCase();
+                if (["in_progress", "doing", "in progress", "active"].includes(status)) return "in_progress";
+                if (["review", "pending_approval", "awaiting_approval"].includes(status)) return "review";
+                if (["done", "completed", "fechado"].includes(status)) return "done";
+                return "todo";
+            };
+            tasks.forEach(function (task) { buckets[bucketFor(task.status)] += 1; });
+            setMetric("dashboardTodoCount", String(buckets.todo));
+            setMetric("dashboardProgressCount", String(buckets.in_progress));
+            setMetric("dashboardReviewCount", String(buckets.review));
+            setMetric("dashboardDoneCount", String(buckets.done));
+
+            const sprint = sprints.find(function (item) { return ["active", "in_progress", "in progress"].includes(String(item.status || "").toLowerCase()); }) || sprints.find(function (item) { return !["completed", "archived"].includes(String(item.status || "").toLowerCase()); });
+            const sprintTitle = document.getElementById("dashboardSprintTitle");
+            const sprintGoal = document.getElementById("dashboardSprintGoal");
+            const sprintDates = document.getElementById("dashboardSprintDates");
+            const sprintSummary = document.getElementById("dashboardSprintSummary");
+            const sprintProgress = document.getElementById("dashboardSprintProgress");
+            if (sprint) {
+                const sprintTasks = tasks.filter(function (task) { return String(task.sprint_id || "") === String(sprint.id); });
+                const completed = sprintTasks.filter(function (task) { return bucketFor(task.status) === "done"; }).length;
+                const percent = sprintTasks.length ? Math.round(completed / sprintTasks.length * 100) : 0;
+                sprintTitle.textContent = sprint.name || "Sprint";
+                sprintGoal.textContent = sprint.goal || "Acompanhe aqui o andamento das tarefas desta sprint.";
+                sprintDates.textContent = [sprint.start_date && formatDate(sprint.start_date), sprint.end_date && formatDate(sprint.end_date)].filter(Boolean).join(" – ") || "Datas não definidas";
+                sprintSummary.textContent = sprintTasks.length ? completed + " de " + sprintTasks.length + " concluídas · " + percent + "%" : "Sem tarefas nesta sprint";
+                sprintProgress.style.width = percent + "%";
+            } else {
+                sprintTitle.textContent = "Nenhuma sprint ativa";
+                sprintGoal.textContent = "Crie uma sprint em Tasks para organizar a próxima entrega.";
+                sprintDates.textContent = "—";
+                sprintSummary.textContent = "—";
+                sprintProgress.style.width = "0%";
+            }
+
+            const today = new Date(); today.setHours(0, 0, 0, 0);
+            const actionable = tasks.map(function (task) {
+                let description = task.description || {};
+                if (typeof description === "string") { try { description = JSON.parse(description); } catch (_) { description = {}; } }
+                const due = description && typeof description === "object" ? description.due_date : "";
+                const dueDate = due ? new Date(due + "T12:00:00") : null;
+                return { task: task, bucket: bucketFor(task.status), due: due, dueDate: dueDate };
+            }).filter(function (item) { return item.bucket !== "done"; }).sort(function (a, b) {
+                if (a.bucket === "review" && b.bucket !== "review") return -1;
+                if (b.bucket === "review" && a.bucket !== "review") return 1;
+                if (a.dueDate && !b.dueDate) return -1;
+                if (b.dueDate && !a.dueDate) return 1;
+                return a.dueDate && b.dueDate ? a.dueDate - b.dueDate : 0;
+            }).slice(0, 5);
+            dashboardTaskList.replaceChildren();
+            if (!actionable.length) setEmpty(tasks.length ? "Nenhuma tarefa pendente. O projeto está em dia." : "Ainda não há tarefas neste projeto.");
+            actionable.forEach(function (item) {
+                const row = document.createElement("div"); row.className = "dashboard-task-row";
+                const detail = document.createElement("div");
+                const title = document.createElement("strong"); title.textContent = item.task.title || "Tarefa sem título";
+                const meta = document.createElement("span");
+                const stateLabels = { todo: "A fazer", in_progress: "Em andamento", review: "Em revisão" };
+                const dueText = item.due ? "Prazo " + formatDate(item.due) : "Sem prazo";
+                meta.textContent = (stateLabels[item.bucket] || "A fazer") + " · " + dueText;
+                detail.append(title, meta);
+                const status = document.createElement("span"); status.className = "dashboard-task-state state-" + item.bucket; status.textContent = item.bucket === "review" ? "Revisão" : item.dueDate && item.dueDate < today ? "Atrasada" : item.due ? "No prazo" : "Aberta";
+                row.append(detail, status); dashboardTaskList.append(row);
+            });
+            dashboardStatus.textContent = "";
+            dashboardStatus.className = "form-status dashboard-status";
+        } catch (error) {
+            if (requestSequence !== dashboardLoadSequence || requestedProjectId !== activeProjectId) return;
+            metricIds.forEach(function (id) { setMetric(id, "—"); });
+            document.getElementById("dashboardSprintTitle").textContent = "Dados indisponíveis";
+            dashboardStatus.textContent = error.message || "Não foi possível carregar o resumo do projeto.";
+            dashboardStatus.className = "form-status dashboard-status is-error";
+            setEmpty("Tente atualizar o painel em alguns instantes.");
+        }
+    }
+
+    document.getElementById("refreshDashboard").addEventListener("click", function () { loadDashboardData(); });
 
     function resetPublicationEditor() {
         publicationId.value = "";
@@ -706,32 +821,6 @@
 
     function githubRepositoryForProject(repositories) {
         return (repositories || []).find(function (item) { return item.project_id === githubProjectSelect.value; }) || null;
-    }
-
-    async function loadGithubOverview() {
-        if (!activeStudioId) {
-            overviewGithubTitle.textContent = "Código ainda não conectado";
-            overviewGithubCopy.textContent = "Crie ou escolha um estúdio para conectar o GitHub App.";
-            return;
-        }
-        try {
-            const token = await getValidAccessToken(); if (!token) throw new Error("Sessão expirada.");
-            const data = await studioRequest("get_github_integration", token, { studio_id: activeStudioId });
-            const repositories = Array.isArray(data.repositories) ? data.repositories : [];
-            if (!data.installation) {
-                overviewGithubTitle.textContent = "GitHub App pendente";
-                overviewGithubCopy.textContent = "Vincule a instalação do GitHub App para receber sinais técnicos dos repositórios.";
-                return;
-            }
-            overviewGithubTitle.textContent = repositories.length === 1 ? "1 repositório vinculado" : repositories.length + " repositórios vinculados";
-            const event = data.last_event;
-            overviewGithubCopy.textContent = event
-                ? "Último evento: " + event.github_event.replace(/_/g, " ") + (event.repository_full_name ? " · " + event.repository_full_name : "") + " · " + formatDate(event.received_at) + "."
-                : "GitHub App conectado em " + (data.installation.account_login || "uma conta") + ". Aguardando o primeiro evento técnico.";
-        } catch (_) {
-            overviewGithubTitle.textContent = "GitHub indisponível agora";
-            overviewGithubCopy.textContent = "Abra a integração para conferir o vínculo quando a conexão voltar.";
-        }
     }
 
     async function loadGithubIntegration() {
@@ -1207,7 +1296,7 @@
         pendingInvitesPanel.hidden = true;
         roleCatalog.hidden = true;
         projectList.hidden = true;
-        overviewProjectCount.textContent = "—";
+        dashboardProjectCopy.textContent = "Escolha um projeto para acompanhar o trabalho.";
         clearProjectAdministration();
     }
 
@@ -1258,13 +1347,10 @@
         studioList.replaceChildren();
         inviteStudio.replaceChildren();
         studioContextSelect.replaceChildren();
-        overviewStudioCount.textContent = String(studios.length);
         if (!studios.length) {
             studiosTitle.textContent = "Nenhum estúdio ainda.";
             studiosCopy.textContent = "Comece criando o primeiro estúdio da sua conta.";
             const option = new Option("Criar novo estúdio…", "__create__"); studioContextSelect.add(option); studioContextSelect.value = "__create__"; studioContextSelect.disabled = false;
-            overviewStudioTitle.textContent = "Crie seu primeiro estúdio";
-            overviewStudioCopy.textContent = "Seu estúdio organiza pessoas, acessos e projetos. Abra o Docs web para escrever documentos compartilhados com sua equipe.";
             studioList.hidden = true;
             inviteMemberForm.hidden = true;
             activeStudioId = "";
@@ -1295,9 +1381,6 @@
             studioContextSelect.disabled = false;
             inviteStudio.value = activeStudioId;
             updateStudioContextMark(activeStudioFromMemberships(studios));
-            const selectedName = studioContextSelect.options[studioContextSelect.selectedIndex].textContent || "Estúdio ativo";
-            overviewStudioTitle.textContent = studios.length === 1 ? "Seu estúdio está pronto." : studios.length + " estúdios, um só controle.";
-            overviewStudioCopy.textContent = selectedName + " está conectado à sua conta. Use os papéis e convites para organizar quem pode colaborar.";
             membersTitle.textContent = "Convide alguém para colaborar.";
             membersCopy.textContent = "O link vale por 7 dias e só pode ser aceito pela conta do e-mail informado.";
             sessionStorage.setItem(sessionKey("active-studio"), activeStudioId);
@@ -1341,8 +1424,6 @@
             } catch (fallbackError) {
                 studiosTitle.textContent = "Não foi possível carregar seus estúdios.";
                 studiosCopy.textContent = "A conexão com a conta falhou. Atualize a página; se persistir, use o Hub enquanto verificamos o serviço.";
-                overviewStudioTitle.textContent = "Estúdios indisponíveis agora";
-                overviewStudioCopy.textContent = "A sua sessão continua protegida; tente atualizar a página para consultar seus espaços.";
             }
         }
     }
@@ -1439,7 +1520,6 @@
         projectList.replaceChildren();
         const projects = Array.isArray(data.projects) ? data.projects : [];
         currentStudioProjects = projects;
-        overviewProjectCount.textContent = String(projects.length);
         projectsTitle.textContent = projects.length ? (projects.length === 1 ? "1 projeto neste estúdio." : projects.length + " projetos neste estúdio.") : "Seu próximo projeto começa aqui.";
         projectsCopy.textContent = projects.length ? "Os projetos e acessos da equipe ficam conectados. Abra o Docs para criar e editar documentos online neste projeto." : "Crie um projeto e abra o Docs pelo Dashboard ou pelo Hub para trabalhar com a equipe.";
         projects.forEach(function (project) { appendListRow(projectList, project.name || "Projeto sem título", (project.status === "archived" ? "Arquivado" : "Ativo") + " · " + (project.description || "Sem descrição") + " · criado em " + formatDate(project.created_at)); });
@@ -1531,7 +1611,7 @@
         try {
             const data = await studioRequest("get_studio_admin", token, { studio_id: activeStudioId });
             renderActiveStudio(data);
-            await loadGithubOverview();
+            await loadDashboardData(token);
             if (activeProjectId) await loadActiveProject(token);
         } catch (error) {
             clearStudioAdministration();
@@ -1787,6 +1867,7 @@
         const visiblePanel = activeIntegrationPanel || workspacePanels.find(function (panel) { return panel.classList.contains("is-active"); });
         const viewName = visiblePanel && visiblePanel.dataset.workspacePanel;
         if (viewName === "projects" || viewName === "tasks") await loadActiveProject(token);
+        if (viewName === "overview") await loadDashboardData(token);
         if (viewName === "apps") await loadProjectApps();
         if (viewName === "publications") await loadPublications();
         if (viewName === "tasks") taskApp.setProject(activeProjectId);
