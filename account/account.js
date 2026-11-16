@@ -610,6 +610,22 @@
             document.getElementById("dashboardSprintProgress").style.width = "0%";
             dashboardProjectCopy.textContent = "Selecione um projeto na barra lateral para acompanhar tarefas e entregas.";
             dashboardStatus.textContent = "";
+            document.getElementById("dashboardTeamPanel").hidden = true;
+            document.getElementById("dashboardTeamList").replaceChildren();
+            document.getElementById("dashboardGithubName").textContent = "Nenhum projeto selecionado";
+            document.getElementById("dashboardGithubState").textContent = "—";
+            document.getElementById("dashboardGithubPulls").textContent = "—";
+            document.getElementById("dashboardGithubIssues").textContent = "—";
+            document.getElementById("dashboardGithubMilestones").textContent = "—";
+            document.getElementById("dashboardGithubBranch").textContent = "Branch padrão: —";
+            document.getElementById("dashboardGithubSize").textContent = "Tamanho estimado: —";
+            document.getElementById("dashboardGithubRelease").textContent = "Release: —";
+            document.getElementById("dashboardGithubFetchedAt").textContent = "Dados atualizados: —";
+            document.getElementById("dashboardDriveName").textContent = "Nenhum projeto selecionado";
+            document.getElementById("dashboardDriveState").textContent = "—";
+            document.getElementById("dashboardDriveSync").textContent = "Última sincronização: —";
+            document.getElementById("dashboardDriveNote").textContent = "Tamanho dos arquivos: indisponível";
+            dashboardStatus.className = "form-status dashboard-status";
             setEmpty("Nenhum projeto selecionado.");
             return;
         }
@@ -692,6 +708,14 @@
                 const status = document.createElement("span"); status.className = "dashboard-task-state state-" + item.bucket; status.textContent = item.bucket === "review" ? "Revisão" : item.dueDate && item.dueDate < today ? "Atrasada" : item.due ? "No prazo" : "Aberta";
                 row.append(detail, status); dashboardTaskList.append(row);
             });
+
+            renderDashboardTeam(tasks, bucketFor);
+            const [githubResult, driveResult] = await Promise.allSettled([
+                studioRequest("get_hub_project_github_status", token, { project_id: activeProjectId }),
+                studioRequest("get_hub_project_cloud_sync", token, { project_id: activeProjectId })
+            ]);
+            if (requestSequence !== dashboardLoadSequence || requestedProjectId !== activeProjectId) return;
+            renderDashboardSources(githubResult, driveResult);
             dashboardStatus.textContent = "";
             dashboardStatus.className = "form-status dashboard-status";
         } catch (error) {
@@ -704,7 +728,97 @@
         }
     }
 
+    function renderDashboardTeam(tasks, bucketFor) {
+        const panel = document.getElementById("dashboardTeamPanel");
+        const list = document.getElementById("dashboardTeamList");
+        const studioRole = activeProjectAdmin && activeProjectAdmin.membership && activeProjectAdmin.membership.role;
+        const project = activeProjectAdmin && activeProjectAdmin.project;
+        const projectMember = (activeProjectAdmin && activeProjectAdmin.project_members || []).find(function (member) { return String(member.user_id) === String(currentUserId); });
+        const permissions = project && project.role_permissions && typeof project.role_permissions === "object" ? project.role_permissions : {};
+        const canSeeTeamProgress = studioRole === "owner" || studioRole === "admin" || Boolean(projectMember && (projectMember.project_roles || []).some(function (role) { return permissions[role] && permissions[role].tasks_approve === true; }));
+        panel.hidden = !canSeeTeamProgress;
+        list.replaceChildren();
+        if (!canSeeTeamProgress) return;
+        const members = activeProjectAdmin && Array.isArray(activeProjectAdmin.project_members) ? activeProjectAdmin.project_members : [];
+        const people = new Map(members.map(function (member) { return [String(member.user_id), { name: member.display_name || "Membro da equipe", done: 0, assigned: 0 }]; }));
+        tasks.forEach(function (task) {
+            if (!task.assigned_to) return;
+            const key = String(task.assigned_to);
+            if (!people.has(key)) people.set(key, { name: "Membro da equipe", done: 0, assigned: 0 });
+            const person = people.get(key); person.assigned += 1;
+            if (bucketFor(task.status) === "done") person.done += 1;
+        });
+        const ranked = Array.from(people.values()).filter(function (person) { return person.assigned > 0; }).sort(function (a, b) { return b.done - a.done || b.assigned - a.assigned; }).slice(0, 5);
+        if (!ranked.length) { const empty = document.createElement("p"); empty.className = "dashboard-empty"; empty.textContent = "Ainda não há tarefas atribuídas para comparar."; list.append(empty); return; }
+        const max = Math.max(1, ranked[0].done);
+        ranked.forEach(function (person) {
+            const row = document.createElement("div"); row.className = "dashboard-team-row";
+            const identity = document.createElement("div"); identity.className = "dashboard-team-identity";
+            const name = document.createElement("strong"); name.textContent = person.name;
+            const count = document.createElement("span"); count.textContent = person.done + " concluídas · " + person.assigned + " atribuídas";
+            identity.append(name, count);
+            const chart = document.createElement("div"); chart.className = "dashboard-team-bar";
+            const fill = document.createElement("span"); fill.style.width = Math.round(person.done / max * 100) + "%"; chart.append(fill);
+            row.append(identity, chart); list.append(row);
+        });
+    }
+
+    function renderDashboardSources(githubResult, driveResult) {
+        const text = function (id, value) { document.getElementById(id).textContent = value; };
+        const githubName = document.getElementById("dashboardGithubName");
+        const githubState = document.getElementById("dashboardGithubState");
+        const snapshot = githubResult.status === "fulfilled" && githubResult.value && githubResult.value.snapshot || null;
+        if (snapshot) {
+            const repoName = snapshot.repository_full_name || "Repositório conectado";
+            githubName.textContent = repoName;
+            githubState.textContent = snapshot.checks_state === "passing" ? "Checks OK" : snapshot.checks_state === "attention" ? "Verificar checks" : "Conectado";
+            text("dashboardGithubPulls", String(snapshot.open_pull_requests || 0));
+            text("dashboardGithubIssues", String(snapshot.open_issues || 0));
+            text("dashboardGithubMilestones", String(snapshot.open_milestones || 0));
+            text("dashboardGithubBranch", "Branch padrão: " + (snapshot.default_branch || "—"));
+            const repoInfo = snapshot.payload && snapshot.payload.repository || {};
+            const sizeKb = Number(repoInfo.size_kb);
+            const sizeText = Number.isFinite(sizeKb) && sizeKb > 0 ? (sizeKb >= 1024 ? (sizeKb / 1024).toFixed(1) + " MB" : sizeKb + " KB") : "indisponível";
+            text("dashboardGithubSize", "Tamanho do repositório: " + sizeText + " (estimativa GitHub)");
+            text("dashboardGithubRelease", "Release: " + (snapshot.latest_release_name || "nenhuma release publicada"));
+            text("dashboardGithubFetchedAt", "Dados atualizados: " + (snapshot.fetched_at ? formatDate(snapshot.fetched_at) : "—"));
+        } else {
+            githubName.textContent = githubResult.status === "rejected" ? "GitHub não conectado" : "Nenhum snapshot disponível";
+            githubState.textContent = githubResult.status === "rejected" ? "Pendente" : "Aguardando atualização";
+            text("dashboardGithubPulls", "—"); text("dashboardGithubIssues", "—"); text("dashboardGithubMilestones", "—");
+            text("dashboardGithubBranch", "Branch padrão: —"); text("dashboardGithubSize", "Tamanho do repositório: —"); text("dashboardGithubRelease", "Release: —"); text("dashboardGithubFetchedAt", "Dados atualizados: —");
+        }
+        const sync = driveResult.status === "fulfilled" && driveResult.value && driveResult.value.sync || null;
+        if (sync) {
+            text("dashboardDriveName", sync.folder_name || "Pasta do projeto");
+            text("dashboardDriveState", sync.sync_enabled ? (sync.last_sync_status || "Sincronizado") : "Pausado");
+            text("dashboardDriveSync", "Última sincronização: " + (sync.last_sync_at ? formatDate(sync.last_sync_at) : "ainda não registrada"));
+            text("dashboardDriveNote", "Tamanho dos arquivos: indisponível");
+        } else {
+            text("dashboardDriveName", driveResult.status === "rejected" ? "Drive não conectado" : "Nenhuma pasta vinculada");
+            text("dashboardDriveState", driveResult.status === "rejected" ? "Indisponível" : "Pendente");
+            text("dashboardDriveSync", "Última sincronização: —");
+            text("dashboardDriveNote", "Conecte o Google Drive nas integrações do estúdio para vincular uma pasta a este projeto.");
+        }
+    }
+
     document.getElementById("refreshDashboard").addEventListener("click", function () { loadDashboardData(); });
+    document.getElementById("refreshDashboardGithub").addEventListener("click", async function (event) {
+        const button = event.currentTarget;
+        if (!activeProjectId || !activeStudioId) return;
+        button.disabled = true;
+        dashboardStatus.textContent = "Atualizando dados do GitHub…";
+        dashboardStatus.className = "form-status dashboard-status";
+        try {
+            const token = await getValidAccessToken();
+            if (!token) throw new Error("Sua sessão expirou. Entre novamente.");
+            await githubOauthRequest("github-project-status", token, { studio_id: activeStudioId, project_id: activeProjectId });
+            await loadDashboardData(token);
+        } catch (error) {
+            dashboardStatus.textContent = error.message || "Não foi possível atualizar o status do GitHub.";
+            dashboardStatus.className = "form-status dashboard-status is-error";
+        } finally { button.disabled = false; }
+    });
 
     function resetPublicationEditor() {
         publicationId.value = "";
@@ -1611,8 +1725,8 @@
         try {
             const data = await studioRequest("get_studio_admin", token, { studio_id: activeStudioId });
             renderActiveStudio(data);
-            await loadDashboardData(token);
             if (activeProjectId) await loadActiveProject(token);
+            await loadDashboardData(token);
         } catch (error) {
             clearStudioAdministration();
             membersTitle.textContent = "Não foi possível carregar a equipe.";
@@ -1866,7 +1980,7 @@
     async function refreshActiveProjectContext(token) {
         const visiblePanel = activeIntegrationPanel || workspacePanels.find(function (panel) { return panel.classList.contains("is-active"); });
         const viewName = visiblePanel && visiblePanel.dataset.workspacePanel;
-        if (viewName === "projects" || viewName === "tasks") await loadActiveProject(token);
+        if (viewName === "projects" || viewName === "tasks" || viewName === "overview") await loadActiveProject(token);
         if (viewName === "overview") await loadDashboardData(token);
         if (viewName === "apps") await loadProjectApps();
         if (viewName === "publications") await loadPublications();
