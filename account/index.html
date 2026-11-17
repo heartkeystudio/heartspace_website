@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#0c8ce9">
     <link rel="icon" type="image/png" href="../assets/icons/logo.png">
     <title>Conta | HeartSpace</title>
-    <link rel="stylesheet" href="account.css?v=20261116-1">
+    <link rel="stylesheet" href="account.css?v=20261117-1">
 </head>
 <body>
     <main class="account-shell">
@@ -30,6 +30,7 @@
                     <button class="workspace-nav-item is-active" type="button" data-workspace-view="overview" aria-current="page"><img class="nav-image-icon" src="../assets/icons/home.svg" alt="" aria-hidden="true"><span class="nav-copy">Visão geral</span></button>
                     <button class="workspace-nav-item" type="button" data-workspace-view="tasks" title="Tasks"><img class="nav-image-icon" src="../assets/icons/tasks.svg" alt="" aria-hidden="true"><span class="nav-copy">Tasks</span></button>
                     <button class="workspace-nav-item docs-nav-item" id="openDocsLink" type="button" data-workspace-view="docs-reader"><img class="nav-image-icon" src="../assets/icons/docs.svg" alt="" aria-hidden="true"><span class="nav-copy">Docs</span></button>
+                    <button class="workspace-nav-item" type="button" data-workspace-view="invites" aria-label="Convites recebidos"><span class="nav-icon" aria-hidden="true">✉</span><span class="nav-copy">Convites</span><span class="invite-count-badge" id="inviteCountBadge" hidden></span></button>
                     <details class="workspace-nav-group">
                         <summary class="workspace-nav-label"><img class="nav-image-icon" src="../assets/icons/studios.svg" alt="" aria-hidden="true"><span class="nav-copy">Estúdio</span></summary>
                         <button class="workspace-nav-item" type="button" data-workspace-view="studios" data-studio-required><span class="nav-icon">◇</span><span class="nav-copy">Estúdios</span></button>
@@ -59,6 +60,11 @@
                             <article class="reader-main" id="readerMain"><div class="reader-empty"><span>▤</span><h2>Escolha um documento</h2><p>Os documentos compartilhados com você aparecerão aqui.</p></div></article>
                         </div>
                         <dialog class="reader-publish-dialog" id="readerPublishDialog"><form id="readerPublishForm" class="studio-form"><div class="admin-detail-heading"><div><p class="panel-kicker">WIKI HEARTSPACE</p><h2>Publicar versão aprovada</h2></div><button class="integration-modal-close" type="button" id="readerPublishClose" aria-label="Fechar">×</button></div><p class="field-note">A Wiki recebe uma cópia da revisão aprovada. Alterações futuras no Docs não mudam esta publicação.</p><label for="readerPublishTitle">Título</label><input id="readerPublishTitle" maxlength="160" required><label for="readerPublishSlug">Endereço</label><input id="readerPublishSlug" maxlength="60" required><label for="readerPublishSummary">Resumo</label><textarea id="readerPublishSummary" maxlength="500"></textarea><label for="readerPublishVisibility">Visibilidade</label><select id="readerPublishVisibility"><option value="public">Pública</option><option value="unlisted">Não listada</option></select><p class="form-status" id="readerPublishStatus" aria-live="polite"></p><div class="reader-dialog-actions"><button type="button" class="row-button" id="readerPublishCancel">Cancelar</button><button class="portal-button" id="readerPublishSubmit" type="submit">Publicar na Wiki</button></div></form></dialog>
+                    </section>
+                    <section class="workspace-view" data-workspace-panel="invites" hidden aria-labelledby="receivedInvitesTitle">
+                        <p class="eyebrow">NOTIFICAÇÕES</p><h1 id="receivedInvitesTitle">Convites recebidos</h1>
+                        <p class="workspace-lead">Revise os convites enviados ao e-mail desta conta. Você só entra em um estúdio quando aceitar.</p>
+                        <article class="empty-panel invites-inbox-panel"><div class="invites-inbox-heading"><div><p class="panel-kicker">PENDENTES</p><h2>Espaços que convidaram você</h2></div><button class="row-button" id="refreshInvites" type="button">Atualizar</button></div><p class="form-status" id="receivedInvitesStatus" aria-live="polite"></p><div class="received-invites-list" id="receivedInvitesList"></div><p class="invites-empty" id="receivedInvitesEmpty" hidden>Você não tem convites pendentes.</p></article>
                     </section>
                     <section class="workspace-view is-active" data-workspace-panel="overview" aria-labelledby="memberTitle">
                         <header class="dashboard-heading"><div><p class="eyebrow">PAINEL DO PROJETO</p><h1 id="memberTitle">Visão do trabalho</h1><p class="workspace-lead" id="dashboardProjectCopy">Selecione um projeto para acompanhar tarefas e entregas.</p></div><button class="row-button" id="refreshDashboard" type="button">Atualizar</button></header>
@@ -115,7 +121,7 @@
                     <section class="workspace-view" data-workspace-panel="members" hidden>
                         <p class="eyebrow">MEMBROS E PAPÉIS</p><h1>Acesso antes de tudo.</h1>
                         <p class="workspace-lead">Convites, permissões e histórico de membros pertencem ao estúdio — nunca a um link público ou a um arquivo local compartilhado por acidente.</p>
-                        <article class="empty-panel members-panel"><span class="empty-symbol">◎</span><h2 id="membersTitle">Você criará um estúdio antes de convidar pessoas.</h2><p id="membersCopy">O fluxo terá papéis claros, revogação de convite e uma visão de quem possui acesso a cada espaço.</p><div class="admin-list" id="memberList" hidden></div><div class="admin-subsection" id="pendingInvitesPanel" hidden><p class="panel-kicker">CONVITES PENDENTES</p><div class="admin-list" id="pendingInviteList"></div></div><form class="studio-form" id="inviteMemberForm" hidden><p class="panel-kicker">ADICIONAR PESSOA</p><label for="inviteStudio">Estúdio</label><select id="inviteStudio" required></select><label for="inviteEmail">E-mail da pessoa</label><input id="inviteEmail" type="email" autocomplete="email" placeholder="pessoa@estudio.com" required><label for="inviteRole">Cargo inicial</label><select id="inviteRole"><option value="member">Membro</option><option value="admin">Admin</option></select><button class="portal-button" type="submit">Criar link de convite</button><p class="form-status" id="inviteStatus" aria-live="polite"></p><a class="hub-link" id="inviteLink" hidden target="_blank" rel="noreferrer">Abrir convite →</a></form></article>
+                        <article class="empty-panel members-panel"><span class="empty-symbol">◎</span><h2 id="membersTitle">Você criará um estúdio antes de convidar pessoas.</h2><p id="membersCopy">O fluxo terá papéis claros, revogação de convite e uma visão de quem possui acesso a cada espaço.</p><div class="admin-list" id="memberList" hidden></div><div class="admin-subsection" id="pendingInvitesPanel" hidden><p class="panel-kicker">CONVITES PENDENTES</p><div class="admin-list" id="pendingInviteList"></div></div><form class="studio-form" id="inviteMemberForm" hidden><p class="panel-kicker">ADICIONAR PESSOA</p><label for="inviteStudio">Estúdio</label><select id="inviteStudio" required></select><label for="inviteEmail">E-mail da pessoa</label><input id="inviteEmail" type="email" autocomplete="email" placeholder="pessoa@estudio.com" required><label for="inviteRole">Cargo inicial</label><select id="inviteRole"><option value="member">Membro</option><option value="admin">Admin</option></select><button class="portal-button" type="submit">Enviar convite</button><p class="form-status" id="inviteStatus" aria-live="polite"></p><a class="hub-link" id="inviteLink" hidden target="_blank" rel="noreferrer">Usar link alternativo →</a></form></article>
                         <article class="role-catalog" id="roleCatalog" hidden><p class="panel-kicker">CARGOS E PERMISSÕES</p><h2>Um papel claro para cada pessoa.</h2><div class="role-grid"><article><strong>Owner</strong><p>Responsável pelo estúdio. Pode apagar o espaço, alterar cargos e remover membros.</p></article><article><strong>Admin</strong><p>Gerencia configurações, projetos e convites. Não altera Owner nem remove pessoas.</p></article><article><strong>Membro</strong><p>Colabora no estúdio e acessa o trabalho compartilhado conforme o projeto.</p></article></div><p class="field-note">Os cargos são deliberadamente fixos para manter a mesma regra no site e no Hub. A mudança de cargo fica registrada no histórico do estúdio.</p></article>
                     </section>
 
@@ -201,7 +207,7 @@
     </div>
     <script src="config.js?v=20260924-12"></script>
     <script src="tasks.js?v=20261020-05"></script>
-    <script src="account.js?v=20261116-1"></script>
-    <script src="reader.js?v=20261112-1"></script>
+    <script src="account.js?v=20261117-1"></script>
+    <script src="reader.js?v=20261116-2"></script>
 </body>
 </html>

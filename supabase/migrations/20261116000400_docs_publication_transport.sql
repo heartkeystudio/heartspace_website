@@ -189,13 +189,14 @@ begin
  if not allowed then
    select case when jsonb_array_length(pm.roles)>0 then array(select jsonb_array_elements_text(pm.roles)) else array[pm.role] end into member_roles
    from public.project_members pm where pm.project_id=p_project_id and pm.user_id=p_actor_id for share;
-   select exists(select 1 from unnest(member_roles) r where
-     project_row.role_permissions->r->>'manage_publications'='true' or project_row.role_permissions->r->>'manage_workspace'='true') into allowed;
+   select exists(select 1 from unnest(member_roles) as roles(role_key) where
+     project_row.role_permissions->roles.role_key->>'manage_publications'='true' or project_row.role_permissions->roles.role_key->>'manage_workspace'='true') into allowed;
  end if;
+ perform 1 from public.project_apps a where a.project_id=p_project_id and a.app_key='docs' for share;
  if allowed is not true or exists(select 1 from public.project_apps a where a.project_id=p_project_id and a.app_key='docs' and not a.enabled) then
    raise exception 'Você não pode publicar neste projeto.' using errcode='42501';
  end if;
- if p_operation_id is null or p_request_hash !~ '^[a-f0-9]{64}$' then raise exception 'Pedido inválido.'; end if;
+ if p_operation_id is null or p_request_hash is null or p_request_hash !~ '^[a-f0-9]{64}$' then raise exception 'Pedido inválido.'; end if;
  perform pg_advisory_xact_lock(hashtextextended(p_actor_id::text||':'||p_operation_id::text,0));
  select * into receipt from public.docs_publication_receipts r where r.actor_id=p_actor_id and r.operation_id=p_operation_id;
  if found then
@@ -207,7 +208,7 @@ begin
  if not found or revision_row.approved_at is null or revision_row.content_hash is distinct from p_content_hash then
    raise exception 'A revisão não está aprovada para este projeto.' using errcode='P0001';
  end if;
- if p_snapshot->>'format'<>'heartspace-docs-publication-v2' or p_snapshot->>'version'<>'2'
+ if (p_snapshot->>'format') is distinct from 'heartspace-docs-publication-v2' or (p_snapshot->>'version') is distinct from '2'
     or jsonb_typeof(p_snapshot->'assets') is distinct from 'array' or jsonb_typeof(p_snapshot->'blocks') is distinct from 'array' then
    raise exception 'Snapshot inválido.';
  end if;

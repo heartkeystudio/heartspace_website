@@ -4,9 +4,11 @@
     const config = window.HEARTSPACE_ACCOUNT_CONFIG || {};
     const docsUrl = config.docsUrl || "https://docs.heartspace.tools/";
     function docsLaunchUrl(projectId) {
-        const params = new URLSearchParams({ source: "dashboard" });
-        if (projectId) params.set("project_id", projectId);
-        return docsUrl + "?" + params.toString();
+        const destination = new URL(docsUrl, window.location.href);
+        destination.searchParams.set("source", "dashboard");
+        destination.searchParams.set("dashboard_origin", window.location.origin);
+        if (projectId) destination.searchParams.set("project_id", projectId);
+        return destination.toString();
     }
     const googleButton = document.getElementById("googleSignIn");
     const magicLinkForm = document.getElementById("magicLinkForm");
@@ -97,6 +99,10 @@
     const memberList = document.getElementById("memberList");
     const pendingInvitesPanel = document.getElementById("pendingInvitesPanel");
     const pendingInviteList = document.getElementById("pendingInviteList");
+    const inviteCountBadge = document.getElementById("inviteCountBadge");
+    const receivedInvitesList = document.getElementById("receivedInvitesList");
+    const receivedInvitesEmpty = document.getElementById("receivedInvitesEmpty");
+    const receivedInvitesStatus = document.getElementById("receivedInvitesStatus");
     const roleCatalog = document.getElementById("roleCatalog");
     const projectList = document.getElementById("projectList");
     const openDocsLink = document.getElementById("openDocsLink");
@@ -383,18 +389,23 @@
     }
 
     const docsOrigin = new URL(docsUrl, window.location.href).origin;
+    let docsSessionTokenRequest = null;
     window.addEventListener("message", function (event) {
         if (event.origin !== docsOrigin || !event.source || !event.data || event.data.type !== "heartspace-docs-session-request") return;
         const requester = event.source;
-        getValidAccessToken().then(function (accessToken) {
-            requester.postMessage({
-                type: "heartspace-docs-session",
-                accessToken: accessToken || "",
-                expiresAt: localStorage.getItem(sessionKey("expires-at")) || ""
-            }, docsOrigin);
-        }).catch(function () {
-            requester.postMessage({ type: "heartspace-docs-session", accessToken: "" }, docsOrigin);
-        });
+        const requestId = typeof event.data.requestId === "string" && event.data.requestId.length <= 100 ? event.data.requestId : undefined;
+        // Retry messages share the same refresh; parallel refresh-token rotations
+        // can otherwise invalidate the session being handed to the Docs window.
+        if (!docsSessionTokenRequest) {
+            const pending = Promise.resolve().then(getValidAccessToken).then(function (accessToken) {
+                return {accessToken:accessToken || "",expiresAt:localStorage.getItem(sessionKey("expires-at")) || ""};
+            }).finally(function () { if (docsSessionTokenRequest === pending) docsSessionTokenRequest = null; });
+            docsSessionTokenRequest = pending;
+        }
+        const reply = function (session) {
+            try { requester.postMessage(Object.assign({type:"heartspace-docs-session",requestId:requestId},session),docsOrigin); } catch (_) { /* The child may already be closed. */ }
+        };
+        docsSessionTokenRequest.then(reply).catch(function () { reply({accessToken:""}); });
     });
 
     window.HeartspaceReaderContext = {
@@ -576,7 +587,86 @@
             if (button.dataset.workspaceView === "security") loadAuditLog();
             if (button.dataset.workspaceView === "billing") loadAccountUsage();
             if (button.dataset.workspaceView === "docs-reader" && window.HeartspaceDocsReader) window.HeartspaceDocsReader.load();
+            if (button.dataset.workspaceView === "invites") getValidAccessToken().then(function (token) { if (token) return loadReceivedStudioInvites(token, true); }).catch(function () {});
         });
+    });
+
+    function updateInviteCount(count) {
+        const safeCount = Math.max(0, Number(count) || 0);
+        inviteCountBadge.hidden = safeCount === 0;
+        inviteCountBadge.textContent = safeCount > 9 ? "9+" : String(safeCount);
+        const inviteNavButton = inviteCountBadge.closest("[data-workspace-view]");
+        if (inviteNavButton) inviteNavButton.setAttribute("aria-label", safeCount ? "Convites recebidos, " + safeCount + " não lidos" : "Convites recebidos");
+    }
+
+    function setReceivedInviteStatus(message, state) {
+        receivedInvitesStatus.textContent = message || "";
+        receivedInvitesStatus.className = "form-status" + (state ? " is-" + state : "");
+    }
+
+    async function loadReceivedStudioInvites(token, markViewed) {
+        setReceivedInviteStatus("", "");
+        try {
+            const data = await studioRequest("get_my_studio_invites", token, { mark_viewed: Boolean(markViewed) });
+            const invites = Array.isArray(data.invites) ? data.invites : [];
+            updateInviteCount(markViewed ? 0 : data.unread_count);
+            receivedInvitesList.replaceChildren();
+            receivedInvitesEmpty.hidden = invites.length > 0;
+            invites.forEach(function (invite) {
+                const card = document.createElement("article"); card.className = "received-invite-card";
+                const main = document.createElement("div"); main.className = "received-invite-main";
+                const kicker = document.createElement("p"); kicker.className = "panel-kicker"; kicker.textContent = invite.role === "admin" ? "CONVITE PARA ADMIN" : "CONVITE PARA MEMBRO";
+                const title = document.createElement("h2"); title.textContent = invite.studio_name;
+                const copy = document.createElement("p"); copy.textContent = invite.invited_by + " convidou você · expira em " + formatDate(invite.expires_at);
+                main.append(kicker, title, copy);
+                const actions = document.createElement("div"); actions.className = "received-invite-actions";
+                const accept = document.createElement("button"); accept.type = "button"; accept.className = "portal-button"; accept.dataset.acceptStudioInvite = invite.id; accept.textContent = "Aceitar convite";
+                const decline = document.createElement("button"); decline.type = "button"; decline.className = "row-button row-button-danger"; decline.dataset.declineStudioInvite = invite.id; decline.textContent = "Recusar";
+                actions.append(accept, decline); card.append(main, actions); receivedInvitesList.append(card);
+            });
+            if (!invites.length) setReceivedInviteStatus("", "");
+            else if (markViewed) setReceivedInviteStatus("", "");
+        } catch (error) {
+            setReceivedInviteStatus(error.message || "Não foi possível carregar seus convites.", "error");
+        }
+    }
+
+    async function respondToStudioInvite(inviteId, accept) {
+        const token = await getValidAccessToken();
+        if (!token) return setReceivedInviteStatus("Sua sessão expirou. Entre novamente para responder ao convite.", "error");
+        const buttons = Array.from(receivedInvitesList.querySelectorAll('[data-accept-studio-invite="' + inviteId + '"], [data-decline-studio-invite="' + inviteId + '"]'));
+        buttons.forEach(function (button) { button.disabled = true; });
+        setReceivedInviteStatus(accept ? "Aceitando convite…" : "Recusando convite…", "");
+        try {
+            const action = accept ? "accept_account_invite" : "decline_account_invite";
+            const data = await studioRequest(action, token, { invite_id: inviteId });
+            if (accept && data.studio_id) {
+                activeStudioId = data.studio_id;
+                sessionStorage.setItem(sessionKey("active-studio"), activeStudioId);
+                await loadStudios(token);
+                setReceivedInviteStatus("Convite aceito. O estúdio já está disponível na sua conta.", "success");
+            } else {
+                setReceivedInviteStatus("Convite recusado.", "success");
+                await loadReceivedStudioInvites(token, true);
+                setReceivedInviteStatus("Convite recusado.", "success");
+            }
+        } catch (error) {
+            setReceivedInviteStatus(error.message || "Não foi possível responder ao convite.", "error");
+            buttons.forEach(function (button) { button.disabled = false; });
+        }
+    }
+
+    receivedInvitesList.addEventListener("click", function (event) {
+        const accept = event.target.closest("[data-accept-studio-invite]");
+        const decline = event.target.closest("[data-decline-studio-invite]");
+        if (accept) respondToStudioInvite(accept.dataset.acceptStudioInvite, true);
+        else if (decline) respondToStudioInvite(decline.dataset.declineStudioInvite, false);
+    });
+    document.getElementById("refreshInvites").addEventListener("click", async function () {
+        try {
+            const token = await getValidAccessToken();
+            if (token) await loadReceivedStudioInvites(token, true);
+        } catch (error) { setReceivedInviteStatus(error.message || "Sua sessão expirou.", "error"); }
     });
 
     function setPublicationStatus(message, state) {
@@ -1500,7 +1590,7 @@
             inviteStudio.value = activeStudioId;
             updateStudioContextMark(activeStudioFromMemberships(studios));
             membersTitle.textContent = "Convide alguém para colaborar.";
-            membersCopy.textContent = "O link vale por 7 dias e só pode ser aceito pela conta do e-mail informado.";
+            membersCopy.textContent = "A pessoa recebe o convite por e-mail e pode aceitar ou recusar pela própria conta HeartSpace.";
             sessionStorage.setItem(sessionKey("active-studio"), activeStudioId);
         }
     }
@@ -1510,6 +1600,7 @@
         try {
             const data = await studioRequest("list_studios", token);
             renderStudios(Array.isArray(data.studios) ? data.studios : []);
+            await loadReceivedStudioInvites(token, false);
             if (activeStudioId) await loadActiveStudio(token);
             if (query.get("cloud") === "connected" && activeStudioId) {
                 await openIntegrationModal("cloud");
@@ -1701,7 +1792,7 @@
         });
         memberList.hidden = !members.length;
         membersTitle.textContent = members.length === 1 ? "1 pessoa no estúdio." : members.length + " pessoas no estúdio.";
-        membersCopy.textContent = isOwner ? "Você pode ajustar os papéis de admins e membros ou remover acessos a qualquer momento." : "Os papéis e acessos são controlados pelos owners do estúdio.";
+        membersCopy.textContent = canManage ? "Gerencie cargos e convites. Convites chegam por e-mail e aparecem na conta da pessoa para aceitar ou recusar." : "Os papéis e acessos são controlados pelos owners e admins do estúdio.";
         roleCatalog.hidden = !members.length;
 
         pendingInviteList.replaceChildren();
@@ -2244,9 +2335,24 @@
         try {
             const token = await getValidAccessToken(); if (!token) throw new Error("Sua sessão expirou. Entre novamente.");
             const data = await studioRequest("create_invite", token, { studio_id: inviteStudio.value, email: inviteEmail.value.trim(), role: inviteRole.value });
-            inviteLink.href = data.invite_url; inviteLink.hidden = false; inviteStatus.textContent = "Link criado. Copie-o e envie apenas para a pessoa convidada.";
-            if (navigator.clipboard) navigator.clipboard.writeText(data.invite_url).catch(function () {});
+            if (data.email_status === "sent") {
+                inviteLink.hidden = true;
+                inviteStatus.textContent = data.recipient_has_account ? "Convite enviado por e-mail. Ele também aparecerá na conta HeartSpace da pessoa, onde ela poderá aceitar ou recusar." : "Convite enviado por e-mail com o link para entrar no HeartSpace.";
+            } else if (data.recipient_has_account) {
+                inviteLink.hidden = true;
+                inviteStatus.textContent = data.email_status === "failed"
+                    ? "O convite já aparece na conta HeartSpace da pessoa, mas o envio do e-mail falhou. Confira a configuração de e-mail do servidor."
+                    : "O convite já aparece na conta HeartSpace da pessoa. O e-mail ainda não está configurado no servidor.";
+            } else if (data.invite_url) {
+                inviteLink.href = data.invite_url; inviteLink.hidden = false;
+                inviteStatus.textContent = data.email_status === "failed" ? "O convite foi criado, mas o e-mail falhou. Use o link abaixo como alternativa." : "O e-mail ainda não está configurado. Use o link abaixo como alternativa.";
+                if (navigator.clipboard) navigator.clipboard.writeText(data.invite_url).catch(function () {});
+            } else {
+                inviteLink.hidden = true;
+                inviteStatus.textContent = "Convite criado.";
+            }
             inviteEmail.value = "";
+            await loadActiveStudio(token);
         } catch (error) { inviteStatus.textContent = error.message || "Não foi possível criar o convite."; }
         finally { button.disabled = false; }
     });

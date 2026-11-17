@@ -931,10 +931,30 @@ body.is-light .project-switch-item.is-active { border-color: transparent; color:
 #projectListStatus:empty { display: none; }
 .project-create-dialog .tasks-modal-actions { margin-top: 18px; }
 body.is-light .project-create-context { border-color: rgba(12,140,233,.24); color: #515d65; background: rgba(12,140,233,.06); }
+.invite-count-badge { display:inline-grid; min-width:19px; height:19px; place-items:center; padding:0 5px; border-radius:999px; color:#fff; background:#0c8ce9; font-size:.64rem; font-weight:800; line-height:1; }
+.invite-count-badge[hidden] { display:none; }
+.workspace-nav:not(:hover):not(:focus-within) .invite-count-badge { position:absolute; top:2px; right:4px; min-width:16px; height:16px; padding:0 3px; font-size:.56rem; }
+.workspace-nav-item[data-workspace-view="invites"] { position:relative; }
+.invites-inbox-panel { max-width:none; margin-top:24px; padding:22px; }
+.invites-inbox-heading { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.invites-inbox-heading .panel-kicker { margin-bottom:6px; }
+.invites-inbox-heading h2 { margin:0; font-size:1.12rem; }
+.received-invites-list { display:grid; gap:10px; margin-top:17px; }
+.received-invite-card { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:16px; border:1px solid var(--border); border-radius:9px; background:rgba(255,255,255,.025); }
+.received-invite-main { min-width:0; }
+.received-invite-main .panel-kicker { margin-bottom:5px; font-size:.62rem; }
+.received-invite-main h2 { margin:0 0 5px; font-size:1rem; }
+.received-invite-main > p:last-child { margin:0; color:var(--muted); font-size:.78rem; line-height:1.45; }
+.received-invite-actions { display:flex; flex:0 0 auto; align-items:center; gap:8px; }
+.received-invite-actions button { min-height:36px; margin:0; }
+.invites-empty { margin:0; padding:20px 0 2px; color:var(--muted); font-size:.86rem; }
+body.is-light .received-invite-card { background:rgba(0,0,0,.018); }
 @media (max-width: 620px) {
     .projects-page-heading { align-items: flex-start; flex-direction: column; }
     .projects-page-heading .portal-button { align-self: stretch; }
     .projects-list-heading { flex-direction: column; }
+    .received-invite-card { align-items:stretch; flex-direction:column; gap:14px; }
+    .received-invite-actions { justify-content:flex-end; }
 }
 .reader-dialog-actions { display:flex; justify-content:flex-end; gap:9px; }
 .reader-dialog-actions button { min-height:40px; margin:0; }

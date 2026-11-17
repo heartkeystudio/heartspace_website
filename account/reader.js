@@ -176,6 +176,7 @@
     function docsLaunchUrl() {
         const destination = new URL(context.docsUrl, window.location.href);
         destination.searchParams.set("source", "dashboard");
+        destination.searchParams.set("dashboard_origin", window.location.origin);
         const projectId = context.getProjectId();
         if (projectId) destination.searchParams.set("project_id", projectId);
         return destination.toString();

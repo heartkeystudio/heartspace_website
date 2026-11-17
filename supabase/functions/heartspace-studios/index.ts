@@ -95,6 +95,42 @@ function randomToken() {
   return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
+function escapeHtml(value: string) {
+  const replacements: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" };
+  return value.replace(/[&<>\"']/g, (character) => replacements[character] || character);
+}
+
+async function sendStudioInviteEmail(email: string, inviter: string, studio: string, role: string, inviteUrl: string) {
+  const apiKey = Deno.env.get("RESEND_API_KEY") || "";
+  const from = Deno.env.get("HEARTSPACE_INVITE_FROM") || "";
+  if (!apiKey || !from) return "not_configured";
+  const safeStudio = escapeHtml(studio);
+  const safeInviter = escapeHtml(inviter);
+  const safeRole = role === "admin" ? "Admin" : "Membro";
+  const safeUrl = escapeHtml(inviteUrl);
+  try {
+    const result = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from,
+        to: [email],
+        subject: `${inviter.replace(/[\r\n]/g, " ")} convidou você para ${studio.replace(/[\r\n]/g, " ")} no HeartSpace`,
+        text: `${inviter} convidou você para colaborar no estúdio ${studio} como ${safeRole}. Entre na sua conta HeartSpace para aceitar ou recusar: ${inviteUrl}`,
+        html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#20252a"><p style="color:#0c8ce9;font-weight:700">HEARTSPACE</p><h1 style="font-size:24px">Você recebeu um convite</h1><p><strong>${safeInviter}</strong> convidou você para colaborar no estúdio <strong>${safeStudio}</strong> como ${safeRole}.</p><p>Entre na sua conta para revisar o convite e escolher aceitar ou recusar.</p><p style="margin:28px 0"><a href="${safeUrl}" style="padding:12px 18px;border-radius:7px;background:#0c8ce9;color:#fff;text-decoration:none;font-weight:700">Ver convite</a></p><p style="font-size:13px;color:#6b7280">Se você não esperava este convite, pode recusá-lo na sua conta.</p></div>`,
+      }),
+    });
+    if (!result.ok) {
+      console.error("studio invite email delivery failed", { status: result.status });
+      return "failed";
+    }
+    return "sent";
+  } catch (error) {
+    console.error("studio invite email delivery failed", error);
+    return "failed";
+  }
+}
+
 function profileSyncPayload(user: any) {
   const metadata = user?.user_metadata || {};
   const firstName = typeof metadata["first name"] === "string" ? metadata["first name"].trim() : "";
@@ -1256,7 +1292,7 @@ Deno.serve(async (request) => {
       admin.from("projects").select("id, name, description, cover_image, banner_image, status, archived_at, created_at").eq("studio_id", studioId).order("created_at", { ascending: false }),
       admin.from("studio_audit_log").select("id, actor_id, action, target_type, target_id, created_at").eq("studio_id", studioId).order("created_at", { ascending: false }).limit(20),
       membership.role === "owner" || membership.role === "admin"
-        ? admin.from("studio_invites").select("id, email, role, expires_at, created_at").eq("studio_id", studioId).is("accepted_at", null).is("revoked_at", null).order("created_at", { ascending: false })
+        ? admin.from("studio_invites").select("id, email, role, expires_at, created_at").eq("studio_id", studioId).is("accepted_at", null).is("revoked_at", null).is("declined_at", null).order("created_at", { ascending: false })
         : Promise.resolve({ data: [], error: null }),
     ]);
     if (studioResult.error || !studioResult.data || membersResult.error || projectsResult.error || activityResult.error || invitesResult.error) {
@@ -1271,6 +1307,34 @@ Deno.serve(async (request) => {
       activity: activityResult.data || [],
       invites: invitesResult.data || [],
     }, 200, origin);
+  }
+
+  if (payload.action === "get_my_studio_invites") {
+    const email = typeof authData.user.email === "string" ? authData.user.email.trim().toLowerCase() : "";
+    if (!email) return response({ invites: [], unread_count: 0 }, 200, origin);
+    const now = new Date().toISOString();
+    const { data: invites, error } = await admin.from("studio_invites")
+      .select("id, studio_id, email, role, created_by, expires_at, created_at, viewed_at")
+      .eq("email", email).is("accepted_at", null).is("revoked_at", null).is("declined_at", null)
+      .gt("expires_at", now).order("created_at", { ascending: false });
+    if (error) return response({ error: "Não foi possível carregar seus convites." }, 500, origin);
+    if (payload.mark_viewed === true && invites?.length) {
+      await admin.from("studio_invites").update({ viewed_at: now }).in("id", invites.map((invite: any) => invite.id)).eq("email", email).is("viewed_at", null);
+    }
+    const studioIds = [...new Set((invites || []).map((invite: any) => invite.studio_id))];
+    const creatorIds = [...new Set((invites || []).map((invite: any) => invite.created_by))];
+    const [{ data: studios }, { data: creators }] = await Promise.all([
+      studioIds.length ? admin.from("studios").select("id, name, logo_url").in("id", studioIds) : Promise.resolve({ data: [] }),
+      creatorIds.length ? admin.from("profiles").select("id, full_name, nickname").in("id", creatorIds) : Promise.resolve({ data: [] }),
+    ]);
+    const studioById = new Map((studios || []).map((studio: any) => [studio.id, studio]));
+    const creatorById = new Map((creators || []).map((creator: any) => [creator.id, creator]));
+    const result = (invites || []).map((invite: any) => {
+      const studio = studioById.get(invite.studio_id) || {};
+      const creator = creatorById.get(invite.created_by) || {};
+      return { id: invite.id, studio_id: invite.studio_id, studio_name: studio.name || "Estúdio HeartSpace", studio_logo_url: studio.logo_url || null, role: invite.role, invited_by: creator.nickname || creator.full_name || "Uma pessoa da equipe", expires_at: invite.expires_at, created_at: invite.created_at, unread: payload.mark_viewed === true ? false : !invite.viewed_at };
+    });
+    return response({ invites: result, unread_count: payload.mark_viewed === true ? 0 : result.filter((invite: any) => invite.unread).length }, 200, origin);
   }
 
   if (payload.action === "update_studio") {
@@ -1329,7 +1393,49 @@ Deno.serve(async (request) => {
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
     const { data, error } = await admin.rpc("admin_create_studio_invite", { p_actor_id: authData.user.id, p_studio_id: studioId, p_email: email, p_role: role, p_token_hash: await tokenHash(token), p_expires_at: expiresAt });
     if (error) return response({ error: error.code === "42501" ? "Você não pode convidar pessoas para este estúdio." : "Não foi possível criar o convite." }, error.code === "42501" ? 403 : 400, origin);
-    return response({ invite: data, invite_url: origin + "/invite/?token=" + encodeURIComponent(token) }, 201, origin);
+    const { data: recipient } = await admin.from("profiles").select("id").eq("email", email).maybeSingle();
+    const inviteId = data?.id;
+    if (recipient?.id && inviteId) {
+      await admin.from("studio_invites").update({ recipient_id: recipient.id }).eq("id", inviteId);
+    }
+    const [{ data: studio }, { data: inviterProfile }] = await Promise.all([
+      admin.from("studios").select("name").eq("id", studioId).maybeSingle(),
+      admin.from("profiles").select("full_name, nickname").eq("id", authData.user.id).maybeSingle(),
+    ]);
+    const inviterName = inviterProfile?.nickname || inviterProfile?.full_name || "Sua equipe";
+    const accountUrl = new URL(betaRedirectUrl("https://www.heartspace.tools/account/"));
+    const inviteUrl = recipient?.id
+      ? accountUrl.toString()
+      : new URL("/invite/?token=" + encodeURIComponent(token), accountUrl.origin).toString();
+    const emailStatus = await sendStudioInviteEmail(email, inviterName, studio?.name || "um estúdio", role, inviteUrl);
+    return response({
+      invite: data,
+      email_status: emailStatus,
+      recipient_has_account: Boolean(recipient?.id),
+      invite_url: recipient?.id ? undefined : inviteUrl,
+    }, 201, origin);
+  }
+
+  if (payload.action === "accept_account_invite") {
+    const inviteId = typeof payload.invite_id === "string" ? payload.invite_id : "";
+    const email = typeof authData.user.email === "string" ? authData.user.email.trim().toLowerCase() : "";
+    if (!inviteId || !email) return response({ error: "Convite inválido." }, 400, origin);
+    const { data: invite, error: inviteError } = await admin.from("studio_invites")
+      .select("id, studio_id, email, token_hash, expires_at")
+      .eq("id", inviteId).eq("email", email).is("accepted_at", null).is("revoked_at", null).is("declined_at", null).gt("expires_at", new Date().toISOString()).maybeSingle();
+    if (inviteError || !invite) return response({ error: "Este convite não é mais válido." }, 400, origin);
+    const { data, error } = await admin.rpc("admin_accept_studio_invite", { p_actor_id: authData.user.id, p_email: email, p_token_hash: invite.token_hash });
+    if (error) return response({ error: "Não foi possível aceitar este convite." }, 400, origin);
+    return response({ studio_id: data }, 200, origin);
+  }
+
+  if (payload.action === "decline_account_invite") {
+    const inviteId = typeof payload.invite_id === "string" ? payload.invite_id : "";
+    const email = typeof authData.user.email === "string" ? authData.user.email.trim().toLowerCase() : "";
+    if (!inviteId || !email) return response({ error: "Convite inválido." }, 400, origin);
+    const { error } = await admin.rpc("admin_decline_studio_invite", { p_actor_id: authData.user.id, p_invite_id: inviteId, p_email: email });
+    if (error) return response({ error: "Este convite não é mais válido." }, 400, origin);
+    return response({ ok: true }, 200, origin);
   }
 
   if (payload.action === "accept_invite") {

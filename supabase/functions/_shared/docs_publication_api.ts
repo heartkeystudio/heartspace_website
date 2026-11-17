@@ -4,6 +4,7 @@ const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const hash=/^[a-f0-9]{64}$/;
 type Dependencies={respond:(body:any,status:number,origin:string|null)=>Response;access:(admin:any,studio:string,project:string,user:string)=>Promise<any>;enabled:(admin:any,project:string,app:string)=>Promise<any>;publicUrl:(id:string)=>string};
 export async function publicationAsset(admin:any,payload:any,origin:string|null,respond:Dependencies["respond"],authorize?:{project:string;revision:string}) {
+  try {
   if(!hash.test(payload.asset_id||""))return respond({error:"Imagem indisponível."},404,origin);
   let revisionId=authorize?.revision, projectId=authorize?.project;
   if(!authorize) {
@@ -19,7 +20,8 @@ export async function publicationAsset(admin:any,payload:any,origin:string|null,
   if(!blob||blob.size!==media.bytes||blob.size>IMAGE_LIMIT)return respond({error:"Imagem indisponível."},503,origin);
   const bytes=new Uint8Array(await blob.arrayBuffer());
   if(await sha256(bytes)!==media.sha256||imageMime(bytes)!==media.mime)return respond({error:"Imagem indisponível."},503,origin);
-  return new Response(bytes,{headers:{"Content-Type":media.mime,"Content-Length":String(bytes.length),"Cache-Control":"no-store","X-Content-Type-Options":"nosniff","Vary":"Origin",...(origin?{"Access-Control-Allow-Origin":origin}:{})}});
+  return new Response(new Uint8Array(bytes).buffer,{headers:{"Content-Type":media.mime,"Content-Length":String(bytes.length),"Cache-Control":"no-store","X-Content-Type-Options":"nosniff","Vary":"Origin",...(origin?{"Access-Control-Allow-Origin":origin}:{})}});
+  } catch { return respond({error:"Imagem indisponível."},503,origin); }
 }
 
 export async function docsPublicationAction(admin:any,payload:any,userId:string,origin:string|null,deps:Dependencies):Promise<Response|null> {
@@ -44,7 +46,7 @@ export async function docsPublicationAction(admin:any,payload:any,userId:string,
     }
     const revisionId=String(payload.revision_id||payload.source?.revision_id||"");
     if(!uuid.test(revisionId))return reply({error:"Selecione uma revisão aprovada."},400);
-    const {data:revision}=await admin.from("doc_revisions").select("id,doc_id,revision_number,content,content_hash,approved_by,approved_at").eq("id",revisionId).eq("doc_id",documentId).maybeSingle();
+    const {data:revision}=await admin.from("doc_revisions").select(payload.action==="get_docs_publication_preview_asset"?"id,doc_id,revision_number,approved_by,approved_at":"id,doc_id,revision_number,content,content_hash,approved_by,approved_at").eq("id",revisionId).eq("doc_id",documentId).maybeSingle();
     if(!revision || (!revision.approved_at && (!access.canApprove || payload.action==="publish_docs_revision")))return reply({error:"A revisão ainda não foi aprovada."},409);
     if(payload.action==="get_docs_publication_preview_asset")return await publicationAsset(admin,payload,origin,deps.respond,{project:projectId,revision:revisionId});
     if(payload.action==="prepare_docs_publication") {
@@ -56,17 +58,17 @@ export async function docsPublicationAction(admin:any,payload:any,userId:string,
     const slug=typeof payload.slug==="string"?payload.slug.trim():"";
     const summary=typeof payload.summary==="string"?payload.summary.trim():"";
     const sourceUrl=typeof payload.source_url==="string"?payload.source_url.trim():"";
-    if(!title||title.length>160||!slug||slug.length>160||!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)||summary.length>500||sourceUrl.length>2048||(sourceUrl&&!/^https:\/\//i.test(sourceUrl))||!["public","unlisted"].includes(payload.visibility)||!uuid.test(payload.operation_id||"")||!hash.test(payload.prepared_digest||"")||payload.source?.format!=="heartspace-html-v1"||payload.source?.revision_number!==revision.revision_number||payload.studio_id!==project.studio_id||payload.snapshot!==undefined)return reply({error:"Pedido de publicação inválido. Prepare a página novamente."},400);
+    if(!title||title.length>160||!slug||slug.length>160||!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)||summary.length>500||sourceUrl.length>2048||(sourceUrl&&!/^https:\/\//i.test(sourceUrl))||!["public","unlisted"].includes(payload.visibility)||!uuid.test(payload.operation_id||"")||!hash.test(payload.prepared_digest||"")||payload.source?.format!=="heartspace-html-v1"||payload.source?.document_id!==documentId||payload.source?.revision_id!==revisionId||payload.source?.revision_number!==revision.revision_number||payload.studio_id!==project.studio_id||payload.snapshot!==undefined)return reply({error:"Pedido de publicação inválido. Prepare a página novamente."},400);
     const publicationId=payload.publication_id||null;
-    if(publicationId && (!uuid.test(publicationId)||!Object.hasOwn(payload,"expected_current_revision_id")||typeof payload.expected_updated_at!=="string"))return reply({error:"Atualize a publicação antes de substituir a página."},409);
+    if(publicationId && (!uuid.test(publicationId)||!Object.hasOwn(payload,"expected_current_revision_id")||typeof payload.expected_updated_at!=="string"||!Number.isFinite(Date.parse(payload.expected_updated_at))||(payload.expected_current_revision_id!==null&&!uuid.test(payload.expected_current_revision_id))))return reply({error:"Atualize a publicação antes de substituir a página."},409);
     // The request receipt precedes rebuilding: retries remain possible even when
     // an old editable image has since been removed from its private source.
     const requestHash=await sha256(JSON.stringify({projectId,documentId,revisionId,publicationId,title,slug,summary,sourceUrl,visibility:payload.visibility,digest:payload.prepared_digest,expected:payload.expected_current_revision_id||null,updated:payload.expected_updated_at||null}));
     const {data:receipt,error:receiptError}=await admin.from("docs_publication_receipts").select("project_id,request_hash,result").eq("actor_id",userId).eq("operation_id",payload.operation_id).maybeSingle();
     if(receiptError)return reply({error:"A publicação requer a migração de transporte de publicações."},503);
     if(receipt) {if(receipt.project_id!==projectId||receipt.request_hash!==requestHash)return reply({error:"Este pedido já foi usado com outro conteúdo."},409);return reply({publication:receipt.result,public_url:deps.publicUrl(receipt.result.id),replayed:true});}
-    // Files frozen by prepare are used for commit. The source text is rebuilt,
-    // while the staged image hashes are checked by the snapshot digest.
+    // Rebuild from the approved revision, checking source image bytes again.
+    // A changed legacy image path requires a new explicit review/digest.
     const prepared=await buildDocsPublication(admin,projectId,revision);
     if(prepared.digest!==payload.prepared_digest)return reply({error:"As imagens ou a página mudaram desde a conferência. Prepare e confira novamente."},409);
     await stagePublicationFiles(admin,revision.id,projectId,prepared.files);

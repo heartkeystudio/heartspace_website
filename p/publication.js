@@ -28,14 +28,15 @@
     if(!modern && !(snapshot.version===1&&snapshot.format==="heartspace-docs-v1"))throw new Error("Formato de página não suportado.");
     const tags = modern ? {heading:"h2",paragraph:"p",quote:"blockquote",code:"pre","list-item":"li"} : {0:"p",1:"h1",2:"h2",3:"h3",4:"li",5:"li",6:"li",7:"blockquote",8:"pre",13:"p"};
     let list=null;
-    const loads=new Map();
+    const loads=new Map(),lanes=Array(4).fill(Promise.resolve());let lane=0;
+    const schedule=work=>{const n=lane++%4;const task=lanes[n].catch(()=>{}).then(work);lanes[n]=task;return task;};
     snapshot.blocks.forEach(function(block) {
       if(modern&&block.type==="image") {
         list=null;
         const asset=(snapshot.assets||[]).find(a=>a.id===block.asset);
         if(!asset||!/^[a-f0-9]{64}$/.test(asset.id)||!["image/png","image/jpeg","image/webp"].includes(asset.mime)||!Number.isInteger(asset.bytes)||asset.bytes<1||asset.bytes>4194304)return;
         const figure=document.createElement("figure"),img=document.createElement("img"),caption=document.createElement("figcaption");img.alt=typeof block.alt==="string"?block.alt:"";caption.textContent="Carregando imagem…";figure.append(img,caption);content.append(figure);
-        if(!loads.has(asset.id))loads.set(asset.id,imageBytes(asset));
+        if(!loads.has(asset.id))loads.set(asset.id,schedule(()=>imageBytes(asset)));
         loads.get(asset.id).then(url=>{img.src=url;caption.remove();}).catch(()=>{img.remove();caption.textContent="Não foi possível carregar esta imagem. Atualize a página para tentar novamente.";});return;
       }
       if(typeof block.text!=="string"||block.text.length>12000)return;
@@ -46,7 +47,7 @@
       content.append(element);
     });
   }
-  window.addEventListener("pagehide",()=>{imageUrls.forEach(url=>URL.revokeObjectURL(url));imageUrls.clear();});
+  window.addEventListener("pagehide",event=>{if(event.persisted)return;imageUrls.forEach(url=>URL.revokeObjectURL(url));imageUrls.clear();});
   async function load() {
     if (!id || !config.studioFunctionUrl || !config.supabaseAnonKey) return fail("A publicação não está disponível.");
     try {
